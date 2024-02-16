@@ -60,6 +60,11 @@ void SetPadIcons(unsigned spaces)
     s_icon_width = s_use_icons ? 1 + s_icon_padding : 0;
 }
 
+unsigned GetPadIcons()
+{
+    return s_icon_padding;
+}
+
 bool SetColorScale(const WCHAR* s)
 {
     if (!s)

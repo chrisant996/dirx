@@ -1,4 +1,4 @@
-// Copyright (c) 2024 by Christopher Antos
+﻿// Copyright (c) 2024 by Christopher Antos
 // License: http://opensource.org/licenses/MIT
 
 // https://github.com/eza-community/eza
@@ -10,6 +10,13 @@
 #include "icons.h"
 #include "filesys.h"
 #include "patterns.h"
+
+#ifdef DEBUG
+#include "colors.h"
+#include "output.h"
+#include "formatter.h"
+#include <algorithm>
+#endif
 
 #include <unordered_map>
 
@@ -438,9 +445,12 @@ struct IconMapping
     Icons icon;
 };
 
-static const WCHAR* GetDirectoryIcon(const WCHAR* name)
+typedef std::unordered_map<const WCHAR*, Icons, HashCase, EqualCase> CaseMap;
+typedef std::unordered_map<const WCHAR*, Icons, HashCaseless, EqualCaseless> CaselessMap;
+
+static const CaseMap& GetDirectoryMap()
 {
-    static const std::unordered_map<const WCHAR*, Icons, HashCase, EqualCase> c_directory_icons =
+    static const CaseMap c_directory_icons =
     {
         { L".config",               Icons::FOLDER_CONFIG },
         { L".git",                  Icons::FOLDER_GIT },
@@ -476,16 +486,12 @@ static const WCHAR* GetDirectoryIcon(const WCHAR* name)
         { L"xorg.conf.d",           Icons::FOLDER_CONFIG },
     };
 
-    const auto& iter = c_directory_icons.find(name);
-    if (iter != c_directory_icons.end())
-        return GetIcon(iter->second);
-
-    return nullptr;
+    return c_directory_icons;
 }
 
-static const WCHAR* GetFilenameIcon(const WCHAR* name)
+static const CaseMap GetFilenameMap()
 {
-    static const std::unordered_map<const WCHAR*, Icons, HashCase, EqualCase> c_filename_icons =
+    static const CaseMap c_filename_icons =
     {
         { L".atom",                 Icons::ATOM },
         { L".bashrc",               Icons::SHELL },
@@ -657,16 +663,12 @@ static const WCHAR* GetFilenameIcon(const WCHAR* name)
         { L"CHANGELOG.txt",         Icons::HISTORY },
     };
 
-    const auto& iter = c_filename_icons.find(name);
-    if (iter != c_filename_icons.end())
-        return GetIcon(iter->second);
-
-    return nullptr;
+    return c_filename_icons;
 }
 
-static const WCHAR* GetExtensionIcon(const WCHAR* ext)
+static const CaselessMap& GetExtensionMap()
 {
-    static const std::unordered_map<const WCHAR*, Icons, HashCase, EqualCase> c_extension_icons =
+    static const CaselessMap c_extension_icons =
     {
         { L"7z",                     Icons::COMPRESSED },
         { L"a",                      Icons::OS_LINUX },
@@ -1105,8 +1107,37 @@ static const WCHAR* GetExtensionIcon(const WCHAR* ext)
         { L"zst",                    Icons::COMPRESSED },
     };
 
-    const auto& iter = c_extension_icons.find(ext);
-    if (iter != c_extension_icons.end())
+    return c_extension_icons;
+}
+
+static const WCHAR* GetDirectoryIcon(const WCHAR* name)
+{
+    static const auto& directory_icons = GetDirectoryMap();
+
+    const auto& iter = directory_icons.find(name);
+    if (iter != directory_icons.end())
+        return GetIcon(iter->second);
+
+    return nullptr;
+}
+
+static const WCHAR* GetFilenameIcon(const WCHAR* name)
+{
+    static const auto& filename_icons = GetFilenameMap();
+
+    const auto& iter = filename_icons.find(name);
+    if (iter != filename_icons.end())
+        return GetIcon(iter->second);
+
+    return nullptr;
+}
+
+static const WCHAR* GetExtensionIcon(const WCHAR* ext)
+{
+    static const auto& extension_icons = GetExtensionMap();
+
+    const auto& iter = extension_icons.find(ext);
+    if (iter != extension_icons.end())
         return GetIcon(iter->second);
 
     return nullptr;
@@ -1157,4 +1188,64 @@ const WCHAR* LookupIcon(const WCHAR* full, DWORD attr)
     assert(icon && *icon);
     return icon;
 }
+
+#ifdef DEBUG
+static bool CmpCaseless(std::wstring& a, std::wstring& b)
+{
+    return wcsicmp(a.c_str(), b.c_str()) < 0;
+}
+
+static void PrintIcons(HANDLE h, std::vector<std::wstring>& strings, DWORD attr, unsigned short mode)
+{
+    StrW tmp;
+    const unsigned spaces = GetPadIcons();
+
+    std::sort(strings.begin(), strings.end(), CmpCaseless);
+
+    for (const auto& s : strings)
+    {
+        const WCHAR* c = LookupColor(s.c_str(), attr, mode);
+        OutputConsole(h, LookupIcon(s.c_str(), attr), -1, GetIconColor(c));
+        tmp.Clear();
+        tmp.AppendSpaces(spaces);
+        OutputConsole(h, tmp.Text());
+        OutputConsole(h, s.c_str(), -1, c);
+        OutputConsole(h, L"\n");
+    }
+}
+
+void PrintAllIcons()
+{
+    HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+    const unsigned spaces = GetPadIcons();
+    std::vector<std::wstring> strings;
+
+    OutputConsole(h, L" DIRECTORIES ", -1, L"7");
+    OutputConsole(h, L"\n");
+    strings.clear();
+    for (const auto& info : GetDirectoryMap())
+        strings.emplace_back(info.first);
+    PrintIcons(h, strings, FILE_ATTRIBUTE_DIRECTORY, S_IFDIR);
+
+    OutputConsole(h, L"\n");
+    OutputConsole(h, L" FILENAMES ", -1, L"7");
+    OutputConsole(h, L"\n");
+    strings.clear();
+    for (const auto& info : GetFilenameMap())
+        strings.emplace_back(info.first);
+    PrintIcons(h, strings, FILE_ATTRIBUTE_NORMAL, S_IFREG);
+
+    OutputConsole(h, L"\n");
+    OutputConsole(h, L" EXTENSIONS ", -1, L"7");
+    OutputConsole(h, L"\n");
+    strings.clear();
+    for (const auto& info : GetExtensionMap())
+    {
+        std::wstring tmp(L"*.");
+        tmp.append(info.first);
+        strings.emplace_back(std::move(tmp));
+    }
+    PrintIcons(h, strings, FILE_ATTRIBUTE_NORMAL, S_IFREG);
+}
+#endif
 

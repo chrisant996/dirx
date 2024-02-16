@@ -122,6 +122,9 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     //  3.  Parse the command line options.
 
     int hide_dot_files = 0;         // By default, behave like CMD DIR.
+#ifdef DEBUG
+    int print_all_icons = 0;
+#endif
 
     enum
     {
@@ -156,6 +159,9 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-icons",              nullptr,            LOI_NO_ICONS },
         { L"nerd-fonts-version",    nullptr,            LOI_NERD_FONTS_VER,     LOHA_REQUIRED },
         { L"pad-icons",             nullptr,            LOI_PAD_ICONS,          LOHA_REQUIRED },
+#ifdef DEBUG
+        { L"print-all-icons",       &print_all_icons,   1 },
+#endif
         { nullptr }
     };
 
@@ -635,6 +641,14 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         assert(!e.Test());
         InitColors(nullptr);
     }
+
+#ifdef DEBUG
+    if (print_all_icons)
+    {
+        PrintAllIcons();
+        return 0;
+    }
+#endif
 
     // Determine path(s) to scan.
 

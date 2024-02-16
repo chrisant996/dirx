@@ -126,6 +126,7 @@ private:
 bool InitLocale();
 void SetUseIcons(bool use_icons);
 void SetPadIcons(unsigned spaces);
+unsigned GetPadIcons();
 bool SetColorScale(const WCHAR* s);
 bool IsScalingSize();
 bool SetColorScaleMode(const WCHAR* s);
