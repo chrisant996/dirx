@@ -508,7 +508,7 @@ static void WriteConsoleInternal(HANDLE h, const WCHAR* p, unsigned len, const W
         {
             StrA tmp2;
             tmp2.SetW(tmp);
-            WriteFile(h, tmp2.Text(), tmp.Length(), &written, nullptr);
+            WriteFile(h, tmp2.Text(), tmp2.Length(), &written, nullptr);
         }
     }
 
