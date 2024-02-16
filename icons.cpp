@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 by Christopher Antos
+// Copyright (c) 2024 by Christopher Antos
 // License: http://opensource.org/licenses/MIT
 
 // https://github.com/eza-community/eza
@@ -328,7 +328,7 @@ static const NerdFontIcon c_common_icons[] =
     { L"",      },     // VIDEO
     { L"",      },     // VIM
     { L"",      },     // WRENCH
-    { L"󰗀", L"謹" },     // XML
+    { L"󰗀", L"" },     // XML
     { L"", L"!" },     // YAML
     { L"", ____ },     // YARN
 
