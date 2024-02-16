@@ -222,6 +222,9 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     // Interpret the options.
 
     DWORD flags = FMT_AUTOSEPTHOUSANDS;
+    if (InitLocale())
+        flags |= FMT_LOCALEDATETIME;
+
     WhichTimeStamp timestamp = TIMESTAMP_MODIFIED;
     WhichFileSize filesize = FILESIZE_FILESIZE;
     DWORD dwAttrIncludeAny = 0;
@@ -250,7 +253,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         case 'j':       flagsON = FMT_JUSTIFY_FAT; break;
         case 'J':       flagsON = FMT_JUSTIFY_NONFAT; break;
         case 'l':       flagsON = FMT_LOWERCASE; break;
-        case 'L':       flagsON = InitLocaleDateTime() ? FMT_LOCALEDATETIME : 0; break;
+        case 'L':       flagsON = FMT_LOCALEDATETIME; break;
         case 'M':       flagsON = FMT_WIDELISTIME; break;
         case 'q':       flagsON = FMT_SHOWOWNER; break;
         case 'r':       flagsON = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;

@@ -114,6 +114,144 @@ static const WCHAR* SelectColor(const FileInfo* const pfi, const DWORD flags)
     return nullptr;
 }
 
+static LCID s_lcid = 0;
+static unsigned s_locale_date_time_len = 0;
+static WCHAR s_locale_date[80];
+static WCHAR s_locale_time[80];
+static WCHAR s_decimal[2];
+static WCHAR s_thousand[2];
+
+bool InitLocale()
+{
+    WCHAR tmp[80];
+
+    // NOTE: Set a breakpoint on GetLocaleInfo in CMD.  Observe in the
+    // assembly code that before it calls GetLocaleInfo, it calls
+    // GetUserDefaultLCID and then tests for certain languages and ... uses
+    // English instead.  I don't understand why it's doing that, but since I'm
+    // trying to behave similarly I guess I'll do the same?
+    s_lcid = GetUserDefaultLCID();
+    if ((PRIMARYLANGID(s_lcid) == LANG_ARABIC) ||
+        (PRIMARYLANGID(s_lcid) == LANG_FARSI) ||
+        (PRIMARYLANGID(s_lcid) == LANG_HEBREW) ||
+        (PRIMARYLANGID(s_lcid) == LANG_HINDI) ||
+        (PRIMARYLANGID(s_lcid) == LANG_TAMIL) ||
+        (PRIMARYLANGID(s_lcid) == LANG_THAI))
+        s_lcid = MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT), SORT_DEFAULT); // 0x409
+
+    if (!GetLocaleInfo(s_lcid, LOCALE_SDECIMAL, s_decimal, _countof(s_decimal)))
+        wcscpy_s(s_decimal, L".");
+    if (!GetLocaleInfo(s_lcid, LOCALE_STHOUSAND, s_thousand, _countof(s_thousand)))
+        wcscpy_s(s_thousand, L",");
+
+    // Get the locale-dependent short date and time formats.
+    // (It looks like a loop, but it's just so 'break' can short circuit out.)
+    while (true)
+    {
+        // First the date format...
+        if (!GetLocaleInfo(s_lcid, LOCALE_SSHORTDATE, tmp, _countof(tmp)))
+        {
+            if (!GetLocaleInfo(s_lcid, LOCALE_IDATE, tmp, _countof(tmp)))
+                break;
+
+            if (tmp[0] == '0')
+                wcscpy_s(tmp, L"MM/dd/yy");
+            else if (tmp[0] == '1')
+                wcscpy_s(tmp, L"dd/MM/yy");
+            else if (tmp[0] == '2')
+                wcscpy_s(tmp, L"yy/MM/dd");
+            else
+                break;
+        }
+
+        // Massage the locale date format so it's fixed width.
+        StrW s;
+        bool quoted = false;
+        for (const WCHAR* pch = tmp; *pch; pch++)
+        {
+            if (*pch == '\'')
+            {
+                quoted = !quoted;
+                s.Append(*pch);
+            }
+            else if (quoted)
+            {
+                s.Append(*pch);
+            }
+            else
+            {
+                unsigned c = 0;
+                const WCHAR* pchCount = pch;
+                while (*pchCount && *pchCount == *pch)
+                {
+                    s.Append(*pch);
+                    pchCount++;
+                    c++;
+                }
+                if (*pch == 'd' || *pch == 'M')
+                {
+                    if (c == 1)
+                        s.Append(*pch);
+                    else if (c == 4)
+                        s.SetLength(s.Length() - 1);
+                }
+                pch = pchCount - 1;
+            }
+        }
+
+        if (s.Length() >= _countof(s_locale_date))
+            break;
+        wcscpy_s(s_locale_date, s.Text());
+
+        // Next the time format...
+        if (!GetLocaleInfo(s_lcid, LOCALE_SSHORTTIME, tmp, _countof(tmp)))
+            wcscpy_s(tmp, L"hh:mm tt");
+
+        // Massage the locale time format so it's fixed width.
+        s.Clear();
+        quoted = false;
+        for (const WCHAR* pch = tmp; *pch; pch++)
+        {
+            if (*pch == '\'')
+            {
+                quoted = !quoted;
+                s.Append(*pch);
+            }
+            else if (quoted)
+            {
+                s.Append(*pch);
+            }
+            else if (*pch == 'h' || *pch == 'H' || *pch == 'm')
+            {
+                unsigned c = 0;
+                const WCHAR* pchCount = pch;
+                while (*pchCount && *pchCount == *pch)
+                {
+                    s.Append(*pch);
+                    pchCount++;
+                    c++;
+                }
+                if (c == 1)
+                    s.Append(*pch);
+                pch = pchCount - 1;
+            }
+            else
+            {
+                s.Append(*pch);
+            }
+        }
+
+        if (s.Length() >= _countof(s_locale_time))
+            break;
+        wcscpy_s(s_locale_time, s.Text());
+
+        s_locale_date_time_len = unsigned(wcslen(s_locale_date) + 2 + wcslen(s_locale_time));
+        break;
+    }
+
+    return s_locale_date_time_len > 0;
+}
+
 static const AttrChar c_attr_chars[] =
 {
     { FILE_ATTRIBUTE_READONLY, 'r' },
@@ -504,10 +642,11 @@ static void FormatSizeForReading(StrW& s, unsigned __int64 cbSize, unsigned fiel
 
         if (settings.IsSet(FMT_SEPARATETHOUSANDS))
         {
+            // CMD DIR does not check GetLocaleInfo(LOCALE_SGROUPING).
             if (cDigits && !(cDigits % 3))
             {
                 out--;
-                *out = ',';
+                *out = s_thousand[0];
             }
         }
 
@@ -724,121 +863,11 @@ static void FormatFileSize(StrW& s, const FileInfo* pfi, const DirFormatSettings
 #endif
 }
 
-static LCID s_lcid = 0;
-static unsigned s_locale_date_time_len = 0;
-static WCHAR s_locate_date[80];
-static WCHAR s_locale_time[80];
-
-bool InitLocaleDateTime()
-{
-    if (s_locale_date_time_len)
-        return true;
-
-    // NOTE: Set a breakpoint on GetLocaleInfo in CMD.  Observe in the
-    // assembly code that before it calls GetLocaleInfo, it calls
-    // GetUserDefaultLCID and then tests for certain languages and ... uses
-    // English instead.  I don't understand why it's doing that, but since I'm
-    // trying to behave similarly I guess I'll do the same?
-    s_lcid = GetUserDefaultLCID();
-    if ((PRIMARYLANGID(s_lcid) == LANG_ARABIC) ||
-        (PRIMARYLANGID(s_lcid) == LANG_FARSI) ||
-        (PRIMARYLANGID(s_lcid) == LANG_HEBREW) ||
-        (PRIMARYLANGID(s_lcid) == LANG_HINDI) ||
-        (PRIMARYLANGID(s_lcid) == LANG_TAMIL) ||
-        (PRIMARYLANGID(s_lcid) == LANG_THAI))
-        s_lcid = MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT), SORT_DEFAULT); // 0x409
-
-    WCHAR tmp[80];
-    if (!GetLocaleInfo(s_lcid, LOCALE_SSHORTDATE, tmp, _countof(tmp)))
-        return false;
-
-    // Massage the locale date format so it's fixed width.
-    StrW s;
-    bool quoted = false;
-    for (const WCHAR* pch = tmp; *pch; pch++)
-    {
-        if (*pch == '\'')
-        {
-            quoted = !quoted;
-            s.Append(*pch);
-        }
-        else if (quoted)
-        {
-            s.Append(*pch);
-        }
-        else
-        {
-            unsigned c = 0;
-            const WCHAR* pchCount = pch;
-            while (*pchCount && *pchCount == *pch)
-            {
-                s.Append(*pch);
-                pchCount++;
-                c++;
-            }
-            if (*pch == 'd' || *pch == 'M')
-            {
-                if (c == 1)
-                    s.Append(*pch);
-                else if (c == 4)
-                    s.SetLength(s.Length() - 1);
-            }
-            pch = pchCount - 1;
-        }
-    }
-    if (s.Length() >= _countof(s_locate_date))
-        return false;
-    wcscpy_s(s_locate_date, _countof(s_locate_date), s.Text());
-
-    if (!GetLocaleInfo(s_lcid, LOCALE_SSHORTTIME, tmp, _countof(tmp)))
-        wcscpy_s(tmp, _countof(tmp), L"hh':'mm tt");
-
-    // Massage the locale time format so it's fixed width.
-    s.Clear();
-    quoted = false;
-    for (const WCHAR* pch = tmp; *pch; pch++)
-    {
-        if (*pch == '\'')
-        {
-            quoted = !quoted;
-            s.Append(*pch);
-        }
-        else if (quoted)
-        {
-            s.Append(*pch);
-        }
-        else if (*pch == 'h' || *pch == 'H' || *pch == 'm')
-        {
-            unsigned c = 0;
-            const WCHAR* pchCount = pch;
-            while (*pchCount && *pchCount == *pch)
-            {
-                s.Append(*pch);
-                pchCount++;
-                c++;
-            }
-            if (c == 1)
-                s.Append(*pch);
-            pch = pchCount - 1;
-        }
-        else
-        {
-            s.Append(*pch);
-        }
-    }
-    if (s.Length() >= _countof(s_locale_time))
-        return false;
-    wcscpy_s(s_locale_time, _countof(s_locale_time), s.Text());
-
-    s_locale_date_time_len = unsigned(wcslen(s_locate_date) + 2 + wcslen(s_locale_time));
-    return true;
-}
-
 static void FormatLocaleDateTime(StrW& s, const SYSTEMTIME* psystime)
 {
     WCHAR tmp[128];
 
-    if (GetDateFormat(s_lcid, 0, psystime, s_locate_date, tmp, _countof(tmp)))
+    if (GetDateFormat(s_lcid, 0, psystime, s_locale_date, tmp, _countof(tmp)))
         s.Append(tmp);
     s.Append(L"  ");
     if (GetTimeFormat(s_lcid, 0, psystime, s_locale_time, tmp, _countof(tmp)))
@@ -923,13 +952,14 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
 
     case 'x':
         // 24 characters.
-        s.Printf(L"%04u/%02u/%02u  %2u:%02u:%02u.%03u",
+        s.Printf(L"%04u/%02u/%02u  %2u:%02u:%02u%s%03u",
                  systime.wYear,
                  systime.wMonth,
                  systime.wDay,
                  systime.wHour,
                  systime.wMinute,
                  systime.wSecond,
+                 s_decimal,
                  systime.wMilliseconds);
         break;
 

@@ -123,7 +123,7 @@ private:
     StrW                m_dir;
 };
 
-bool InitLocaleDateTime();
+bool InitLocale();
 void SetUseIcons(bool use_icons);
 void SetPadIcons(unsigned spaces);
 bool SetColorScale(const WCHAR* s);
