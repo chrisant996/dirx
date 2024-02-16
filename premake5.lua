@@ -344,18 +344,20 @@ newaction {
         rmdir(target_dir)
         mkdir(target_dir)
 
+        -- Copy release files.
+        copy(src .. "/x64/dirx.exe", root_dir)
+        copy(src .. "/x64/dirx.pdb", root_dir)
+
         -- Package the release and the pdbs separately.
         os.chdir(src .. "/x64")
         if have_7z then
-            --exec(have_7z .. " a -r  " .. target_dir .. "dirx-v" .. version .. "-symbols.zip  *.pdb")
+            exec(have_7z .. " a -r  " .. target_dir .. "dirx-v" .. version .. "-symbols.zip  *.pdb")
             exec(have_7z .. " a -r  " .. target_dir .. "dirx-v" .. version .. ".zip  *.exe")
         end
 
         -- Tidy up code directory.
-        os.chdir(code_dir)
-        rmdir(".build")
-        rmdir(".git")
-        unlink(".gitignore")
+        os.chdir(root_dir)
+        rmdir(code_dir)
 
         -- Report some facts about what just happened.
         print("\n\n")
