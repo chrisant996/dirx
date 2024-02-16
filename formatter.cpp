@@ -66,6 +66,8 @@ bool SetColorScale(const WCHAR* s)
         return false;
     if (!_wcsicmp(s, L"") || !_wcsicmp(s, L"all"))
         s_scale_size = s_scale_time = true;
+    else if (!_wcsicmp(s, L"none"))
+        s_scale_size = s_scale_time = false;
     else if (!_wcsicmp(s, L"size"))
         s_scale_size = true, s_scale_time = false;
     else if (!_wcsicmp(s, L"time") || !_wcsicmp(s, L"date") || !_wcsicmp(s, L"age"))

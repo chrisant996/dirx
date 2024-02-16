@@ -5,7 +5,7 @@
 
 #pragma once
 
-void SetUseEscapeCodes(int color_mode=-1);   // 0=no, 1=yes, -1=auto (when not redirected).
+bool SetUseEscapeCodes(const WCHAR* s);
 bool CanUseEscapeCodes(HANDLE hout);
 
 bool SetPagination(bool paginate);

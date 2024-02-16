@@ -121,8 +121,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     //  2.  Parse options from DIRXCMD.
     //  3.  Parse the command line options.
 
-    int color_mode = -1;
-    int hide_dot_files = 1;
+    int hide_dot_files = 0;         // By default, behave like CMD DIR.
 
     enum
     {
@@ -130,6 +129,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_CLASSIFY,
         LOI_NO_CLASSIFY,
         LOI_COLOR_SCALE,
+        LOI_NO_COLOR_SCALE,
         LOI_COLOR_SCALE_MODE,
         LOI_ESCAPE_CODES,
         LOI_HYPERLINKS,
@@ -145,6 +145,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"classify",              nullptr,            LOI_CLASSIFY },
         { L"no-classify",           nullptr,            LOI_NO_CLASSIFY },
         { L"color-scale",           nullptr,            LOI_COLOR_SCALE,        LOHA_OPTIONAL },
+        { L"no-color-scale",        nullptr,            LOI_NO_COLOR_SCALE },
         { L"color-scale-mode",      nullptr,            LOI_COLOR_SCALE_MODE,   LOHA_REQUIRED },
         { L"escape-codes",          nullptr,            LOI_ESCAPE_CODES,       LOHA_OPTIONAL },
         { L"hide-dot-files",        &hide_dot_files,    1 },
@@ -280,13 +281,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                 }
                 break;
             case LOI_ESCAPE_CODES:
-                if (!_wcsicmp(opt_value, L"") || !_wcsicmp(opt_value, L"always"))
-                    SetUseEscapeCodes(1);
-                else if (!_wcsicmp(opt_value, L"never"))
-                    SetUseEscapeCodes(0);
-                else if (!_wcsicmp(opt_value, L"auto"))
-                    SetUseEscapeCodes(-1);
-                else
+                if (!SetUseEscapeCodes(opt_value))
                 {
                     e.Set(L"Unrecognized value '%1' for '--%2'.") << opt_value << long_opt->name;
                     return e.Report();
@@ -294,6 +289,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                 break;
             case LOI_CLASSIFY:          flags |= FMT_CLASSIFY; break;
             case LOI_NO_CLASSIFY:       flags &= ~FMT_CLASSIFY; break;
+            case LOI_NO_COLOR_SCALE:    SetColorScaleMode(L"none"); break;
             case LOI_HYPERLINKS:        flags |= FMT_HYPERLINKS; break;
             case LOI_NO_HYPERLINKS:     flags &= ~FMT_HYPERLINKS; break;
             case LOI_ICONS:             SetUseIcons(true); break;

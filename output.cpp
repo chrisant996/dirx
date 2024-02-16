@@ -11,9 +11,19 @@
 
 static int s_escape_codes = -1;   // 0=no, 1=yes, -1=auto (when not redirected).
 
-void SetUseEscapeCodes(int escape_codes)
+bool SetUseEscapeCodes(const WCHAR* s)
 {
-    s_escape_codes = escape_codes;
+    if (!s)
+        return false;
+    else if (!_wcsicmp(s, L"") || !_wcsicmp(s, L"always"))
+        s_escape_codes = 1;
+    else if (!_wcsicmp(s, L"never"))
+        s_escape_codes = 0;
+    else if (!_wcsicmp(s, L"auto"))
+        s_escape_codes = -1;
+    else
+        return false;
+    return true;
 }
 
 bool CanUseEscapeCodes(HANDLE hout)
