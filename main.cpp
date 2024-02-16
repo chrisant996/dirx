@@ -179,21 +179,25 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     if (opts['?'])
     {
         SetPagination(true);
-        if (!wcsicmp(argv[0], L"colors"))
+        s.Clear();
+        if (argv[0])
         {
-            s.SetA(c_help_colors);
+            if (!wcsicmp(argv[0], L"colors"))
+            {
+                s.SetA(c_help_colors);
+            }
+            else if (!wcsicmp(argv[0], L"pictures"))
+            {
+                StrW tmp;
+                tmp.SetA(c_help_pictures);
+                s.Printf(tmp.Text(), GetTruncationCharacter());
+            }
+            else if (!wcsicmp(argv[0], L"regex"))
+            {
+                s.SetA(c_help_regex);
+            }
         }
-        else if (!wcsicmp(argv[0], L"pictures"))
-        {
-            StrW tmp;
-            tmp.SetA(c_help_pictures);
-            s.Printf(tmp.Text(), GetTruncationCharacter());
-        }
-        else if (!wcsicmp(argv[0], L"regex"))
-        {
-            s.SetA(c_help_regex);
-        }
-        else
+        if (s.Empty())
         {
             app.ToUpper();
             fmt.SetA(c_long_usage);
