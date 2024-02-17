@@ -2094,7 +2094,10 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
                 if (s_scale_size)
                 {
                     for (WhichFileSize which = FILESIZE_ARRAY_SIZE; which = WhichFileSize(int(which) - 1);)
-                        Settings().UpdateMinMaxSize(which, pfi->GetFileSize(which));
+                    {
+                        if (which != FILESIZE_COMPRESSED || Settings().m_need_compressed_size)
+                            Settings().UpdateMinMaxSize(which, pfi->GetFileSize(which));
+                    }
                 }
                 if (s_scale_time)
                 {
