@@ -13,6 +13,7 @@
 #include "output.h"
 #include "ecma48.h"
 #include "wcwidth.h"
+#include "columns.h"
 
 #include <algorithm>
 #include <memory>
@@ -20,6 +21,7 @@
 //static WCHAR s_chTruncated = L'\x2192'; // Right arrow character.
 //static WCHAR s_chTruncated = L'\x25b8'; // Black Right-Pointing Small Triangle character.
 static WCHAR s_chTruncated = L'\x2026'; // Horizontal Ellipsis character.
+static bool s_can_autofit = false;
 static bool s_use_icons = false;
 static BYTE s_icon_padding = 1;
 static unsigned s_icon_width = 0;
@@ -46,6 +48,11 @@ void SetTruncationCharacter(WCHAR ch)
 WCHAR GetTruncationCharacter()
 {
     return s_chTruncated;
+}
+
+void SetCanAutoFit(bool can_autofit)
+{
+    s_can_autofit = can_autofit;
 }
 
 void SetUseIcons(bool use_icons)
@@ -1475,6 +1482,60 @@ unsigned PictureFormatter::GetMaxWidth(unsigned fit_in_width, bool recalc_auto_w
     return width;
 }
 
+unsigned PictureFormatter::GetMinWidth(const FileInfo* pfi) const
+{
+    assert(m_picture.Length() >= m_fields.size());
+    unsigned width = unsigned(m_picture.Length() - m_fields.size());
+
+    StrW tmp;
+    for (size_t ii = m_fields.size(); ii--;)
+    {
+        if (m_fields[ii].m_auto_width)
+        {
+            assert(m_fields[ii].m_field == FLD_FILENAME);
+            const WCHAR* name = pfi->GetLongName().Text();
+
+            if (m_settings.IsSet(FMT_LOWERCASE) && tmp.Empty())
+            {
+                tmp.Set(name);
+                tmp.ToLower();
+                name = tmp.Text();
+            }
+
+            if (m_settings.IsSet(FMT_DIRBRACKETS) && (pfi->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY))
+                width += 2;
+            else if (m_settings.IsSet(FMT_CLASSIFY) && ((pfi->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY) || (pfi->IsSymLink())))
+                width += 1;
+
+            width += s_icon_width + __wcswidth(name);
+        }
+        else
+        {
+            width += m_fields[ii].m_cchWidth;
+        }
+    }
+
+    return width;
+}
+
+bool PictureFormatter::CanAutoFitWidth() const
+{
+    if (s_can_autofit &&
+        !m_settings.IsSet(FMT_ALTDATASTEAMS|
+                          FMT_BARE|
+                          FMT_FAT|
+                          FMT_FULLNAME|
+                          FMT_JUSTIFY_FAT))
+    {
+        for (size_t ii = m_fields.size(); ii--;)
+        {
+            if (m_fields[ii].m_auto_width)
+                return true;
+        }
+    }
+    return false;
+}
+
 void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WCHAR* dir, const WIN32_FIND_STREAM_DATA* pfsd, bool one_per_line) const
 {
     assert(!s.Length() || s.Text()[s.Length() - 1] == '\n');
@@ -2199,6 +2260,7 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
                 assert(!Settings().IsSet(FMT_ATTRIBUTES));
 
                 const bool isFAT = Settings().IsSet(FMT_FAT);
+// TODO: Allow overriding with a flag.
                 unsigned console_width = LOWORD(GetConsoleColsRows(m_hout));
                 if (!console_width)
                     console_width = 80;
@@ -2214,17 +2276,43 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
                 }
 
                 StrW s;
-                const unsigned max_per_file_width = m_picture.GetMaxWidth(Settings().IsSet(FMT_REDIRECTED) ? 0 : console_width - 1, true);
                 const bool vertical = Settings().IsSet(FMT_SORTVERTICAL);
                 const unsigned spacing = (num_columns != 0 || isFAT || m_picture.HasDate()) ? 3 : 2;
-                const unsigned num_per_row = std::max<unsigned>((console_width + spacing - 1) / (max_per_file_width + spacing), unsigned(1));
+
+                ColumnWidths col_widths;
+                std::vector<PictureFormatter> col_pictures;
+                const bool autofit = m_picture.CanAutoFitWidth();
+                if (!autofit)
+                {
+                    const unsigned max_per_file_width = m_picture.GetMaxWidth(console_width - 1, true);
+                    assert(implies(console_width >= 80, num_columns * (max_per_file_width + 3) < console_width + 3));
+                    for (unsigned num = std::max<unsigned>((console_width + spacing - 1) / (max_per_file_width + spacing), unsigned(1)); num--;)
+                    {
+                        col_widths.emplace_back(max_per_file_width);
+                        col_pictures.emplace_back(m_picture);
+                    }
+                }
+                else
+                {
+                    col_widths = CalculateColumns([this](size_t i){
+                        return m_picture.GetMinWidth(&m_files[i]);
+                    }, m_files.size(), vertical, spacing, console_width - 1);
+
+                    for (unsigned i = 0; i < col_widths.size(); ++i)
+                    {
+                        col_pictures.emplace_back(m_picture);
+                        col_pictures.back().GetMaxWidth(col_widths[i], true);
+                    }
+                }
+
+                const unsigned num_per_row = std::max<unsigned>(1, unsigned(col_widths.size()));
                 const unsigned num_rows = unsigned(m_files.size() + num_per_row - 1) / num_per_row;
                 const unsigned num_add = vertical ? num_rows : 1;
 
-                assert(implies(console_width >= 80, num_columns * (max_per_file_width + 3) < console_width + 3));
-
                 for (unsigned ii = 0; ii < num_rows; ii++)
                 {
+                    auto picture = col_pictures.begin();
+
                     unsigned iItem = vertical ? ii : ii * num_per_row;
                     for (unsigned jj = 0; jj < num_per_row && iItem < m_files.size(); jj++, iItem += num_add)
                     {
@@ -2233,16 +2321,17 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
                         if (jj)
                         {
                             const unsigned width = cell_count(s.Text());
-                            assert_width(max_per_file_width >= width);
-                            const unsigned spaces = max_per_file_width - width + spacing;
+                            const unsigned spaces = col_widths[jj - 1] - width + spacing;
                             s.Clear();
                             s.AppendSpaces(spaces);
                             OutputConsole(m_hout, s.Text(), s.Length());
                         }
 
                         s.Clear();
-                        m_picture.Format(s, pfi, m_dir.Text(), nullptr, false/*one_per_line*/);
+                        picture->Format(s, pfi, m_dir.Text(), nullptr, false/*one_per_line*/);
                         OutputConsole(m_hout, s.Text(), s.Length());
+
+                        ++picture;
                     }
 
                     s.Set(L"\n");

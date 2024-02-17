@@ -2,15 +2,6 @@
 
 ### BUGS
 
-### Auto-fit columns
-- Need an algorithm with results like `ls` and Clink, but compatible with MIT License.
-  - Seems conceptually super simple, actually:
-    - Start with the MAX number of columns to consider.
-    - For each ITEM, for each possible NUMBER of columns, map the item into its corresponding COLUMN and update that column's WIDTH.
-    - For each NUMBER of columns that now exceeds the target width, mark the NUMBER of columns as invalid.
-    - Can reduce the MAX number of columns to the smallest NUMBER of columns that's still valid.
-    - The greatest NUMBER of columns still valid is the winner (which should equal MAX, whatever it got reduced down to).
-
 ### Rethink and simplify
 - Keep CMD DIR options for compatibility.
 - Fix default date format to match CMD DIR.

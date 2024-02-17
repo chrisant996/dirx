@@ -38,6 +38,8 @@ public:
 
     void SetMaxFileDirWidth(unsigned max_file_width, unsigned max_dir_width);
     unsigned GetMaxWidth(unsigned fit_in_width=0, bool recalc_auto_width_fields=false);
+    unsigned GetMinWidth(const FileInfo* pfi) const;
+    bool CanAutoFitWidth() const;
 
     void Format(StrW& s, const FileInfo* pfi, const WCHAR* dir=nullptr, const WIN32_FIND_STREAM_DATA* pfsd=nullptr, bool one_per_line=true) const;
 
@@ -124,6 +126,7 @@ private:
 };
 
 bool InitLocale();
+void SetCanAutoFit(bool can_autofit);
 void SetUseIcons(bool use_icons);
 void SetPadIcons(unsigned spaces);
 unsigned GetPadIcons();

@@ -134,6 +134,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_COLOR_SCALE,
         LOI_NO_COLOR_SCALE,
         LOI_COLOR_SCALE_MODE,
+        LOI_COMPACT_COLUMNS,
+        LOI_NO_COMPACT_COLUMNS,
         LOI_ESCAPE_CODES,
         LOI_HYPERLINKS,
         LOI_NO_HYPERLINKS,
@@ -150,6 +152,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"color-scale",           nullptr,            LOI_COLOR_SCALE,        LOHA_OPTIONAL },
         { L"no-color-scale",        nullptr,            LOI_NO_COLOR_SCALE },
         { L"color-scale-mode",      nullptr,            LOI_COLOR_SCALE_MODE,   LOHA_REQUIRED },
+        { L"compact-columns",       nullptr,            LOI_COMPACT_COLUMNS },
+        { L"no-compact-columns",    nullptr,            LOI_NO_COMPACT_COLUMNS },
         { L"escape-codes",          nullptr,            LOI_ESCAPE_CODES,       LOHA_OPTIONAL },
         { L"hide-dot-files",        &hide_dot_files,    1 },
         { L"no-hide-dot-files",     &hide_dot_files,    -1 },
@@ -296,15 +300,17 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                     return e.Report();
                 }
                 break;
-            case LOI_CLASSIFY:          flags |= FMT_CLASSIFY; break;
-            case LOI_NO_CLASSIFY:       flags &= ~FMT_CLASSIFY; break;
-            case LOI_NO_COLOR_SCALE:    SetColorScaleMode(L"none"); break;
-            case LOI_HYPERLINKS:        flags |= FMT_HYPERLINKS; break;
-            case LOI_NO_HYPERLINKS:     flags &= ~FMT_HYPERLINKS; break;
-            case LOI_ICONS:             SetUseIcons(true); break;
-            case LOI_NO_ICONS:          SetUseIcons(false); break;
-            case LOI_NERD_FONTS_VER:    SetNerdFontsVersion(wcstoul(opt_value, nullptr, 10)); break;
-            case LOI_PAD_ICONS:         SetPadIcons(wcstoul(opt_value, nullptr, 10)); break;
+            case LOI_CLASSIFY:              flags |= FMT_CLASSIFY; break;
+            case LOI_NO_CLASSIFY:           flags &= ~FMT_CLASSIFY; break;
+            case LOI_NO_COLOR_SCALE:        SetColorScaleMode(L"none"); break;
+            case LOI_COMPACT_COLUMNS:       SetCanAutoFit(true); break;
+            case LOI_NO_COMPACT_COLUMNS:    SetCanAutoFit(false); break;
+            case LOI_HYPERLINKS:            flags |= FMT_HYPERLINKS; break;
+            case LOI_NO_HYPERLINKS:         flags &= ~FMT_HYPERLINKS; break;
+            case LOI_ICONS:                 SetUseIcons(true); break;
+            case LOI_NO_ICONS:              SetUseIcons(false); break;
+            case LOI_NERD_FONTS_VER:        SetNerdFontsVersion(wcstoul(opt_value, nullptr, 10)); break;
+            case LOI_PAD_ICONS:             SetPadIcons(wcstoul(opt_value, nullptr, 10)); break;
             }
             break;
         }
@@ -601,7 +607,10 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     if (!(flags & FMT_FAT))
         flags |= FMT_FULLSIZE;
     if (flags & FMT_BARE)
+    {
         flags &= ~(FMT_ALTDATASTEAMS|FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
+        SetUseIcons(false);
+    }
 
     if (flags & FMT_SEPARATETHOUSANDS)
         flags |= FMT_FULLSIZE;
