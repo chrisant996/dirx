@@ -640,7 +640,11 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         SetPagination(true);
 
     if (!CanUseEscapeCodes(GetStdHandle(STD_OUTPUT_HANDLE)))
+    {
         flags |= FMT_DISABLECOLORS;
+        SetUseIcons(false);
+        SetColorScale(L"none");
+    }
 
     DirEntryFormatter def;
     def.Initialize(cColumns, flags, timestamp, filesize, dwAttrIncludeAny, dwAttrMatch, dwAttrExcludeAny, sDisableOptions.Text(), picture);
