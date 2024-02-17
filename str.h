@@ -416,6 +416,7 @@ inline void Str<WCHAR>::Transform(DWORD dwMapFlags)
         p = tmp.Reserve(len + 1);
         len = LCMapStringW(LOCALE_USER_DEFAULT, dwMapFlags, Text(), int(Length()), p, int(tmp.Capacity()));
     }
+    Swap(tmp);
     m_length = len;
     m_p[len] = '\0';
     assert(m_length < m_capacity);

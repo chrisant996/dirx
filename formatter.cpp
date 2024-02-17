@@ -493,15 +493,19 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, DWORD flags, unsigned m
             }
         }
 
-        if (max_width && tmp.Empty())
-            name_width = __wcswidth(name.Text());
-
         if (flags & FMT_LOWERCASE)
         {
             if (!tmp.Length())
                 tmp.Set(name);
             tmp.ToLower();
             p = tmp.Text();
+            if (max_width)
+                name_width = __wcswidth(p);
+        }
+        else
+        {
+            if (max_width && tmp.Empty())
+                name_width = __wcswidth(p);
         }
 
         if (show_brackets)
