@@ -2,6 +2,7 @@
 // License: http://opensource.org/licenses/MIT
 
 // https://github.com/eza-community/eza
+// Formula for adjusting luminance copied from eza.
 // Many color type keys (e.g. "im" "do" etc) copied from eza.
 // Many file extensions copied from eza.
 
@@ -1682,14 +1683,18 @@ const WCHAR* ApplyGradient(const WCHAR* color, ULONGLONG value, ULONGLONG min, U
     if (rgb == 0xffffffff || min > max)
         return color;
 
-    colorspace::Oklab oklab(rgb);
+    // This formula for applying a gradient effect is borrowed from eza.
+    // https://github.com/eza-community/eza/blob/626eb34df26376fc36758894424676ffa4363785/src/output/color_scale.rs#L201-L213
+    {
+        colorspace::Oklab oklab(rgb);
 
-    double ratio = double(value - min) / double(max - min);
-    if (std::isnan(ratio))
-        ratio = 1.0;
-    oklab.L = float(clamp(s_min_luminance + (1.0 - s_min_luminance) * exp(-4.0 * (1.0 - ratio)), 0.0, 1.0));
+        double ratio = double(value - min) / double(max - min);
+        if (std::isnan(ratio))
+            ratio = 1.0;
+        oklab.L = float(clamp(s_min_luminance + (1.0 - s_min_luminance) * exp(-4.0 * (1.0 - ratio)), 0.0, 1.0));
 
-    rgb = oklab.to_rgb();
+        rgb = oklab.to_rgb();
+    }
 
     static StrW s_color;
     s_color.Set(color);
