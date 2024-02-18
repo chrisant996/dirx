@@ -134,7 +134,7 @@ unsigned GetPadIcons();
 bool SetColorScale(const WCHAR* s);
 bool IsScalingSize();
 bool SetColorScaleMode(const WCHAR* s);
-void SetTruncationCharacter(WCHAR ch);
+void SetTruncationCharacterInHex(const WCHAR* s);
 WCHAR GetTruncationCharacter();
 DWORD ParseAttribute(const WCHAR ch);
 

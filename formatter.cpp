@@ -40,9 +40,65 @@ static const WCHAR c_BEL[] = L"\a";
 #define assert_width(expr)  do {} while (0)
 #endif
 
-void SetTruncationCharacter(WCHAR ch)
+static bool ParseHexDigit(WCHAR ch, WORD* digit)
 {
-    s_chTruncated = ch;
+    if (ch >= '0' && ch <= '9')
+    {
+        *digit = ch - '0';
+        return true;
+    }
+
+    ch = _toupper(ch);
+    if (ch >= 'A' && ch <= 'F')
+    {
+        *digit = ch + 10 - 'A';
+        return true;
+    }
+
+    return false;
+}
+
+void SetTruncationCharacterInHex(const WCHAR* s)
+{
+    SkipColonOrEqual(s);
+
+    if (s[0] == '$')
+        ++s;
+    else if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
+        s += 2;
+
+    WCHAR ch = 0;
+    WORD w;
+
+    if (*s && ParseHexDigit(*s, &w))
+    {
+        ch <<= 4;
+        ch |= w;
+        ++s;
+        if (*s && ParseHexDigit(*s, &w))
+        {
+            ch <<= 4;
+            ch |= w;
+            ++s;
+#ifdef UNICODE
+            if (*s && ParseHexDigit(*s, &w))
+            {
+                ch <<= 4;
+                ch |= w;
+                ++s;
+                if (*s && ParseHexDigit(*s, &w))
+                {
+                    ch <<= 4;
+                    ch |= w;
+                    ++s;
+                }
+            }
+#endif
+        }
+    }
+
+    if (!*s)
+        s_chTruncated = ch;
 }
 
 WCHAR GetTruncationCharacter()

@@ -33,24 +33,6 @@
 static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+E.f:F+h+i+j+J+K+l+n.o.p+q+r+s+S.t+T.u+v+w+W:x+Y+z+Z+";
 static const WCHAR c_DIRXCMD[] = L"DIRXCMD";
 
-static bool ParseHexDigit(WCHAR ch, WORD* digit)
-{
-    if (ch >= '0' && ch <= '9')
-    {
-        *digit = ch - '0';
-        return true;
-    }
-
-    ch = _toupper(ch);
-    if (ch >= 'A' && ch <= 'F')
-    {
-        *digit = ch + 10 - 'A';
-        return true;
-    }
-
-    return false;
-}
-
 /**
  * Can only return non-zero when !fRestore and ch == 'w'.
  */
@@ -167,6 +149,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_NO_SIZE,
         LOI_NO_STREAMS,
         LOI_NO_TIME,
+        LOI_TRUNCATE_CHAR,
     };
 
     static LongOption<WCHAR> long_opts[] =
@@ -215,6 +198,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-streams",            nullptr,            LOI_NO_STREAMS },
         { L"time",                  nullptr,            'T',                    LOHA_OPTIONAL },
         { L"no-time",               nullptr,            LOI_NO_TIME },
+        { L"truncate-char",         nullptr,            LOI_TRUNCATE_CHAR,      LOHA_REQUIRED },
         { L"usage",                 nullptr,            'u' },
         { L"version",               nullptr,            'V' },
         { L"vertical",              nullptr,            'v' },
@@ -399,6 +383,10 @@ unrecognized_long_opt_value:
                 else
                     goto unrecognized_long_opt_value;
                 break;
+            case LOI_TRUNCATE_CHAR:
+                SetTruncationCharacterInHex(opt_value);
+                break;
+
             case LOI_NO_ATTRIBUTES:         flagsOFF = FMT_ATTRIBUTES; break;
             case LOI_CLASSIFY:              flagsON = FMT_CLASSIFY; break;
             case LOI_NO_CLASSIFY:           flagsOFF = FMT_CLASSIFY; break;
@@ -494,48 +482,6 @@ unrecognized_long_opt_value:
             *pdwAttr |= dwAttr;
             opt_value++;
         }
-    }
-
-    for (unsigned ii = 0; opt_value = opts.GetValue('E', ii); ii++)
-    {
-        SkipColonOrEqual(opt_value);
-        if (opt_value[0] == '$')
-            opt_value++;
-        else if (opt_value[0] == '0' && _tolower(opt_value[1]) == 'x')
-            opt_value += 2;
-
-        ch = 0;
-        WORD w;
-
-        if (*opt_value && ParseHexDigit(*opt_value, &w))
-        {
-            ch <<= 4;
-            ch |= w;
-            opt_value++;
-            if (*opt_value && ParseHexDigit(*opt_value, &w))
-            {
-                ch <<= 4;
-                ch |= w;
-                opt_value++;
-#ifdef UNICODE
-                if (*opt_value && ParseHexDigit(*opt_value, &w))
-                {
-                    ch <<= 4;
-                    ch |= w;
-                    opt_value++;
-                    if (*opt_value && ParseHexDigit(*opt_value, &w))
-                    {
-                        ch <<= 4;
-                        ch |= w;
-                        opt_value++;
-                    }
-                }
-#endif
-            }
-        }
-
-        if (!*opt_value)
-            SetTruncationCharacter(ch);
     }
 
     for (unsigned ii = 0; opt_value = opts.GetValue('f', ii); ii++)
