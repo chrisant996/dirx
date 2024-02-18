@@ -455,9 +455,6 @@ DWORD GetConsoleColsRows(HANDLE hout)
 {
     assert(hout);
 
-    if (s_console_width)
-        return s_console_width;
-
     static BOOL s_initialized = false;
     static HANDLE s_hout = INVALID_HANDLE_VALUE;
     static BOOL s_is_console;
@@ -495,6 +492,9 @@ DWORD GetConsoleColsRows(HANDLE hout)
             s_num_rows = (csbi.srWindow.Bottom - csbi.srWindow.Top) + 1;
         }
     }
+
+    if (s_console_width)
+        s_num_cols = s_console_width;
 
     return (s_num_rows << 16) | s_num_cols;
 }
