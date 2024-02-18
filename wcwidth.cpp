@@ -321,25 +321,32 @@ static int mk_wcswidth_cjk(const char32_t *pwcs, size_t n)
 wcwidth_t const __wcwidth = mk_wcwidth;
 
 
+char32_t __decode(const WCHAR*& p, unsigned* len)
+{
+  char32_t ch = *p;
+
+  // Decode surrogate pair.
+  if ((ch & 0xFC00) == 0xD800) {
+    if (!len || *len) {
+      WCHAR trail = p[1];
+      if ((trail & 0xFC00) == 0xDC00) {
+        ch = 0x10000 + (ch - 0xD800) * 0x400 + (trail - 0xDC00);
+        --len;
+        ++p;
+      }
+    }
+  }
+
+  return ch;
+}
+
+
 unsigned __wcswidth(const WCHAR* p, unsigned len)
 {
   unsigned width = 0;
 
   for (; len-- && *p; ++p) {
-    char32_t ch = *p;
-
-    // Decode surrogate pair.
-    if ((ch & 0xFC00) == 0xD800) {
-      if (len) {
-        WCHAR trail = p[1];
-        if ((trail & 0xFC00) == 0xDC00) {
-          ch = 0x10000 + (ch - 0xD800) * 0x400 + (trail - 0xDC00);
-          --len;
-          ++p;
-        }
-      }
-    }
-
+    char32_t ch = __decode(p, &len);
     int w = __wcwidth(ch);
     width += (w < 0) ? 1 : w;
   }

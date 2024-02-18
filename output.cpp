@@ -6,6 +6,7 @@
 #include "pch.h"
 #include "output.h"
 #include "colors.h"
+#include "wcwidth.h"
 
 #include <VersionHelpers.h>
 
@@ -336,11 +337,12 @@ static unsigned CLinesFromString(const WCHAR* p, unsigned len, unsigned max_widt
             }
             break;
         default:
-// TODO: Use wcwidth.
-            cx++;
+            const char32_t ch = __decode(p, &len);
+            int w = __wcwidth(ch);
+            cx += (w < 0) ? 1 : w;
             if (cx >= max_width)
             {
-                cx = 0;
+                cx = (cx > max_width) ? w : 0;
                 cLines++;
             }
             break;
