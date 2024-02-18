@@ -5,8 +5,10 @@
 
 #pragma once
 
-enum
+enum FormatFlags : ULONGLONG
 {
+    FMT_NONE                    = 0x00000000,
+
     FMT_JUSTIFY_NONFAT          = 0x00000001,
     FMT_ATTRIBUTES              = 0x00000002,   // Prevents more than 1 column.
     FMT_FAT                     = 0x00000004,
@@ -40,6 +42,7 @@ enum
     FMT_HYPERLINKS              = 0x40000000,   // Add hyperlink escape codes for file and directory names.
     FMT_CLASSIFY                = 0x80000000,   // Append type symbol after file name (\ for dir, @ for symlink file).
 };
+DEFINE_ENUM_FLAG_OPERATORS(FormatFlags);
 
 enum FieldType
 {
@@ -75,13 +78,13 @@ inline ULONGLONG FileTimeToULONGLONG(const FILETIME& ft)
 
 struct DirFormatSettings
 {
-    bool                IsSet(int flag) const { return !!(m_flags & flag); }
+    bool                IsSet(FormatFlags flag) const { return !!(m_flags & flag); }
     bool                IsOptionDisabled(WCHAR ch) const { return !!wcschr(m_sDisableOptions.Text(), ch); }
     void                ClearMinMax();
     void                UpdateMinMaxTime(WhichTimeStamp which, const FILETIME& ft);
     void                UpdateMinMaxSize(WhichFileSize which, ULONGLONG size);
 
-    DWORD               m_flags = 0;
+    FormatFlags         m_flags = FMT_NONE;
     WhichTimeStamp      m_whichtimestamp = TIMESTAMP_MODIFIED;
     WhichFileSize       m_whichfilesize = FILESIZE_FILESIZE;
     unsigned            m_num_columns = 1;

@@ -128,7 +128,7 @@ static void SelectFileTime(const FileInfo* const pfi, const WhichTimeStamp times
     FileTimeToSystemTime(&ft, psystime);
 }
 
-static const WCHAR* SelectColor(const FileInfo* const pfi, const DWORD flags)
+static const WCHAR* SelectColor(const FileInfo* const pfi, const FormatFlags flags)
 {
     if (!(flags & FMT_DISABLECOLORS))
     {
@@ -427,7 +427,7 @@ static void JustifyFilename(StrW& s, const StrW& name, unsigned max_name_width, 
     s.AppendSpaces(max_name_width + 1 + max_ext_width - __wcswidth(s.Text() + orig_len));
 }
 
-static void FormatFilename(StrW& s, const FileInfo* pfi, DWORD flags, unsigned max_width=0, const WCHAR* dir=nullptr, const WCHAR* color=nullptr)
+static void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsigned max_width=0, const WCHAR* dir=nullptr, const WCHAR* color=nullptr)
 {
     StrW tmp;
     const StrW& name = pfi->GetFileName(flags);
@@ -623,7 +623,7 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, DWORD flags, unsigned m
         s.Append(c_norm);
 }
 
-static void FormatReparsePoint(StrW& s, const FileInfo* const pfi, const DWORD flags, const WCHAR* const dir)
+static void FormatReparsePoint(StrW& s, const FileInfo* const pfi, const FormatFlags flags, const WCHAR* const dir)
 {
     assert(dir);
 
@@ -1712,7 +1712,7 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WCHAR* dir, co
                 break;
             case FLD_FILENAME:
                 {
-                    DWORD flags = m_settings.m_flags;
+                    FormatFlags flags = m_settings.m_flags;
                     if (m_fields[ii].m_chSubField == 'x')
                         flags |= FMT_SHORTNAMES|FMT_FAT;
                     else
@@ -1761,7 +1761,7 @@ DirEntryFormatter::~DirEntryFormatter()
     g_settings = nullptr;
 }
 
-void DirEntryFormatter::Initialize(unsigned num_columns, const DWORD flags, WhichTimeStamp whichtimestamp, WhichFileSize whichfilesize, DWORD dwAttrIncludeAny, DWORD dwAttrMatch, DWORD dwAttrExcludeAny, const WCHAR* disable_options, const WCHAR* picture)
+void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags, WhichTimeStamp whichtimestamp, WhichFileSize whichfilesize, DWORD dwAttrIncludeAny, DWORD dwAttrMatch, DWORD dwAttrExcludeAny, const WCHAR* disable_options, const WCHAR* picture)
 {
     m_root_pass = false;
     m_count_usage_dirs = 0;
@@ -2181,7 +2181,7 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
     }
     else
     {
-        const DWORD flags = Settings().m_flags;
+        const FormatFlags flags = Settings().m_flags;
         const unsigned num_columns = Settings().m_num_columns;
 
         if (pfi->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY)

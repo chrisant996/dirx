@@ -125,7 +125,7 @@ float FileInfo::GetCompressionRatio() const
     return float(cbDelta) / float(m_ulFile.QuadPart);
 }
 
-const StrW& FileInfo::GetFileName(DWORD flags) const
+const StrW& FileInfo::GetFileName(FormatFlags flags) const
 {
     if ((flags & FMT_SHORTNAMES) && (m_short.Length() || (flags & FMT_ONLYSHORTNAMES)))
         return m_short;

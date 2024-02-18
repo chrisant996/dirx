@@ -26,7 +26,7 @@ public:
     const FILETIME&     GetFileTime(const WhichTimeStamp timestamp) const;
     const unsigned __int64& GetFileSize(const WhichFileSize filesize = FILESIZE_FILESIZE) const;
     float               GetCompressionRatio() const;
-    const StrW&         GetFileName(DWORD flags) const;
+    const StrW&         GetFileName(FormatFlags flags) const;
     const StrW&         GetLongName() const { return m_long; }
     const StrW&         GetOwner() const { return m_owner; }
 

@@ -54,7 +54,7 @@ static bool ParseHexDigit(WCHAR ch, WORD* digit)
 /**
  * Can only return non-zero when !fRestore and ch == 'w'.
  */
-static int HandleDisableOption(WCHAR ch, bool fRestore, DWORD& flags, Error& e)
+static int HandleDisableOption(WCHAR ch, bool fRestore, FormatFlags& flags, Error& e)
 {
     if (fRestore)
     {
@@ -281,7 +281,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
 
     InitLocale();
 
-    DWORD flags = FMT_AUTOSEPTHOUSANDS;
+    FormatFlags flags = FMT_AUTOSEPTHOUSANDS;
     WhichTimeStamp timestamp = TIMESTAMP_MODIFIED;
     WhichFileSize filesize = FILESIZE_FILESIZE;
     DWORD dwAttrIncludeAny = 0;
@@ -297,8 +297,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
 
     for (unsigned ii = 0; opts.GetValue(ii, ch, opt_value, &long_opt); ii++)
     {
-        DWORD flagsON = 0;
-        DWORD flagsOFF = 0;
+        FormatFlags flagsON = FMT_NONE;
+        FormatFlags flagsOFF = FMT_NONE;
 
         switch (ch)
         {

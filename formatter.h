@@ -68,7 +68,7 @@ public:
                         DirEntryFormatter();
                         ~DirEntryFormatter();
 
-    void                Initialize(unsigned cColumns, DWORD flags, WhichTimeStamp whichtimestamp=TIMESTAMP_MODIFIED, WhichFileSize whichfilesize=FILESIZE_FILESIZE, DWORD dwAttrIncludeAny=0, DWORD dwAttrMatch=0, DWORD dwAttrExcludeAny=0, const WCHAR* disable_options=nullptr, const WCHAR* picture=nullptr);
+    void                Initialize(unsigned cColumns, FormatFlags flags, WhichTimeStamp whichtimestamp=TIMESTAMP_MODIFIED, WhichFileSize whichfilesize=FILESIZE_FILESIZE, DWORD dwAttrIncludeAny=0, DWORD dwAttrMatch=0, DWORD dwAttrExcludeAny=0, const WCHAR* disable_options=nullptr, const WCHAR* picture=nullptr);
 
     void                DisplayOne(const FileInfo* pfi);
 

@@ -273,7 +273,7 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, Error& e)
     bool any_files_found = false;
     for (const DirPattern* p = patterns; p; p = p->m_next)
     {
-        const DWORD flagsRestore = callbacks.Settings().m_flags;
+        const FormatFlags flagsRestore = callbacks.Settings().m_flags;
 
         if (p->m_isFAT && !callbacks.Settings().IsSet(FMT_FORCENONFAT))
         {
