@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 by Christopher Antos
+// Copyright (c) 2024 by Christopher Antos
 // License: http://opensource.org/licenses/MIT
 
 // https://github.com/eza-community/eza
@@ -1016,15 +1016,19 @@ static int ParseColorRule(const WCHAR* in, StrW& value, ColorRule& rule, bool ls
 
     // Readonly by itself implies NOT DIRECTORY so by itself it only applies
     // to files, but can be explicitly applied to dirs/links/etc.
+    DWORD not_attr_mask = ~0;
     if (rule.m_attr == FILE_ATTRIBUTE_READONLY && rule.m_patterns.empty() && num_attr == 1)
+    {
         rule.m_not_attr |= FILE_ATTRIBUTE_DIRECTORY;
+        not_attr_mask &= ~FILE_ATTRIBUTE_DIRECTORY;
+    }
 
     // A pattern with no attributes implies NOT DIRECTORY so it only applies
     // to files, but can be explicitly applied to dirs/links/etc.
     if (rule.m_patterns.size() && !rule.m_attr && !rule.m_not_attr && !ever_any)
         rule.m_not_attr |= FILE_ATTRIBUTE_DIRECTORY;
 
-    if (num_attr == 1 && !rule.m_not_attr && !rule.m_not_flags && rule.m_patterns.empty())
+    if (num_attr == 1 && !(rule.m_not_attr & not_attr_mask) && !rule.m_not_flags && rule.m_patterns.empty())
     {
         if (ci > ciZERO && ValidateColor(value.Text()) >= 0)
         {
