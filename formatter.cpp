@@ -606,8 +606,12 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, DWORD flags, unsigned m
         }
         if (classify)
         {
-            assert(spaces);
-            --spaces;
+            if (max_width)
+            {
+                assert(spaces);
+                if (spaces) // Let the output be misaligned instead of crashing.
+                    --spaces;
+            }
             s.Append(&classify, 1);
         }
         if (underlined)
