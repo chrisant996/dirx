@@ -12,7 +12,7 @@ ColumnWidths CalculateColumns(const std::function<unsigned(size_t)>&& item_width
 {
     ColumnWidths out;
 
-    if (count > 0)
+    if (count > 0 && max_columns && max_width)
     {
         if (max_columns > count)
             max_columns = unsigned(count);
@@ -38,8 +38,9 @@ ColumnWidths CalculateColumns(const std::function<unsigned(size_t)>&& item_width
             size_t          vertical_stride;
         };
 
+        const unsigned storage_capacity = (max_columns * (max_columns + 1)) / 2;
         CandidateColumns* candidates = new CandidateColumns[max_columns];
-        unsigned* width_storage = new unsigned[(max_columns * (max_columns + 1)) / 2];
+        unsigned* width_storage = new unsigned[storage_capacity];
 
         if (candidates && width_storage)
         {
@@ -50,13 +51,12 @@ ColumnWidths CalculateColumns(const std::function<unsigned(size_t)>&& item_width
                 auto& candidate = candidates[y];
                 candidate.valid = true;
                 candidate.line_width = (y * (1 + padding)) + 1;
+                candidate.column_widths = storage;
                 for (unsigned x = 0; x <= y; ++x)
-                {
-                    *storage = 1; // Empty columns aren't supported.
-                    candidate.column_widths = storage++;
-                }
+                    *(storage++) = 1; // Empty columns aren't supported.
                 candidate.vertical_stride = (count + y) / (y + 1);
             }
+            assert(storage == width_storage + storage_capacity);
 
             // Evaluate the item widths.
             for (size_t i = 0; i < count; ++i)
@@ -76,6 +76,7 @@ ColumnWidths CalculateColumns(const std::function<unsigned(size_t)>&& item_width
                         c = unsigned(i / candidate.vertical_stride);
                     else
                         c = unsigned(i % (n + 1));
+                    assert(c <= n);
 
                     // Update the column's width.
                     const unsigned col_width = candidate.column_widths[c];
