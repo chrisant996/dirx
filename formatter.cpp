@@ -372,6 +372,7 @@ static void JustifyFilename(StrW& s, const StrW& name, unsigned max_name_width, 
 
     const unsigned orig_len = s.Length();
 
+    unsigned name_len = name.Length();
     unsigned name_width = __wcswidth(name.Text());
     unsigned ext_width = 0;
     const WCHAR* ext = FindExtension(name.Text());
@@ -380,6 +381,7 @@ static void JustifyFilename(StrW& s, const StrW& name, unsigned max_name_width, 
     {
         ext_width = __wcswidth(ext);
         name_width -= ext_width;
+        name_len = unsigned(ext - name.Text());
         assert(*ext == '.');
         ext++;
         ext_width--;
@@ -388,8 +390,10 @@ static void JustifyFilename(StrW& s, const StrW& name, unsigned max_name_width, 
     if (!ext_width)
     {
         const unsigned combined_width = max_name_width + 1 + max_ext_width;
-        if (name.Length() <= combined_width)
+        if (name_width <= combined_width)
+        {
             s.Append(name);
+        }
         else
         {
             StrW tmp;
@@ -401,8 +405,9 @@ static void JustifyFilename(StrW& s, const StrW& name, unsigned max_name_width, 
     else
     {
         StrW tmp;
-        tmp.Set(name);
+        tmp.Set(name.Text(), name_len);
         TruncateWcwidth(tmp, max_name_width, 0);
+        tmp.AppendSpaces(max_name_width - name_width);
         tmp.Append(name_width > max_name_width ? '.' : ' ');
         s.Append(tmp);
         if (ext_width > max_ext_width)
@@ -413,7 +418,9 @@ static void JustifyFilename(StrW& s, const StrW& name, unsigned max_name_width, 
             s.Append(tmp);
         }
         else
+        {
             s.Append(ext);
+        }
     }
 
     assert(max_name_width + 1 + max_ext_width >= __wcswidth(s.Text() + orig_len));
