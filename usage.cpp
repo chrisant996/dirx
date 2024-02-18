@@ -142,6 +142,7 @@ const char c_long_usage[] =
 "  -W, --width=COLS	Override the screen width.\n"
 "  -Y			Abbreviate dates and times (implies -T).\n"
 "  -Z			Abbreviate file sizes as 1K, 15M, etc (implies -S).\n"
+"  --classify		Print '\\' by dir names and '@' by symlink names.\n"
 "  --compact-columns	Fit more columns in -w mode by compacting column widths\n"
 "			to fit their content (this is the default; use\n"
 "			--no-compact-columns to disable it).\n"
