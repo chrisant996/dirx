@@ -372,7 +372,7 @@ PaginationAction PageBreak(HANDLE hin, HANDLE hout)
     GetConsoleScreenBufferInfo(hout, &csbi);
     csbi.dwCursorPosition.X = 0;
 
-    lstrcpy(details, L"press Spacebar to continue [? for help]");
+    lstrcpy(details, L"press SPACE to continue [? for help]");
 
 LPrompt:
     ErasePrompt(hout, &csbi, prompt);
@@ -412,7 +412,7 @@ LPrompt:
             switch (record.Event.KeyEvent.uChar.AsciiChar)
             {
             case '?':
-                lstrcpy(details, L"<Space>=next page, <Ret>=next line, P=half page, <Esc>=quit");
+                lstrcpy(details, L"SPACE=next page, ENTER=next line, P=half page, Q=quit");
                 goto LPrompt;
             }
             continue;

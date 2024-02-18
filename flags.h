@@ -16,7 +16,7 @@ enum
     FMT_JUSTIFY_FAT             = 0x00000040,
     FMT_BARE                    = 0x00000080,   // Prevents more than 1 column, suppresses all columns other than name.
     FMT_DIRBRACKETS             = 0x00000100,
-    FMT_WIDELISTIME             = 0x00000200,   // Include time in wide list format.
+    FMT_DATE                    = 0x00000200,   // Include time even in multi-column formats.
     FMT_FULLTIME                = 0x00000400,   // Include seconds and milliseconds, plus four digit year.
     FMT_FULLSIZE                = 0x00000800,   // Always show size in bytes (e.g. "1,234,567" not "1.2M").
     FMT_SHORTNAMES              = 0x00001000,   // Include short name (or in formats where only one name column is possible then show the short name instead of the long name).
@@ -35,7 +35,7 @@ enum
     FMT_USAGE                   = 0x02000000,
     FMT_USAGEGROUPED            = 0x04000000,   // Show directory usage statistics grouped by top level directories.
     FMT_MINIDATE                = 0x08000000,   // Shows abbreviated (11 chars) time when more than 1 column.
-    FMT_LOCALEDATETIME          = 0x10000000,   // Use current locale date and time format.
+    FMT_SIZE                    = 0x10000000,   // Include size even in multi-column formats.
     FMT_FULLNAME                = 0x20000000,   // Show the fully qualified path in the file name column.
     FMT_HYPERLINKS              = 0x40000000,   // Add hyperlink escape codes for file and directory names.
     FMT_CLASSIFY                = 0x80000000,   // Append type symbol after file name (\ for dir, @ for symlink file).

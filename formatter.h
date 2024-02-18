@@ -125,9 +125,9 @@ private:
     StrW                m_dir;
 };
 
-bool InitLocale();
+void InitLocale();
 void SetCanAutoFit(bool can_autofit);
-void SetUseIcons(bool use_icons);
+bool SetUseIcons(const WCHAR* s);
 void SetPadIcons(unsigned spaces);
 unsigned GetPadIcons();
 bool SetColorScale(const WCHAR* s);

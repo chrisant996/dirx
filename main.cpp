@@ -129,6 +129,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     enum
     {
         LOI_UNIQUE_IDS              = 0x7FFF,
+        LOI_NO_ATTRIBUTES,
         LOI_CLASSIFY,
         LOI_NO_CLASSIFY,
         LOI_COLOR_SCALE,
@@ -137,16 +138,25 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_COMPACT_COLUMNS,
         LOI_NO_COMPACT_COLUMNS,
         LOI_ESCAPE_CODES,
+        LOI_NO_FULL_PATHS,
+        LOI_HORIZONTAL,
         LOI_HYPERLINKS,
         LOI_NO_HYPERLINKS,
-        LOI_ICONS,
-        LOI_NO_ICONS,
+        LOI_JUSTIFY,
+        LOI_NO_LOWER,
         LOI_NERD_FONTS_VER,
+        LOI_NO_OWNER,
         LOI_PAD_ICONS,
+        LOI_NO_SHORT_NAMES,
+        LOI_NO_STREAMS,
     };
 
     static LongOption<WCHAR> long_opts[] =
     {
+        { L"all",                   nullptr,            'a' },
+        { L"attributes",            nullptr,            't' },
+        { L"no-attributes",         nullptr,            LOI_NO_ATTRIBUTES },
+        { L"bare",                  nullptr,            'b' },
         { L"classify",              nullptr,            LOI_CLASSIFY },
         { L"no-classify",           nullptr,            LOI_NO_CLASSIFY },
         { L"color-scale",           nullptr,            LOI_COLOR_SCALE,        LOHA_OPTIONAL },
@@ -155,14 +165,34 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"compact-columns",       nullptr,            LOI_COMPACT_COLUMNS },
         { L"no-compact-columns",    nullptr,            LOI_NO_COMPACT_COLUMNS },
         { L"escape-codes",          nullptr,            LOI_ESCAPE_CODES,       LOHA_OPTIONAL },
+        { L"fat",                   nullptr,            'z' },
+        { L"full-paths",            nullptr,            'F' },
+        { L"no-full-paths",         nullptr,            LOI_NO_FULL_PATHS },
+        { L"help",                  nullptr,            '?' },
         { L"hide-dot-files",        &hide_dot_files,    1 },
         { L"no-hide-dot-files",     &hide_dot_files,    -1 },
+        { L"horizontal",            nullptr,            LOI_HORIZONTAL },
         { L"hyperlinks",            nullptr,            LOI_HYPERLINKS },
         { L"no-hyperlinks",         nullptr,            LOI_NO_HYPERLINKS },
-        { L"icons",                 nullptr,            LOI_ICONS },
-        { L"no-icons",              nullptr,            LOI_NO_ICONS },
+        { L"icons",                 nullptr,            'i' },
+        { L"justify",               nullptr,            LOI_JUSTIFY,            LOHA_OPTIONAL },
+        { L"lower",                 nullptr,            'l' },
+        { L"no-lower",              nullptr,            LOI_NO_LOWER },
         { L"nerd-fonts-version",    nullptr,            LOI_NERD_FONTS_VER,     LOHA_REQUIRED },
+        { L"normal",                nullptr,            'n' },
+        { L"owner",                 nullptr,            'q' },
+        { L"no-owner",              nullptr,            LOI_NO_OWNER },
         { L"pad-icons",             nullptr,            LOI_PAD_ICONS,          LOHA_REQUIRED },
+        { L"paginate",              nullptr,            'p' },
+        { L"recurse",               nullptr,            's' },
+        { L"short-names",           nullptr,            'x' },
+        { L"no-short-names",        nullptr,            LOI_NO_SHORT_NAMES },
+        { L"streams",               nullptr,            'r' },
+        { L"no-streams",            nullptr,            LOI_NO_STREAMS },
+        { L"usage",                 nullptr,            'u' },
+        { L"version",               nullptr,            'V' },
+        { L"vertical",              nullptr,            'v' },
+        { L"wide",                  nullptr,            'w' },
 #ifdef DEBUG
         { L"print-all-icons",       &print_all_icons,   1 },
 #endif
@@ -196,6 +226,10 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             if (!wcsicmp(argv[0], L"colors"))
             {
                 s.SetA(c_help_colors);
+            }
+            else if (!wcsicmp(argv[0], L"icons"))
+            {
+                s.SetA(c_help_icons);
             }
             else if (!wcsicmp(argv[0], L"pictures"))
             {
@@ -231,10 +265,9 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
 
     // Interpret the options.
 
-    DWORD flags = FMT_AUTOSEPTHOUSANDS;
-    if (InitLocale())
-        flags |= FMT_LOCALEDATETIME;
+    InitLocale();
 
+    DWORD flags = FMT_AUTOSEPTHOUSANDS;
     WhichTimeStamp timestamp = TIMESTAMP_MODIFIED;
     WhichFileSize filesize = FILESIZE_FILESIZE;
     DWORD dwAttrIncludeAny = 0;
@@ -263,8 +296,6 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         case 'j':       flagsON = FMT_JUSTIFY_FAT; break;
         case 'J':       flagsON = FMT_JUSTIFY_NONFAT; break;
         case 'l':       flagsON = FMT_LOWERCASE; break;
-        case 'L':       flagsON = FMT_LOCALEDATETIME; break;
-        case 'M':       flagsON = FMT_WIDELISTIME; break;
         case 'q':       flagsON = FMT_SHOWOWNER; break;
         case 'r':       flagsON = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;
         case ':':       flagsON = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;
@@ -274,6 +305,13 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         case 'v':       flagsON = FMT_SORTVERTICAL; break;
         case 'x':       flagsON = FMT_SHORTNAMES; break;
         case 'z':       flagsON = FMT_FAT; break;
+        case 'i':
+            if (!SetUseIcons(opt_value))
+            {
+                e.Set(L"Unrecognized value '%1' for '--%2'.") << opt_value << long_opt->name;
+                return e.Report();
+            }
+            continue;
         default:
             if (!long_opt)
                 continue; // Other flags are handled separately further below.
@@ -300,17 +338,38 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                     return e.Report();
                 }
                 break;
+            case LOI_JUSTIFY:
+                if (!opt_value) opt_value = L" ";
+                else if (!_wcsicmp(opt_value, L"") || !_wcsicmp(opt_value, L"always"))
+                    flags |= (FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
+                else if (!_wcsicmp(opt_value, L"never"))
+                    flags &= ~(FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
+                else if (!_wcsicmp(opt_value, L"fat"))
+                    flags |= FMT_JUSTIFY_FAT, flags &= ~FMT_JUSTIFY_NONFAT;
+                else if (!_wcsicmp(opt_value, L"normal") || !_wcsicmp(opt_value, L"nonfat") || !_wcsicmp(opt_value, L"non-fat"))
+                    flags |= FMT_JUSTIFY_NONFAT, flags &= ~FMT_JUSTIFY_FAT;
+                else
+                {
+                    e.Set(L"Unrecognized value '%1' for '--%2'.") << opt_value << long_opt->name;
+                    return e.Report();
+                }
+                break;
+            case LOI_NO_ATTRIBUTES:         flags &= FMT_ATTRIBUTES; break;
             case LOI_CLASSIFY:              flags |= FMT_CLASSIFY; break;
             case LOI_NO_CLASSIFY:           flags &= ~FMT_CLASSIFY; break;
             case LOI_NO_COLOR_SCALE:        SetColorScaleMode(L"none"); break;
             case LOI_COMPACT_COLUMNS:       SetCanAutoFit(true); break;
             case LOI_NO_COMPACT_COLUMNS:    SetCanAutoFit(false); break;
+            case LOI_NO_FULL_PATHS:         flags &= ~(FMT_FULLNAME|FMT_FORCENONFAT|FMT_HIDEDOTS); break;
+            case LOI_HORIZONTAL:            flags &= ~FMT_SORTVERTICAL; break;
             case LOI_HYPERLINKS:            flags |= FMT_HYPERLINKS; break;
             case LOI_NO_HYPERLINKS:         flags &= ~FMT_HYPERLINKS; break;
-            case LOI_ICONS:                 SetUseIcons(true); break;
-            case LOI_NO_ICONS:              SetUseIcons(false); break;
+            case LOI_NO_LOWER:              flags &= ~FMT_LOWERCASE; break;
             case LOI_NERD_FONTS_VER:        SetNerdFontsVersion(wcstoul(opt_value, nullptr, 10)); break;
+            case LOI_NO_OWNER:              flags &= ~FMT_SHOWOWNER; break;
             case LOI_PAD_ICONS:             SetPadIcons(wcstoul(opt_value, nullptr, 10)); break;
+            case LOI_NO_SHORT_NAMES:        flags &= ~(FMT_SHORTNAMES); break;
+            case LOI_NO_STREAMS:            flags &= ~(FMT_ALTDATASTEAMS|FMT_FORCENONFAT); break;
             }
             break;
         }
@@ -448,12 +507,16 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             SkipColonOrEqual(opt_value);
             if (wcscmp(opt_value, L"-") == 0)
             {
-                flags &= ~FMT_FULLSIZE;
+                flags &= ~(FMT_SIZE|FMT_MINISIZE);
                 filesize = FILESIZE_FILESIZE;
                 continue;
             }
-            flags &= ~FMT_MINISIZE;
-            flags |= FMT_FULLSIZE;
+            flags |= FMT_SIZE;
+            if (wcscmp(opt_value, L"S") == 0)
+            {
+                flags |= FMT_FULLSIZE;
+                continue;
+            }
             if (!wcscmp(opt_value, L"a"))
                 filesize = FILESIZE_ALLOCATION;
             else if (!wcscmp(opt_value, L"c"))
@@ -470,12 +533,16 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             SkipColonOrEqual(opt_value);
             if (wcscmp(opt_value, L"-") == 0)
             {
-                flags &= ~FMT_FULLTIME;
+                flags &= ~(FMT_DATE|FMT_MINIDATE);
                 timestamp = TIMESTAMP_MODIFIED;
                 continue;
             }
-            flags &= ~FMT_MINIDATE;
-            flags |= FMT_FULLTIME;
+            flags |= FMT_DATE;
+            if (wcscmp(opt_value, L"T") == 0)
+            {
+                flags |= FMT_FULLTIME;
+                continue;
+            }
             if (!wcscmp(opt_value, L"a"))
                 timestamp = TIMESTAMP_ACCESS;
             else if (!wcscmp(opt_value, L"c"))
@@ -490,12 +557,16 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             }
             break;
         case 'Y':
-            flags &= ~FMT_FULLTIME;
-            flags |= FMT_MINIDATE;
+            if (wcscmp(opt_value, L"-") == 0)
+                flags &= ~FMT_MINIDATE;
+            else
+                flags |= FMT_MINIDATE;
             break;
         case 'Z':
-            flags &= ~FMT_FULLSIZE;
-            flags |= FMT_MINISIZE;
+            if (wcscmp(opt_value, L"-") == 0)
+                flags &= ~FMT_MINISIZE;
+            else
+                flags |= FMT_MINISIZE;
             break;
         }
     }

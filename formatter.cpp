@@ -21,13 +21,13 @@
 //static WCHAR s_chTruncated = L'\x2192'; // Right arrow character.
 //static WCHAR s_chTruncated = L'\x25b8'; // Black Right-Pointing Small Triangle character.
 static WCHAR s_chTruncated = L'\x2026'; // Horizontal Ellipsis character.
-static bool s_can_autofit = false;
+static bool s_can_autofit = true;
 static bool s_use_icons = false;
 static BYTE s_icon_padding = 1;
 static unsigned s_icon_width = 0;
 static bool s_scale_size = false;
 static bool s_scale_time = false;
-static bool s_gradient = false;
+static bool s_gradient = true;
 
 static const WCHAR c_hyperlink[] = L"\x1b]8;;";
 static const WCHAR c_BEL[] = L"\a";
@@ -55,10 +55,23 @@ void SetCanAutoFit(bool can_autofit)
     s_can_autofit = can_autofit;
 }
 
-void SetUseIcons(bool use_icons)
+bool SetUseIcons(const WCHAR* s)
 {
-    s_use_icons = use_icons;
+    if (!s)
+        return false;
+    if (!_wcsicmp(s, L"") || !_wcsicmp(s, L"auto"))
+    {
+        DWORD dwMode;
+        s_use_icons = !!GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &dwMode);
+    }
+    else if (!_wcsicmp(s, L"always"))
+        s_use_icons = true;
+    else if (!_wcsicmp(s, L"never"))
+        s_use_icons = false;
+    else
+        return false;
     s_icon_width = s_use_icons ? 1 + s_icon_padding : 0;
+    return true;
 }
 
 void SetPadIcons(unsigned spaces)
@@ -133,7 +146,7 @@ static WCHAR s_locale_time[80];
 static WCHAR s_decimal[2];
 static WCHAR s_thousand[2];
 
-bool InitLocale()
+void InitLocale()
 {
     WCHAR tmp[80];
 
@@ -260,8 +273,6 @@ bool InitLocale()
         s_locale_date_time_len = unsigned(wcslen(s_locale_date) + 2 + wcslen(s_locale_time));
         break;
     }
-
-    return s_locale_date_time_len > 0;
 }
 
 static const AttrChar c_attr_chars[] =
@@ -900,7 +911,7 @@ static WCHAR GetEffectiveTimeFieldStyle(const DirFormatSettings& settings, WCHAR
             chStyle = 'x';
         else if (settings.IsSet(FMT_MINIDATE))
             chStyle = 'm';
-        else if (settings.IsSet(FMT_LOCALEDATETIME) && s_locale_date_time_len)
+        else if (s_locale_date_time_len)
             chStyle = 'l';
     }
 
@@ -1227,6 +1238,8 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
                     }
                     picture++;
                 }
+                if (m_settings.IsSet(FMT_FULLSIZE) && m_settings.IsSet(FMT_FAT))
+                    chStyle = 0;
                 m_fields.emplace_back();
                 FieldInfo* const p = &m_fields.back();
                 p->m_field = FLD_FILESIZE;
@@ -1735,7 +1748,7 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const DWORD flags, Whic
         switch (m_settings.m_num_columns)
         {
         case 4:
-            if (m_settings.IsSet(FMT_FAT) || m_settings.IsSet(FMT_MINISIZE))
+            if (m_settings.IsSet(FMT_SIZE|FMT_MINISIZE|FMT_FAT))
                 picture = L"F12 Sm";
             else
                 picture = L"F17";
@@ -1747,30 +1760,43 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const DWORD flags, Whic
             {
                 unsigned width = 38;
                 StrW tmp;
-                if (m_settings.IsSet(FMT_MINISIZE))
+                const bool size = m_settings.IsSet(FMT_SIZE|FMT_MINISIZE);
+                const bool date = m_settings.IsSet(FMT_DATE|FMT_MINIDATE);
+                if (size)
                 {
-                    tmp.Append(L" Sm");
-                    width -= 1 + 4;
-                }
-                if (m_settings.IsSet(FMT_MINIDATE))
-                {
-                    if (tmp.Length())
+                    if (date || m_settings.IsSet(FMT_MINISIZE))
                     {
-                        tmp.Append(L" ");
-                        width -= 1;
+                        tmp.Append(L" Sm");
+                        width -= 1 + 4;
                     }
-                    tmp.Append(L" Dm");
-                    width -= 1 + 11;
-                }
-                else if (m_settings.IsSet(FMT_WIDELISTIME))
-                {
-                    if (tmp.Length())
+                    else
                     {
-                        tmp.Append(L" ");
-                        width -= 1;
+                        tmp.Append(L" Ss");
+                        width -= 1 + 9;
                     }
-                    tmp.Append(L" Dn");
-                    width -= 1 + 17;
+                }
+                if (date)
+                {
+                    if (size || m_settings.IsSet(FMT_MINIDATE))
+                    {
+                        if (tmp.Length())
+                        {
+                            tmp.Append(L" ");
+                            width -= 1;
+                        }
+                        tmp.Append(L" Dm");
+                        width -= 1 + 11;
+                    }
+                    else
+                    {
+                        if (tmp.Length())
+                        {
+                            tmp.Append(L" ");
+                            width -= 1;
+                        }
+                        tmp.Append(L" Dn");
+                        width -= 1 + 17;
+                    }
                 }
                 sPic.Printf(L"F%u%s", width, tmp.Text());
                 picture = sPic.Text();
@@ -1784,13 +1810,10 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const DWORD flags, Whic
             break;
         case 0:
             sPic.Set(L"F");
-            if (m_settings.IsSet(FMT_FAT) ||
-                m_settings.IsSet(FMT_MINISIZE))
-                sPic.Append(L" Sm");
-            if (m_settings.IsSet(FMT_MINIDATE))
-                sPic.Append(L" Dm");
-            else if (m_settings.IsSet(FMT_WIDELISTIME))
-                sPic.Append(L" D");
+            if (m_settings.IsSet(FMT_SIZE|FMT_MINISIZE|FMT_FAT))
+                sPic.Append(m_settings.IsSet(FMT_MINISIZE) ? L" Sm" : L" S");
+            if (m_settings.IsSet(FMT_DATE|FMT_MINIDATE))
+                sPic.Append(m_settings.IsSet(FMT_MINIDATE) ? L" Dm" : L" D");
             picture = sPic.Text();
             break;
         default:
