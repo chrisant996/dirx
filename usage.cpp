@@ -50,7 +50,7 @@ const char c_long_usage[] =
 "			  -  Prefix to disable option (this is the default)\n"
 "			  +  Prefix to enable option\n"
 "  -p, --paginate	Pause after each screen full of information.\n"
-"  -s, --recurse	Subdirectories; recursively display files in specified\n"
+"  -s, --recurse		Subdirectories; recursively display files in specified\n"
 "			directory and all subdirectories.\n"
 "  -u, --usage		Display directory size usage data.\n"
 "  -v, --vertical	Sort columns vertically.\n"

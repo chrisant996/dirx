@@ -66,7 +66,7 @@ bool SetUseIcons(const WCHAR* s)
     }
     else if (!_wcsicmp(s, L"always"))
         s_use_icons = true;
-    else if (!_wcsicmp(s, L"never"))
+    else if (!_wcsicmp(s, L"never") || !_wcsicmp(s, L"-"))
         s_use_icons = false;
     else
         return false;
