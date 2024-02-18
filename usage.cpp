@@ -37,6 +37,7 @@ const char c_long_usage[] =
 "  -n, --normal		Use normal list format.  This is the default for\n"
 "			non-FAT volumes.\n"
 // TODO: Redesign these options.  This existed for 4NT compatibility.
+#pragma region
 "  -n-			Reset disabled options (below).\n"
 "  -n[...]		Disable options:\n"
 "			  v  Suppress the volume information\n"
@@ -49,6 +50,7 @@ const char c_long_usage[] =
 "			  w  Disable word sort (uses string sort instead)\n"
 "			  -  Prefix to disable option (this is the default)\n"
 "			  +  Prefix to enable option\n"
+#pragma endregion
 "  -p, --paginate	Pause after each screen full of information.\n"
 "  -s, --recurse		Subdirectories; recursively display files in specified\n"
 "			directory and all subdirectories.\n"
@@ -58,7 +60,8 @@ const char c_long_usage[] =
 "  -w, --wide		Wide mode; show as many columns as fit.\n"
 "  -z, --fat		Use FAT list format (filenames on left, etc).  This is\n"
 "			the default for FAT volumes.\n"
-"  --color-scale[=FLD]	Highlight levels of certain fields distinctly.\n"
+"  -K, --color-scale[=FIELD]\n"
+"			Highlight levels of certain fields distinctly.\n"
 "			  all, age, size, none (default)\n"
 "  --color-scale-mode=MODE\n"
 "			Mode for --color-scale (use '-? colors' for more info).\n"
@@ -152,8 +155,7 @@ const char c_long_usage[] =
 "			  always, auto (default), never\n"
 "  --more-colors=LIST	Add color rules in the same format as the DIRX_COLORS\n"
 "			environment variable (use '-? colors' for more info).\n"
-"  --nerd-fonts-version=VER\n"
-"			Select which Nerd Fonts version to use (see '-? colors'\n"
+"  --nerd-fonts=VER	Select which Nerd Fonts version to use (see '-? colors'\n"
 "			for more info).\n"
 "  --pad-icons=SPACES	Select how many spaces to print after an icon.  The\n"
 "			default is 1 space.  Some terminals or fonts may need\n"

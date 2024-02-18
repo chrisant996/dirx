@@ -30,7 +30,7 @@
 
 #include <memory>
 
-static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+E.f:F+h+i:j+J+l+n.o.p+q+r+s+S.t+T.u+v+w+W:x+Y+z+Z+";
+static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+E.f:F+h+i+j+J+K+l+n.o.p+q+r+s+S.t+T.u+v+w+W:x+Y+z+Z+";
 static const WCHAR c_DIRXCMD[] = L"DIRXCMD";
 
 static bool ParseHexDigit(WCHAR ch, WORD* digit)
@@ -154,6 +154,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_HORIZONTAL,
         LOI_HYPERLINKS,
         LOI_NO_HYPERLINKS,
+        LOI_ICONS,
+        LOI_NO_ICONS,
         LOI_JUSTIFY,
         LOI_NO_LOWER,
         LOI_MORE_COLORS,
@@ -187,12 +189,13 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"horizontal",            nullptr,            LOI_HORIZONTAL },
         { L"hyperlinks",            nullptr,            LOI_HYPERLINKS },
         { L"no-hyperlinks",         nullptr,            LOI_NO_HYPERLINKS },
-        { L"icons",                 nullptr,            'i',                    LOHA_OPTIONAL },
+        { L"icons",                 nullptr,            LOI_ICONS,              LOHA_OPTIONAL },
+        { L"no-icons",              nullptr,            LOI_NO_ICONS },
         { L"justify",               nullptr,            LOI_JUSTIFY,            LOHA_OPTIONAL },
         { L"lower",                 nullptr,            'l' },
         { L"no-lower",              nullptr,            LOI_NO_LOWER },
         { L"more-colors",           nullptr,            LOI_MORE_COLORS,        LOHA_REQUIRED },
-        { L"nerd-fonts-version",    nullptr,            LOI_NERD_FONTS_VER,     LOHA_REQUIRED },
+        { L"nerd-fonts",            nullptr,            LOI_NERD_FONTS_VER,     LOHA_REQUIRED },
         { L"normal",                nullptr,            'n' },
         { L"owner",                 nullptr,            'q' },
         { L"no-owner",              nullptr,            LOI_NO_OWNER },
@@ -331,8 +334,10 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         case 'c':       flagsON = FMT_COMPRESSED; break;
         case 'F':       flagsON = FMT_FULLNAME|FMT_FORCENONFAT|FMT_HIDEDOTS; break;
         case 'h':       flagsON = FMT_HIDEDOTS; break;
+        case 'i':       SetUseIcons((*opt_value == '-') ? L"never" : L"auto"); continue;
         case 'j':       flagsON = FMT_JUSTIFY_FAT; break;
         case 'J':       flagsON = FMT_JUSTIFY_NONFAT; break;
+        case 'K':       SetColorScale((*opt_value == '-') ? L"none" : L"all"); continue;
         case 'l':       flagsON = FMT_LOWERCASE; break;
         case 'q':       flagsON = FMT_SHOWOWNER; break;
         case 'r':       flagsON = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;
@@ -343,17 +348,6 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         case 'v':       flagsON = FMT_SORTVERTICAL; break;
         case 'x':       flagsON = FMT_SHORTNAMES; break;
         case 'z':       flagsON = FMT_FAT; break;
-        case 'i':
-            SkipColonOrEqual(opt_value);
-            if (!SetUseIcons(opt_value))
-            {
-                if (long_opt)
-                    e.Set(L"Unrecognized value '%1' for '--%2'.") << opt_value << long_opt->name;
-                else
-                    e.Set(L"Unrecognized value '%1' for '-i'.") << opt_value;
-                return e.Report();
-            }
-            continue;
         case 'W':
             SkipColonOrEqual(opt_value);
             SetConsoleWidth(wcstoul(opt_value, nullptr, 10));
@@ -366,23 +360,22 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             case LOI_COLOR_SCALE:
                 if (!SetColorScale(opt_value))
                 {
+unrecognized_long_opt_value:
                     e.Set(L"Unrecognized value '%1' for '--%2'.") << opt_value << long_opt->name;
                     return e.Report();
                 }
                 break;
             case LOI_COLOR_SCALE_MODE:
                 if (!SetColorScaleMode(opt_value))
-                {
-                    e.Set(L"Unrecognized value '%1' for '--%2'.") << opt_value << long_opt->name;
-                    return e.Report();
-                }
+                    goto unrecognized_long_opt_value;
                 break;
             case LOI_ESCAPE_CODES:
                 if (!SetUseEscapeCodes(opt_value))
-                {
-                    e.Set(L"Unrecognized value '%1' for '--%2'.") << opt_value << long_opt->name;
-                    return e.Report();
-                }
+                    goto unrecognized_long_opt_value;
+                break;
+            case LOI_ICONS:
+                if (!SetUseIcons(opt_value))
+                    goto unrecognized_long_opt_value;
                 break;
             case LOI_JUSTIFY:
                 if (!opt_value) opt_value = L" ";
@@ -395,10 +388,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                 else if (!_wcsicmp(opt_value, L"normal") || !_wcsicmp(opt_value, L"nonfat") || !_wcsicmp(opt_value, L"non-fat"))
                     flags |= FMT_JUSTIFY_NONFAT, flags &= ~FMT_JUSTIFY_FAT;
                 else
-                {
-                    e.Set(L"Unrecognized value '%1' for '--%2'.") << opt_value << long_opt->name;
-                    return e.Report();
-                }
+                    goto unrecognized_long_opt_value;
                 break;
             case LOI_NO_ATTRIBUTES:         flags &= FMT_ATTRIBUTES; break;
             case LOI_CLASSIFY:              flags |= FMT_CLASSIFY; break;
@@ -410,6 +400,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             case LOI_HORIZONTAL:            flags &= ~FMT_SORTVERTICAL; break;
             case LOI_HYPERLINKS:            flags |= FMT_HYPERLINKS; break;
             case LOI_NO_HYPERLINKS:         flags &= ~FMT_HYPERLINKS; break;
+            case LOI_NO_ICONS:              SetUseIcons(L"never"); break;
             case LOI_NO_LOWER:              flags &= ~FMT_LOWERCASE; break;
             case LOI_MORE_COLORS:           more_colors = opt_value; break;
             case LOI_NERD_FONTS_VER:        SetNerdFontsVersion(wcstoul(opt_value, nullptr, 10)); break;
