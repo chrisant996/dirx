@@ -7,6 +7,7 @@
 - Built in date formats like eza (since they're mostly ISO based).
 - Add an "overlay" color style for `readme*` files, instead of being hard-coded.
 - Messy:  `-Z --no-size` and `--size -Z-` don't have an intuitive outcome.
+- Move `-E` to `--ellipsis-char`.
 
 ### Git integration
 - Ignore files per `.gitignore`.
