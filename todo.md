@@ -12,6 +12,7 @@
 - Git status column for files.  Be very careful about performance!
 
 ### Maybe
+- The `readme*` underline might be annoying to some people; try to find a simple way to supersede it, while still making it able to automatically attach to other colors.  I may want to use a similar principle in other cases as well, so ideally there needs to be a generalized way to supersede "attaching" color effects.
 - Something like `%EZA_GRID_ROWS%`?
 - Ability to choose which file attributes to list, without needing to use format pictures?
 - Attribute colors?

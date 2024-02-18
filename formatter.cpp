@@ -444,6 +444,24 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, DWORD flags, unsigned m
             max_width -= s_icon_width;
     }
 
+    if (!(flags & FMT_DISABLECOLORS))
+    {
+        if (_wcsnicmp(L"readme", pfi->GetLongName().Text(), 6) == 0)
+        {
+            if (color)
+            {
+                static StrW s_tmp;
+                s_tmp.Set(L"4;");
+                s_tmp.Append(color);
+                color = s_tmp.Text();
+            }
+            else
+            {
+                color = L"4";
+            }
+        }
+    }
+
     if (color)
         s.Printf(L"\x1b[%sm", color);
 
