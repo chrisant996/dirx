@@ -33,6 +33,14 @@ bool CanUseEscapeCodes(HANDLE hout)
     if (s_escape_codes == 0)
         return false;
 
+    // See https://no-color.org/.
+    const WCHAR* env = _wgetenv(L"NO_COLOR");
+    if (env && *env)
+    {
+        s_escape_codes = 0;
+        return false;
+    }
+
     if (!IsWindows8Point1OrGreater())
         return false;
 
@@ -430,9 +438,23 @@ LPrompt:
  * OutputConsole.
  */
 
+static unsigned s_console_width = 0;
+
+void SetConsoleWidth(unsigned long width)
+{
+    if ((signed long)width < 0)
+        width = 0;
+    else if (width > 1024)
+        width = 1024;
+    s_console_width = width;
+}
+
 DWORD GetConsoleColsRows(HANDLE hout)
 {
     assert(hout);
+
+    if (s_console_width)
+        return s_console_width;
 
     static BOOL s_initialized = false;
     static HANDLE s_hout = INVALID_HANDLE_VALUE;

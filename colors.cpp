@@ -1134,8 +1134,15 @@ void InitColors(const WCHAR* custom)
         ReportColorlessError(e);
     }
 
-    ParseColors(custom, L"TBD: NAME OF COLOR FLAG", false, e);
+    ParseColors(custom, L"--more-colors", false, e);
     ReportColorlessError(e);
+
+    const WCHAR* env = _wgetenv(L"DIRX_MIN_LUMINANCE");
+    if (env)
+    {
+        const int x = clamp(_wtoi(env), -100, 100);
+        s_min_luminance = double(x) / 100;
+    }
 
     const WCHAR* link_color = s_color_strings[ciLink];
     s_link_target_color = (link_color && _wcsicmp(link_color, L"target") == 0);

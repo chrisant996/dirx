@@ -2287,7 +2287,6 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
                 assert(!Settings().IsSet(FMT_ATTRIBUTES));
 
                 const bool isFAT = Settings().IsSet(FMT_FAT);
-// TODO: Allow overriding with a flag.
                 unsigned console_width = LOWORD(GetConsoleColsRows(m_hout));
                 if (!console_width)
                     console_width = 80;

@@ -30,7 +30,7 @@
 
 #include <memory>
 
-static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.A+b+c+E.f:F+h+j+J+l+L+M+n.o.p+q+r+s+S.t+T.u+v+w+x+Y+z+Z+";
+static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+E.f:F+h+i:j+J+l+n.o.p+q+r+s+S.t+T.u+v+w+W:x+Y+z+Z+";
 static const WCHAR c_DIRXCMD[] = L"DIRXCMD";
 
 static bool ParseHexDigit(WCHAR ch, WORD* digit)
@@ -77,6 +77,16 @@ static int HandleDisableOption(WCHAR ch, bool fRestore, DWORD& flags, Error& e)
     return 0;
 }
 
+static const WCHAR* get_env_prio(const WCHAR* a, const WCHAR* b=nullptr, const WCHAR* c=nullptr)
+{
+    const WCHAR* env = _wgetenv(a);
+    if (!env && b)
+        env = _wgetenv(b);
+    if (!env && c)
+        env = _wgetenv(c);
+    return env;
+}
+
 int __cdecl _tmain(int argc, const WCHAR** argv)
 {
     Error e;
@@ -98,11 +108,11 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
 
     {
         const WCHAR* env;
-        SetColorScale(_wgetenv(L"DIRX_COLOR_SCALE"));
-        SetColorScaleMode(_wgetenv(L"DIRX_COLOR_SCALE_MODE"));
+        SetColorScale(get_env_prio(L"DIRX_COLOR_SCALE", L"EXA_COLOR_SCALE", L"EXA_COLOR_SCALE"));
+        SetColorScaleMode(get_env_prio(L"DIRX_COLOR_SCALE_MODE", L"EZA_COLOR_SCALE_MODE", L"EXA_COLOR_SCALE_MODE"));
         if (env = _wgetenv(L"DIRX_NERD_FONTS_VERSION"))
             SetNerdFontsVersion(wcstoul(env, nullptr, 10));
-        if (env = _wgetenv(L"DIRX_PAD_ICONS"))
+        if (env = get_env_prio(L"DIRX_PAD_ICONS", L"EZA_ICON_SPACING", L"EXA_ICON_SPACING"))
             SetPadIcons(wcstoul(env, nullptr, 10));
     }
 
@@ -121,6 +131,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     //  2.  Parse options from DIRXCMD.
     //  3.  Parse the command line options.
 
+    const WCHAR* more_colors = nullptr;
     int hide_dot_files = 0;         // By default, behave like CMD DIR.
 #ifdef DEBUG
     int print_all_icons = 0;
@@ -144,6 +155,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_NO_HYPERLINKS,
         LOI_JUSTIFY,
         LOI_NO_LOWER,
+        LOI_MORE_COLORS,
         LOI_NERD_FONTS_VER,
         LOI_NO_OWNER,
         LOI_PAD_ICONS,
@@ -174,10 +186,11 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"horizontal",            nullptr,            LOI_HORIZONTAL },
         { L"hyperlinks",            nullptr,            LOI_HYPERLINKS },
         { L"no-hyperlinks",         nullptr,            LOI_NO_HYPERLINKS },
-        { L"icons",                 nullptr,            'i' },
+        { L"icons",                 nullptr,            'i',                    LOHA_OPTIONAL },
         { L"justify",               nullptr,            LOI_JUSTIFY,            LOHA_OPTIONAL },
         { L"lower",                 nullptr,            'l' },
         { L"no-lower",              nullptr,            LOI_NO_LOWER },
+        { L"more-colors",           nullptr,            LOI_MORE_COLORS,        LOHA_REQUIRED },
         { L"nerd-fonts-version",    nullptr,            LOI_NERD_FONTS_VER,     LOHA_REQUIRED },
         { L"normal",                nullptr,            'n' },
         { L"owner",                 nullptr,            'q' },
@@ -193,6 +206,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"version",               nullptr,            'V' },
         { L"vertical",              nullptr,            'v' },
         { L"wide",                  nullptr,            'w' },
+        { L"width",                 nullptr,            'W',                    LOHA_REQUIRED },
 #ifdef DEBUG
         { L"print-all-icons",       &print_all_icons,   1 },
 #endif
@@ -306,11 +320,19 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         case 'x':       flagsON = FMT_SHORTNAMES; break;
         case 'z':       flagsON = FMT_FAT; break;
         case 'i':
+            SkipColonOrEqual(opt_value);
             if (!SetUseIcons(opt_value))
             {
-                e.Set(L"Unrecognized value '%1' for '--%2'.") << opt_value << long_opt->name;
+                if (long_opt)
+                    e.Set(L"Unrecognized value '%1' for '--%2'.") << opt_value << long_opt->name;
+                else
+                    e.Set(L"Unrecognized value '%1' for '-i'.") << opt_value;
                 return e.Report();
             }
+            continue;
+        case 'W':
+            SkipColonOrEqual(opt_value);
+            SetConsoleWidth(wcstoul(opt_value, nullptr, 10));
             continue;
         default:
             if (!long_opt)
@@ -365,6 +387,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             case LOI_HYPERLINKS:            flags |= FMT_HYPERLINKS; break;
             case LOI_NO_HYPERLINKS:         flags &= ~FMT_HYPERLINKS; break;
             case LOI_NO_LOWER:              flags &= ~FMT_LOWERCASE; break;
+            case LOI_MORE_COLORS:           more_colors = opt_value; break;
             case LOI_NERD_FONTS_VER:        SetNerdFontsVersion(wcstoul(opt_value, nullptr, 10)); break;
             case LOI_NO_OWNER:              flags &= ~FMT_SHOWOWNER; break;
             case LOI_PAD_ICONS:             SetPadIcons(wcstoul(opt_value, nullptr, 10)); break;
@@ -723,7 +746,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     if (!def.Settings().IsSet(FMT_DISABLECOLORS))
     {
         assert(!e.Test());
-        InitColors(nullptr);
+        InitColors(more_colors);
     }
 
 #ifdef DEBUG

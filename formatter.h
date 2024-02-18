@@ -127,6 +127,7 @@ private:
 
 void InitLocale();
 void SetCanAutoFit(bool can_autofit);
+void SetConsoleWidth(unsigned long width);
 bool SetUseIcons(const WCHAR* s);
 void SetPadIcons(unsigned spaces);
 unsigned GetPadIcons();

@@ -12,6 +12,7 @@
 - Git status column for files.  Be very careful about performance!
 
 ### Maybe
+- Something like `%EZA_GRID_ROWS%`?
 - Ability to choose which file attributes to list, without needing to use format pictures?
 - Attribute colors?
 - Combine "d" and "l" attributes into same column?
