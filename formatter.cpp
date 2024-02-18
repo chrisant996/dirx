@@ -451,6 +451,7 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, DWORD flags, unsigned m
             max_width -= s_icon_width;
     }
 
+    bool underlined = false;
     if (!(flags & FMT_DISABLECOLORS))
     {
         if (_wcsnicmp(L"readme", pfi->GetLongName().Text(), 6) == 0)
@@ -466,6 +467,7 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, DWORD flags, unsigned m
             {
                 color = L"4";
             }
+            underlined = true;
         }
     }
 
@@ -587,7 +589,7 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, DWORD flags, unsigned m
             s.AppendSpaces(max_width - name_width);
     }
 
-    if (classify || hyperlinks)
+    if (classify || hyperlinks || underlined)
     {
         unsigned spaces = 0;
         unsigned len = s.Length();
@@ -608,6 +610,8 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, DWORD flags, unsigned m
             --spaces;
             s.Append(&classify, 1);
         }
+        if (underlined)
+            s.Printf(L"\x1b[%s;24m", color);
         s.AppendSpaces(spaces);
     }
 
