@@ -305,22 +305,34 @@ DWORD ParseAttribute(const WCHAR ch)
     return 0;
 }
 
-static void FormatAttributes(StrW& s, const DWORD dwAttr, const WCHAR chNotSet = '_')
-{
-    for (unsigned ii = 0; ii < _countof(c_attr_chars); ii++)
-        s.Append((dwAttr & c_attr_chars[ii].dwAttr) ? c_attr_chars[ii].ch : chNotSet);
-}
-
-static void FormatAttributes(StrW& s, const DWORD dwAttr, const std::vector<AttrChar>* vec, WCHAR chNotSet = '_')
+static void FormatAttributes(StrW& s, const DWORD dwAttr, const std::vector<AttrChar>* vec, WCHAR chNotSet, bool use_color)
 {
     if (!chNotSet)
         chNotSet = '_';
 
+    const WCHAR* prev_color = nullptr;
+
     for (unsigned ii = 0; ii < vec->size(); ii++)
     {
         const AttrChar* const pAttr = &*(vec->cbegin() + ii);
-        s.Append((dwAttr & pAttr->dwAttr) ? pAttr->ch : chNotSet);
+        const DWORD bit = (dwAttr & pAttr->dwAttr);
+        if (use_color)
+        {
+            const WCHAR* color = LookupColor(bit);
+            if (color != prev_color)
+            {
+                if (color)
+                    s.Printf(L"\x1b[%sm", color);
+                else
+                    s.Append(c_norm);
+                prev_color = color;
+            }
+        }
+        s.Append(bit ? pAttr->ch : chNotSet);
     }
+
+    if (prev_color)
+        s.Append(c_norm);
 }
 
 static WCHAR GetEffectiveFilenameFieldStyle(const DirFormatSettings& settings, WCHAR chStyle)
@@ -722,15 +734,18 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
     const unsigned orig_len = s.Length();
 #endif
 
-    if (!color && which)
-        color = GetSizeColor(cbSize);
-    if (!color)
-        color = fallback_color;
-    if (s_gradient && s_scale_size && which)
+    if (!settings.IsSet(FMT_DISABLECOLORS))
     {
-        const WCHAR* gradient = ApplyGradient(color ? color : L"", cbSize, settings.m_min_size[*which], settings.m_max_size[*which]);
-        if (gradient)
-            color = gradient;
+        if (!color && which)
+            color = GetSizeColor(cbSize);
+        if (!color)
+            color = fallback_color;
+        if (s_gradient && s_scale_size && which)
+        {
+            const WCHAR* gradient = ApplyGradient(color ? color : L"", cbSize, settings.m_min_size[*which], settings.m_max_size[*which]);
+            if (gradient)
+                color = gradient;
+        }
     }
     if (color)
         s.Printf(L"\x1b[%sm", color);
@@ -1590,8 +1605,12 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WCHAR* dir, co
                 break;
             case FLD_FILESIZE:
                 {
-                    const WCHAR* size_color = GetSizeColor(pfsd->StreamSize.QuadPart);
-// TODO: min/max for stream sizes?
+                    // FUTURE: color scale for stream sizes.
+                    const WCHAR* size_color;
+                    if (m_settings.IsSet(FMT_DISABLECOLORS))
+                        size_color = nullptr;
+                    else
+                        size_color = GetSizeColor(pfsd->StreamSize.QuadPart);
                     FormatSize(s, pfsd->StreamSize.QuadPart, nullptr, m_settings, GetEffectiveSizeFieldStyle(m_settings, m_fields[ii].m_chStyle), size_color ? size_color : color);
                 }
                 break;
@@ -1645,15 +1664,14 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WCHAR* dir, co
                 FormatFileSize(s, pfi, m_settings, m_fields[ii].m_chStyle, m_fields[ii].m_chSubField, color);
                 break;
             case FLD_COMPRESSION:
-// TODO: Color?
+                // FUTURE: Color?
                 FormatCompressed(s, pfi, m_fields[ii].m_chSubField);
                 break;
             case FLD_ATTRIBUTES:
-// TODO: Color?
-                FormatAttributes(s, pfi->GetAttributes(), m_fields[ii].m_masks, m_fields[ii].m_chStyle);
+                FormatAttributes(s, pfi->GetAttributes(), m_fields[ii].m_masks, m_fields[ii].m_chStyle, !m_settings.IsSet(FMT_DISABLECOLORS));
                 break;
             case FLD_OWNER:
-// TODO: Color?
+                // FUTURE: Color?
                 FormatOwner(s, pfi);
                 break;
             case FLD_SHORTNAME:
@@ -2048,7 +2066,7 @@ void DirEntryFormatter::DisplayOne(const FileInfo* const pfi)
             s.Set(m_dir);
             EnsureTrailingSlash(s);
         }
-        FormatFilename(s, pfi, m_settings.m_flags, 0, m_dir.Text());
+        FormatFilename(s, pfi, m_settings.m_flags, 0, m_dir.Text(), SelectColor(pfi, m_settings.m_flags));
     }
     else
     {

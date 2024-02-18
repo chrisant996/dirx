@@ -15,6 +15,7 @@ int ValidateColor(const WCHAR* p, const WCHAR* end=nullptr);
 void InitColors(const WCHAR* custom);
 const WCHAR* LookupColor(const FileInfo* pfi);
 const WCHAR* LookupColor(const WCHAR* name, DWORD attr, unsigned short mode);
+const WCHAR* LookupColor(DWORD attr);
 const WCHAR* GetIconColor(const WCHAR* color);
 const WCHAR* GetColorByKey(const WCHAR* key);
 const WCHAR* GetSizeColor(ULONGLONG ull);

@@ -379,7 +379,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             case LOI_NO_ATTRIBUTES:         flags &= FMT_ATTRIBUTES; break;
             case LOI_CLASSIFY:              flags |= FMT_CLASSIFY; break;
             case LOI_NO_CLASSIFY:           flags &= ~FMT_CLASSIFY; break;
-            case LOI_NO_COLOR_SCALE:        SetColorScaleMode(L"none"); break;
+            case LOI_NO_COLOR_SCALE:        SetColorScale(L"none"); break;
             case LOI_COMPACT_COLUMNS:       SetCanAutoFit(true); break;
             case LOI_NO_COMPACT_COLUMNS:    SetCanAutoFit(false); break;
             case LOI_NO_FULL_PATHS:         flags &= ~(FMT_FULLNAME|FMT_FORCENONFAT|FMT_HIDEDOTS); break;

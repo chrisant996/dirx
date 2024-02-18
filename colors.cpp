@@ -1,4 +1,4 @@
-// Copyright (c) 2024 by Christopher Antos
+﻿// Copyright (c) 2024 by Christopher Antos
 // License: http://opensource.org/licenses/MIT
 
 // https://github.com/eza-community/eza
@@ -37,9 +37,14 @@ static const WCHAR c_default_colors[] =
     L"*.diff=1;36:"
     L"*.dpk=1;36:"
     L"*.zip=36:"
-    L"cR=35:"
+    L"co=35:"
     L"ex=1:"
-    L"ro=32"
+    L"ro=32:"
+    // L"nt=38;2;239;65;54:ng=38;2;252;176;64:nm=38;2;240;230;50:nk=38;2;142;198;64:nb=38;2;1;148;68:"
+    // L"sn=0:"
+    // L"da=38;5;27:"
+    // L"da=0:"
+    // L"lp=36:"
     ;
 
 enum ColorIndex : unsigned short
@@ -588,6 +593,7 @@ static void InitColorMaps()
         { L"ng", { CFLAG_NOT_A_TYPE, ciSizeG } },       // the numbers of a file’s size if it is between 1 GB/GiB and 1 TB/TiB
         { L"nt", { CFLAG_NOT_A_TYPE, ciSizeT } },       // the numbers of a file’s size if it is 1 TB/TiB or higher
 
+        // TODO: size unit colors.
         // sb : the units of a file’s size (sets ub, uk, um, ug and ut)
         // ub : the units of a file’s size if it is lower than 1 KB/Kib
         // uk : the units of a file’s size if it is between 1 KB/KiB and 1 MB/MiB
@@ -597,6 +603,7 @@ static void InitColorMaps()
 
         { L"da", { CFLAG_NOT_A_TYPE, ciTime } },        // a file date
 
+        // TODO: git file status.
         // ga : a new flag in Git
         // gm : a modified flag in Git
         // gd : a deleted flag in Git
@@ -605,12 +612,14 @@ static void InitColorMaps()
         // gi : an ignored flag in Git
         // gc : a conflicted flag in Git
 
+        // TODO: how does eza choose the branch colors?
         // Gm : main branch of repo
         // Go : other branch of repo
         // Gc : clean branch of repo
         // Gd : dirty branch of repo
 
         { L"lp", { CFLAG_NOT_A_TYPE, ciLinkPath } },
+        // TODO: what is "bO" in eza?
         // bO : the overlay style for broken symlink paths
 
         { L"ex", { CFLAG_EXECUTABLE, ciExecutable } },
@@ -631,6 +640,7 @@ static void InitColorMaps()
         // { L"tT", { CFLAG_TEMPORARY_ATTRIBUTE, ciTemporaryAttribute } },
         { L"tX", { CFLAG_TEMPORARY_EXTENSION, ciTemporaryExtension } },
 
+        // TODO: maybe punctuation?
         // xx : “punctuation”, including many background UI elements
 
         //---- IGNORE FOR LS_COLORS COMPATIBILITY ----------------------------
@@ -1342,6 +1352,57 @@ next_rule:
     }
 
     return seq;
+}
+
+const WCHAR* LookupColor(DWORD attr)
+{
+    if (!attr)
+        return L"90";
+
+    assert(!(attr & (attr - 1)));
+
+    ColorIndex ci = ciZERO;
+    switch (attr)
+    {
+    case FILE_ATTRIBUTE_READONLY:               ci = ciReadonly; break;
+    case FILE_ATTRIBUTE_HIDDEN:                 ci = ciHidden; break;
+    case FILE_ATTRIBUTE_SYSTEM:                 ci = ciSystem; break;
+    case FILE_ATTRIBUTE_DIRECTORY:              ci = ciDirectory; break;
+    case FILE_ATTRIBUTE_ARCHIVE:                ci = ciArchiveAttribute; break;
+    case FILE_ATTRIBUTE_NORMAL:                 ci = ciFile; break;
+    case FILE_ATTRIBUTE_TEMPORARY:              ci = ciTemporaryAttribute; break;
+    case FILE_ATTRIBUTE_SPARSE_FILE:            ci = ciSparse; break;
+    case FILE_ATTRIBUTE_REPARSE_POINT:          ci = ciLink; break;
+    case FILE_ATTRIBUTE_COMPRESSED:             ci = ciCompressedAttribute; break;
+    case FILE_ATTRIBUTE_OFFLINE:                ci = ciOffline; break;
+    case FILE_ATTRIBUTE_NOT_CONTENT_INDEXED:    ci = ciNotContentIndexed; break;
+    case FILE_ATTRIBUTE_ENCRYPTED:              ci = ciEncrypted; break;
+
+    // case FILE_ATTRIBUTE_DEVICE:
+    // case FILE_ATTRIBUTE_INTEGRITY_STREAM:
+    // case FILE_ATTRIBUTE_VIRTUAL:
+    // case FILE_ATTRIBUTE_NO_SCRUB_DATA:
+    // case FILE_ATTRIBUTE_EA:
+    // case FILE_ATTRIBUTE_PINNED:
+    // case FILE_ATTRIBUTE_UNPINNED:
+    // case FILE_ATTRIBUTE_RECALL_ON_OPEN:
+    // case FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS:
+    }
+
+    if (!ci)
+        return nullptr;
+
+    const WCHAR* color = s_color_strings[unsigned(ci)];
+    if (!color)
+    {
+        ci = s_color_fallback[ci];
+        if (!ci)
+            return nullptr;
+
+        color = s_color_strings[unsigned(ci)];
+    }
+
+    return color;
 }
 
 const WCHAR* GetColorByKey(const WCHAR* key)
