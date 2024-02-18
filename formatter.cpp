@@ -293,7 +293,8 @@ static const AttrChar c_attr_chars[] =
     { FILE_ATTRIBUTE_REPARSE_POINT, 'l' },
     //{ FILE_ATTRIBUTE_DEVICE, 'v' },
 };
-static const WCHAR c_attr_mask_default[] = L"rhsadentpcoij";
+static const WCHAR c_attr_mask_default[] = L"darhsj";
+static const WCHAR c_attr_mask_all[] = L"darhsjceotpni";
 
 DWORD ParseAttribute(const WCHAR ch)
 {
@@ -322,7 +323,7 @@ static void FormatAttributes(StrW& s, const DWORD dwAttr, const std::vector<Attr
             if (color != prev_color)
             {
                 if (color)
-                    s.Printf(L"\x1b[%sm", color);
+                    s.Printf(L"\x1b[0;%sm", color);
                 else
                     s.Append(c_norm);
                 prev_color = color;
@@ -1405,7 +1406,7 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
                     picture++;
                 }
                 if (!mask.Length())
-                    mask.Set(c_attr_mask_default);
+                    mask.Set(m_settings.IsSet(FMT_ALLATTRIBUTES) ? c_attr_mask_all : c_attr_mask_default);
                     m_fields.emplace_back();
                 FieldInfo* const p = &m_fields.back();
                 p->m_field = FLD_ATTRIBUTES;

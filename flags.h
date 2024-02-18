@@ -7,40 +7,44 @@
 
 enum FormatFlags : ULONGLONG
 {
-    FMT_NONE                    = 0x00000000,
+    FMT_NONE                    = 0x000000000000,
 
-    FMT_JUSTIFY_NONFAT          = 0x00000001,
-    FMT_ATTRIBUTES              = 0x00000002,   // Prevents more than 1 column.
-    FMT_FAT                     = 0x00000004,
-    FMT_MINISIZE                = 0x00000008,   // Shows abbreviated (4 chars) size when more than 1 column.
-    FMT_DISABLECOLORS           = 0x00000010,
-    FMT_LOWERCASE               = 0x00000020,
-    FMT_JUSTIFY_FAT             = 0x00000040,
-    FMT_BARE                    = 0x00000080,   // Prevents more than 1 column, suppresses all columns other than name.
-    FMT_DIRBRACKETS             = 0x00000100,
-    FMT_DATE                    = 0x00000200,   // Include time even in multi-column formats.
-    FMT_FULLTIME                = 0x00000400,   // Include seconds and milliseconds, plus four digit year.
-    FMT_FULLSIZE                = 0x00000800,   // Always show size in bytes (e.g. "1,234,567" not "1.2M").
-    FMT_SHORTNAMES              = 0x00001000,   // Include short name (or in formats where only one name column is possible then show the short name instead of the long name).
-    FMT_COMPRESSED              = 0x00002000,   // Include compression ratio.
-    FMT_SEPARATETHOUSANDS       = 0x00004000,
-    FMT_FORCENONFAT             = 0x00008000,   // Force normal list format even on FAT volumes.
-    FMT_SORTVERTICAL            = 0x00010000,
-    FMT_SUBDIRECTORIES          = 0x00020000,
-    FMT_SHOWOWNER               = 0x00040000,   // Include file owner.
-    FMT_ALTDATASTEAMS           = 0x00080000,
-    FMT_REDIRECTED              = 0x00100000,
-    FMT_ONLYALTDATASTREAMS      = 0x00200000,   // Skip files that do not have any alternate data streams (this also works with FMT_BARE, but in that case does not list the streams).
-    FMT_HIDEDOTS                = 0x00400000,   // Hide the "." and ".." directories.
-    FMT_AUTOSEPTHOUSANDS        = 0x00800000,   // If -, and -,- are not used then FMT_FULLSIZE|FMT_SEPARATETHOUSANDS are used iff the 1 column format is used.
-    FMT_ONLYSHORTNAMES          = 0x01000000,   // Show the short name, even if it is blank.
-    FMT_USAGE                   = 0x02000000,
-    FMT_USAGEGROUPED            = 0x04000000,   // Show directory usage statistics grouped by top level directories.
-    FMT_MINIDATE                = 0x08000000,   // Shows abbreviated (11 chars) time when more than 1 column.
-    FMT_SIZE                    = 0x10000000,   // Include size even in multi-column formats.
-    FMT_FULLNAME                = 0x20000000,   // Show the fully qualified path in the file name column.
-    FMT_HYPERLINKS              = 0x40000000,   // Add hyperlink escape codes for file and directory names.
-    FMT_CLASSIFY                = 0x80000000,   // Append type symbol after file name (\ for dir, @ for symlink file).
+    FMT_DISABLECOLORS           = 0x000000000001,
+    FMT_REDIRECTED              = 0x000000000002,
+    FMT_BARE                    = 0x000000000004,   // Prevents more than 1 column, suppresses all columns other than name.
+    FMT_SUBDIRECTORIES          = 0x000000000008,
+    FMT_ATTRIBUTES              = 0x000000000010,   // Prevents more than 1 column.
+    FMT_ALLATTRIBUTES           = 0x000000000020,   // Append type symbol after file name (\ for dir, @ for symlink file).
+    FMT_FAT                     = 0x000000000040,
+    FMT_FORCENONFAT             = 0x000000000080,   // Force normal list format even on FAT volumes.
+    FMT_JUSTIFY_FAT             = 0x000000000100,
+    FMT_JUSTIFY_NONFAT          = 0x000000000200,
+    FMT_SHORTNAMES              = 0x000000000400,   // Include short name (or in formats where only one name column is possible then show the short name instead of the long name).
+    FMT_ONLYSHORTNAMES          = 0x000000000800,   // Show the short name, even if it is blank.
+    FMT_FULLNAME                = 0x000000001000,   // Show the fully qualified path in the file name column.
+    FMT_HYPERLINKS              = 0x000000002000,   // Add hyperlink escape codes for file and directory names.
+    FMT_LOWERCASE               = 0x000000004000,
+    FMT_HIDEDOTS                = 0x000000008000,   // Hide the "." and ".." directories.
+    FMT_DIRBRACKETS             = 0x000000010000,
+    FMT_CLASSIFY                = 0x000000020000,   // Append type symbol after file name (\ for dir, @ for symlink file).
+    FMT_SIZE                    = 0x000000040000,   // Include size even in multi-column formats.
+    FMT_MINISIZE                = 0x000000080000,   // Shows abbreviated (4 chars) size when more than 1 column.
+    FMT_FULLSIZE                = 0x000000100000,   // Always show size in bytes (e.g. "1,234,567" not "1.2M").
+    FMT_DATE                    = 0x000000200000,   // Include time even in multi-column formats.
+    FMT_MINIDATE                = 0x000000400000,   // Shows abbreviated (11 chars) time when more than 1 column.
+    FMT_FULLTIME                = 0x000000800000,   // Include seconds and milliseconds, plus four digit year.
+    FMT_ALTDATASTEAMS           = 0x000001000000,
+    FMT_ONLYALTDATASTREAMS      = 0x000002000000,   // Skip files that do not have any alternate data streams (this also works with FMT_BARE, but in that case does not list the streams).
+    FMT_COMPRESSED              = 0x000004000000,   // Include compression ratio.
+    FMT_SHOWOWNER               = 0x000008000000,   // Include file owner.
+    FMT_SEPARATETHOUSANDS       = 0x000010000000,
+    FMT_AUTOSEPTHOUSANDS        = 0x000020000000,   // If -, and -,- are not used then FMT_FULLSIZE|FMT_SEPARATETHOUSANDS are used iff the 1 column format is used.
+    //                          = 0x000040000000,
+    //                          = 0x000080000000,
+    FMT_SORTVERTICAL            = 0x000100000000,
+    //                          = 0x000200000000,
+    FMT_USAGE                   = 0x000400000000,
+    FMT_USAGEGROUPED            = 0x000800000000,   // Show directory usage statistics grouped by top level directories.
 };
 DEFINE_ENUM_FLAG_OPERATORS(FormatFlags);
 

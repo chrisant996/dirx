@@ -132,6 +132,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     //  3.  Parse the command line options.
 
     const WCHAR* more_colors = nullptr;
+    bool show_all_attributes = false;
     int hide_dot_files = 0;         // By default, behave like CMD DIR.
 #ifdef DEBUG
     int print_all_icons = 0;
@@ -213,19 +214,42 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { nullptr }
     };
 
+    Options opts(99);
     MakeArgv argvEnv(_wgetenv(c_DIRXCMD));
 
-    Options opts(99);
+    // First parse options in the DIRXCMD environment variable.
     if (!opts.Parse(argvEnv.Argc(), argvEnv.Argv(), c_opts, usage.Text(), OPT_NONE, long_opts))
     {
         fwprintf(stderr, L"In %%%s%%: %s", c_DIRXCMD, opts.ErrorString());
         return 1;
     }
+
+    int t_count = 0;
+    unsigned t_index = 0;
+    for (; const WCHAR* opt_value = opts.GetValue('t', t_index); t_index++)
+    {
+        if (*opt_value == '-')
+            t_count = 0;
+        else
+            ++t_count;
+    }
+    show_all_attributes = (t_count >= 2);
+
+    // Then parse options from the command line.
     if (!opts.Parse(argc, argv, c_opts, usage.Text(), OPT_ANY|OPT_ANYWHERE|OPT_LONGABBR, long_opts))
     {
         fputws(opts.ErrorString(), stderr);
         return 1;
     }
+
+    for (; const WCHAR* opt_value = opts.GetValue('t', t_index); t_index++)
+    {
+        if (*opt_value == '-')
+            t_count = 0, show_all_attributes = false;
+        else
+            ++t_count;
+    }
+    show_all_attributes = show_all_attributes || (t_count >= 2);
 
     assert(!argvEnv.Argc());
 
@@ -727,6 +751,9 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
 
     if (flags & FMT_CLASSIFY)
         flags &= ~FMT_DIRBRACKETS;
+
+    if ((flags & FMT_ATTRIBUTES) && show_all_attributes)
+        flags |= FMT_ALLATTRIBUTES;
 
     // Initialize directory entry formatter.
 
