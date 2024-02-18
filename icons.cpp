@@ -310,7 +310,7 @@ static const NerdFontIcon c_common_icons[] =
     { L"",      },     // OS_APPLE
     { L"",      },     // OS_LINUX
     { L"",      },     // OS_WINDOWS
-    { L"󰘔", L"ﬓ" },     // OS_WINDOWS_CMD       // TODO: Not right; shouldn't make it look like all .EXE files are console programs.
+    { L"󰘔", L"ﬓ" },     // OS_WINDOWS_CMD
     { L"󰲹", ____ },     // PLAYLIST
     { L"", L"" },     // POWERSHELL
     { L"󰌆", L"" },     // PRIVATE_KEY
