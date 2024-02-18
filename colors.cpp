@@ -28,10 +28,12 @@ static double s_min_luminance = 0.4;
 
 static const WCHAR c_DIRX_COLORS[] = L"DIRX_COLORS";
 static const WCHAR c_default_colors[] =
-    L"hi=1;31:"
-    L"sy=1;31:"
+    //L"hi=91:"
+    //L"sy=91:"
+    L"hi=38;2;204;64;64:"
+    L"sy=38;2;204;64;64:"
     L"di=1;33:"
-    L"ln=34:"
+    L"ln=1;34:"
     L"ro ex=1;32:"
     L"*.patch=1;36:"
     L"*.diff=1;36:"
