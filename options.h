@@ -146,7 +146,7 @@ bool OptionsTemplate<T>::Parse(
 
     ClearError();
 
-    if (long_opts)
+    if (long_opts && !m_long_opts)
     {
         m_long_opts = new const LongOption<T>*[m_max];
         memset(m_long_opts, 0, m_max * sizeof(*m_long_opts));
