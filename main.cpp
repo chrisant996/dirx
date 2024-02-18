@@ -162,8 +162,11 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_NERD_FONTS_VER,
         LOI_NO_OWNER,
         LOI_PAD_ICONS,
+        LOI_NO_RATIO,
         LOI_NO_SHORT_NAMES,
+        LOI_NO_SIZE,
         LOI_NO_STREAMS,
+        LOI_NO_TIME,
     };
 
     static LongOption<WCHAR> long_opts[] =
@@ -201,11 +204,17 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-owner",              nullptr,            LOI_NO_OWNER },
         { L"pad-icons",             nullptr,            LOI_PAD_ICONS,          LOHA_REQUIRED },
         { L"paginate",              nullptr,            'p' },
+        { L"ratio",                 nullptr,            'c' },
+        { L"no-ratio",              nullptr,            LOI_NO_RATIO },
         { L"recurse",               nullptr,            's' },
         { L"short-names",           nullptr,            'x' },
         { L"no-short-names",        nullptr,            LOI_NO_SHORT_NAMES },
+        { L"size",                  nullptr,            'S',                    LOHA_OPTIONAL },
+        { L"no-size",               nullptr,            LOI_NO_SIZE },
         { L"streams",               nullptr,            'r' },
         { L"no-streams",            nullptr,            LOI_NO_STREAMS },
+        { L"time",                  nullptr,            'T',                    LOHA_OPTIONAL },
+        { L"no-time",               nullptr,            LOI_NO_TIME },
         { L"usage",                 nullptr,            'u' },
         { L"version",               nullptr,            'V' },
         { L"vertical",              nullptr,            'v' },
@@ -380,46 +389,49 @@ unrecognized_long_opt_value:
             case LOI_JUSTIFY:
                 if (!opt_value) opt_value = L" ";
                 else if (!_wcsicmp(opt_value, L"") || !_wcsicmp(opt_value, L"always"))
-                    flags |= (FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
+                    flagsON = FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT;
                 else if (!_wcsicmp(opt_value, L"never"))
-                    flags &= ~(FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
+                    flagsOFF = FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT;
                 else if (!_wcsicmp(opt_value, L"fat"))
-                    flags |= FMT_JUSTIFY_FAT, flags &= ~FMT_JUSTIFY_NONFAT;
+                    flagsON = FMT_JUSTIFY_FAT, flagsOFF = FMT_JUSTIFY_NONFAT;
                 else if (!_wcsicmp(opt_value, L"normal") || !_wcsicmp(opt_value, L"nonfat") || !_wcsicmp(opt_value, L"non-fat"))
-                    flags |= FMT_JUSTIFY_NONFAT, flags &= ~FMT_JUSTIFY_FAT;
+                    flagsON = FMT_JUSTIFY_NONFAT, flagsOFF = FMT_JUSTIFY_FAT;
                 else
                     goto unrecognized_long_opt_value;
                 break;
-            case LOI_NO_ATTRIBUTES:         flags &= FMT_ATTRIBUTES; break;
-            case LOI_CLASSIFY:              flags |= FMT_CLASSIFY; break;
-            case LOI_NO_CLASSIFY:           flags &= ~FMT_CLASSIFY; break;
+            case LOI_NO_ATTRIBUTES:         flagsOFF = FMT_ATTRIBUTES; break;
+            case LOI_CLASSIFY:              flagsON = FMT_CLASSIFY; break;
+            case LOI_NO_CLASSIFY:           flagsOFF = FMT_CLASSIFY; break;
             case LOI_NO_COLOR_SCALE:        SetColorScale(L"none"); break;
             case LOI_COMPACT_COLUMNS:       SetCanAutoFit(true); break;
             case LOI_NO_COMPACT_COLUMNS:    SetCanAutoFit(false); break;
-            case LOI_NO_FULL_PATHS:         flags &= ~(FMT_FULLNAME|FMT_FORCENONFAT|FMT_HIDEDOTS); break;
-            case LOI_HORIZONTAL:            flags &= ~FMT_SORTVERTICAL; break;
-            case LOI_HYPERLINKS:            flags |= FMT_HYPERLINKS; break;
-            case LOI_NO_HYPERLINKS:         flags &= ~FMT_HYPERLINKS; break;
+            case LOI_NO_FULL_PATHS:         flagsOFF = FMT_FULLNAME|FMT_FORCENONFAT|FMT_HIDEDOTS; break;
+            case LOI_HORIZONTAL:            flagsOFF = FMT_SORTVERTICAL; break;
+            case LOI_HYPERLINKS:            flagsON = FMT_HYPERLINKS; break;
+            case LOI_NO_HYPERLINKS:         flagsOFF = FMT_HYPERLINKS; break;
             case LOI_NO_ICONS:              SetUseIcons(L"never"); break;
-            case LOI_NO_LOWER:              flags &= ~FMT_LOWERCASE; break;
+            case LOI_NO_LOWER:              flagsOFF = FMT_LOWERCASE; break;
             case LOI_MORE_COLORS:           more_colors = opt_value; break;
             case LOI_NERD_FONTS_VER:        SetNerdFontsVersion(wcstoul(opt_value, nullptr, 10)); break;
-            case LOI_NO_OWNER:              flags &= ~FMT_SHOWOWNER; break;
+            case LOI_NO_OWNER:              flagsOFF = FMT_SHOWOWNER; break;
             case LOI_PAD_ICONS:             SetPadIcons(wcstoul(opt_value, nullptr, 10)); break;
-            case LOI_NO_SHORT_NAMES:        flags &= ~(FMT_SHORTNAMES); break;
-            case LOI_NO_STREAMS:            flags &= ~(FMT_ALTDATASTEAMS|FMT_FORCENONFAT); break;
+            case LOI_NO_RATIO:              flagsOFF = FMT_COMPRESSED; break;
+            case LOI_NO_SHORT_NAMES:        flagsOFF = FMT_SHORTNAMES; break;
+            case LOI_NO_SIZE:               flagsOFF = FMT_SIZE; break;
+            case LOI_NO_STREAMS:            flagsOFF = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;
+            case LOI_NO_TIME:               flagsOFF = FMT_DATE; break;
             }
             break;
         }
 
-        if (!long_opt)
+        if (flagsON != FMT_NONE || flagsOFF != FMT_NONE)
         {
             if (!flagsOFF)
                 flagsOFF = flagsON;
 
-            if (*opt_value == '+')
+            if (*opt_value == '+' || (long_opt && flagsON != FMT_NONE))
                 flags |= flagsON;
-            else if (*opt_value == '-')
+            else if (*opt_value == '-' || (long_opt && flagsOFF != FMT_NONE))
                 flags &= ~flagsOFF;
             else
                 assert(false);
