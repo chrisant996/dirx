@@ -67,15 +67,17 @@ enum ColorIndex : unsigned short
     ciTemporaryAttribute,       // The TEMPORARY file attribute.
 
     // Sizes.
-    ciSize,
     ciSizeB,
     ciSizeK,
     ciSizeM,
     ciSizeG,
     ciSizeT,
 
-    // Times.
+    // Fields.
+    ciSize,
     ciTime,
+    ciCompressionField,
+    ciOwnerField,
 
     // File extension groups.
     ciCompressedArchive,        // A compressed archive (for example, a .zip file).
@@ -166,6 +168,15 @@ static void InitColorMaps()
     s_color_fallback[ciTemporaryAttribute] = ciTemporary;
     s_color_fallback[ciTemporaryExtension] = ciTemporary;
     s_color_fallback[ciLossless] = ciMusic;
+    // NOTE, there is intentionally no fallback for these fields:
+    //  - ciCompressionField
+    //  - ciOwnerField
+    //  - ciSize
+    //      "cF=" falls back to the file entry's color.
+    //      "cF=0" uses no color.
+    //      "cF=44" uses the specified color.
+    //  - ciSizeB, ciSizeK, ciSizeM, ciSizeG, ciSizeT
+    //      This allows different coloring for color scale.
 
     static const struct
     {
@@ -600,6 +611,9 @@ static void InitColorMaps()
 
         { L"da", { CFLAG_NOT_A_TYPE, ciTime } },        // a file date
 
+        { L"cF", { CFLAG_NOT_A_TYPE, ciCompressionField } }, // the compression ratio field
+        { L"oF", { CFLAG_NOT_A_TYPE, ciOwnerField } },  // the owner field
+
         // TODO: git file status.
         // ga : a new flag in Git
         // gm : a modified flag in Git
@@ -698,6 +712,25 @@ static void SetColorString(ColorIndex ci, WCHAR* color)
         free(s_color_strings[ci]);
         s_color_strings[ci] = color;
     }
+}
+
+static const WCHAR* GetColorWithFallback(ColorIndex ci)
+{
+    assert(ci > ciZERO);
+    assert(ci < ciCOUNT);
+    const WCHAR* seq;
+    if (ci > ciZERO && ci < ciCOUNT)
+        seq = s_color_strings[ci];
+    else
+        seq = nullptr;
+
+    if (!seq)
+    {
+        ci = s_color_fallback[ci];
+        seq = s_color_strings[ci];
+    }
+
+    return seq;
 }
 
 // Returns the delimiter character that was encountered, if any.
@@ -1333,21 +1366,7 @@ next_rule:
         }
     }
 
-    assert(ci > ciZERO);
-    assert(ci < ciCOUNT);
-    const WCHAR* seq;
-    if (ci > ciZERO && ci < ciCOUNT)
-        seq = s_color_strings[ci];
-    else
-        seq = nullptr;
-
-    if (!seq)
-    {
-        ci = s_color_fallback[ci];
-        seq = s_color_strings[ci];
-    }
-
-    return seq;
+    return GetColorWithFallback(ci);
 }
 
 const WCHAR* LookupColor(DWORD attr)
@@ -1388,17 +1407,7 @@ const WCHAR* LookupColor(DWORD attr)
     if (!ci)
         return nullptr;
 
-    const WCHAR* color = s_color_strings[unsigned(ci)];
-    if (!color)
-    {
-        ci = s_color_fallback[ci];
-        if (!ci)
-            return nullptr;
-
-        color = s_color_strings[unsigned(ci)];
-    }
-
-    return color;
+    return GetColorWithFallback(ci);
 }
 
 const WCHAR* GetColorByKey(const WCHAR* key)
@@ -1407,13 +1416,7 @@ const WCHAR* GetColorByKey(const WCHAR* key)
     {
         const auto& info = s_key_to_info.find(key);
         if (info != s_key_to_info.end())
-        {
-            const ColorIndex ci = info->second.ci;
-            assert(ci > ciZERO);
-            assert(ci < ciCOUNT);
-            if (ci > ciZERO && ci < ciCOUNT)
-                return s_color_strings[ci];
-        }
+            return GetColorWithFallback(info->second.ci);
     }
     return nullptr;
 }

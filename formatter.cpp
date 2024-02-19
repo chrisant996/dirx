@@ -1197,8 +1197,12 @@ static void FormatCompressed(StrW& s, const unsigned __int64 cbCompressed, const
     }
 }
 
-static void FormatCompressed(StrW& s, const FileInfo* pfi, WCHAR chField=0)
+static void FormatCompressed(StrW& s, const FileInfo* pfi, const FormatFlags flags, const WCHAR* fallback_color, WCHAR chField=0)
 {
+    const WCHAR* color = (flags & FMT_COLORS) ? GetColorByKey(L"cF") : fallback_color;
+    if (color)
+        s.Printf(L"\x1b[0;%sm", StripLineStyles(color));
+
     if (pfi->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY)
     {
         s.Append(L"   ");
@@ -1222,14 +1226,25 @@ static void FormatCompressed(StrW& s, const FileInfo* pfi, WCHAR chField=0)
 
         s.Printf(L"%2u%%", pct);
     }
+
+    if (color)
+        s.Append(c_norm);
 }
 
-static void FormatOwner(StrW& s, const FileInfo* pfi)
+static void FormatOwner(StrW& s, const FileInfo* pfi, const FormatFlags flags, const WCHAR* fallback_color)
 {
     const WCHAR* owner = pfi->GetOwner().Text();
     unsigned width = __wcswidth(owner);
+
+    const WCHAR* color = (flags & FMT_COLORS) ? GetColorByKey(L"oF") : fallback_color;
+    if (color)
+        s.Printf(L"\x1b[0;%sm", StripLineStyles(color));
+
     s.Append(owner);
     s.AppendSpaces(22 - width);
+
+    if (color)
+        s.Append(c_norm);
 }
 
 /*
@@ -1767,15 +1782,13 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WCHAR* dir, co
                 FormatFileSize(s, pfi, m_settings, m_fields[ii].m_chStyle, m_fields[ii].m_chSubField, color);
                 break;
             case FLD_COMPRESSION:
-                // FUTURE: Color?
-                FormatCompressed(s, pfi, m_fields[ii].m_chSubField);
+                FormatCompressed(s, pfi, m_settings.m_flags, color, m_fields[ii].m_chSubField);
                 break;
             case FLD_ATTRIBUTES:
                 FormatAttributes(s, pfi->GetAttributes(), m_fields[ii].m_masks, m_fields[ii].m_chStyle, m_settings.IsSet(FMT_COLORS));
                 break;
             case FLD_OWNER:
-                // FUTURE: Color?
-                FormatOwner(s, pfi);
+                FormatOwner(s, pfi, m_settings.m_flags, color);
                 break;
             case FLD_SHORTNAME:
                 FormatFilename(s, pfi, m_settings.m_flags|FMT_SHORTNAMES|FMT_FAT|FMT_ONLYSHORTNAMES, 0, dir, color);
