@@ -288,7 +288,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
 
     InitLocale();
 
-    FormatFlags flags = FMT_AUTOSEPTHOUSANDS;
+    FormatFlags flags = FMT_COLORS|FMT_AUTOSEPTHOUSANDS;
     WhichTimeStamp timestamp = TIMESTAMP_MODIFIED;
     WhichFileSize filesize = FILESIZE_FILESIZE;
     DWORD dwAttrIncludeAny = 0;
