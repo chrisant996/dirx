@@ -1,6 +1,7 @@
 # FEATURES
 
 ### BUGS
+- `dx --more-colors=da=38;5;172;7;40 -k` uses the wrong color for the gradient.
 
 ### Rethink and simplify
 - `-L`, `--level` to limit depth of recursion.
