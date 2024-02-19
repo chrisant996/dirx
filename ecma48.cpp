@@ -623,6 +623,7 @@ void ecma48_processor(const WCHAR* in, StrW* out, uint32* cell_count, ecma48_pro
     uint32 cells = 0;
     bool plaintext = !!int32(flags & ecma48_processor_flags::plaintext);
     bool colorless = !!int32(flags & ecma48_processor_flags::colorless);
+    bool lineless = !!int32(flags & ecma48_processor_flags::lineless);
 
     ecma48_state state;
     ecma48_iter iter(in, state);
@@ -663,18 +664,89 @@ concat_verbatim:
                         if (code.decode_csi(csi) && csi.final == 'm')
                         {
                             StrW tmp;
-                            for (int32 i = 0, n = csi.param_count; i < csi.param_count; ++i, --n)
+                            unsigned skip = 0;
+                            for (int32 i = 0; i < csi.param_count; ++i)
                             {
+                                if (skip)
+                                {
+                                    --skip;
+                                    continue;
+                                }
                                 switch (csi.params[i])
                                 {
-                                case 0:     tmp.Append(L";23;24;29"); break;
-                                case 3:     tmp.Append(L";3"); break;
-                                case 4:     tmp.Append(L";4"); break;
-                                case 9:     tmp.Append(L";9"); break;
-                                case 23:    tmp.Append(L";23"); break;
-                                case 24:    tmp.Append(L";24"); break;
-                                case 29:    tmp.Append(L";29"); break;
+                                case 0:
+                                    tmp.Append(L";23;24;29");
+                                    break;
+                                case 3:
+                                case 4:
+                                case 9:
+                                case 21:
+                                case 23:
+                                case 24:
+                                case 29:
+                                case 53:
+                                case 55:
+                                case 73:
+                                case 74:
+                                case 75:
+                                    tmp.Printf(L";%u", csi.params[i]);
+                                    break;
+                                case 38:
+                                case 48:
+                                case 58:
+                                    if (i + 1 < csi.param_count)
+                                    {
+                                        if (csi.params[i + 1] == 2)
+                                            skip = 4;
+                                        else if (csi.params[i + 1] == 5)
+                                            skip = 2;
+                                    }
+                                    break;
                                 }
+                            }
+
+                            if (!tmp.Empty())
+                            {
+                                out->Append(L"\x1b[");
+                                out->Append(tmp.Text() + 1);   // Skip leading ";".
+                                out->Append(L"m");
+                            }
+                        }
+                    }
+                    else if (lineless && code.get_code() == ecma48_code::c1_csi)
+                    {
+                        ecma48_code::csi<32> csi;
+                        if (code.decode_csi(csi) && csi.final == 'm')
+                        {
+                            StrW tmp;
+                            unsigned skip = 0;
+                            for (int32 i = 0; i < csi.param_count; ++i)
+                            {
+                                if (skip)
+                                    --skip;
+                                else
+                                {
+                                    // switch (csi.params[i])
+                                    // {
+                                    // case 4:     // Underline.
+                                    // case 9:     // Strikethrough.
+                                    // case 21:    // Double underline.
+                                    // case 53:    // Overline.
+                                    //     continue;
+                                    // case 38:
+                                    // case 48:
+                                    // case 58:
+                                    //     if (i + 1 < csi.param_count)
+                                    //     {
+                                    //         if (csi.params[i + 1] == 2)
+                                    //             skip = 4;
+                                    //         else if (csi.params[i + 1] == 5)
+                                    //             skip = 2;
+                                    //     }
+                                    //     break;
+                                    // }
+                                }
+                                tmp.Printf(L";%u", csi.params[i]);
                             }
 
                             if (!tmp.Empty())

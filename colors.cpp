@@ -28,22 +28,23 @@ static double s_min_luminance = 0.4;
 
 static const WCHAR c_DIRX_COLORS[] = L"DIRX_COLORS";
 static const WCHAR c_default_colors[] =
-    L"hi=91:"
-    L"sy=91:"
+    // L"hi=91:"
+    // L"sy=91:"
     L"di=1;33:"
     L"ln=1;34:"
-    L"ro ex=1;32:"
+    // L"ro ex=1;32:"
     L"*.patch=1;36:"
     L"*.diff=1;36:"
     L"*.dpk=1;36:"
     L"*.zip=36:"
     L"co=35:"
     L"ex=1:"
-    L"ro=32:"
+    // L"ro=32:"
+    L"xx=90:"
     // L"nt=38;2;239;65;54:ng=38;2;252;176;64:nm=38;2;240;230;50:nk=38;2;142;198;64:nb=38;2;1;148;68:"
     // L"da=94:"
     // L"da=0:"
-    // L"lp=36:"
+    L"lp=36:"
     ;
 
 enum ColorIndex : unsigned short
@@ -65,13 +66,6 @@ enum ColorIndex : unsigned short
     ciSystem,
     ciTemporaryAttribute,       // The TEMPORARY file attribute.
 
-    // ???
-    ciOrphan,
-
-    // ???
-    ciCompressed,
-    ciTemporary,
-
     // Sizes.
     ciSize,
     ciSizeB,
@@ -82,9 +76,6 @@ enum ColorIndex : unsigned short
 
     // Times.
     ciTime,
-
-    // ???
-    ciLinkPath,
 
     // File extension groups.
     ciCompressedArchive,        // A compressed archive (for example, a .zip file).
@@ -99,6 +90,13 @@ enum ColorIndex : unsigned short
     ciSourceCode,
     ciCompiled,
     ciTemporaryExtension,       // Temporary file extensions.
+
+    // Other.
+    ciOrphan,
+    ciCompressed,
+    ciTemporary,
+    ciLinkPath,
+    ciPunctuation,
 
     ciCOUNT,
 
@@ -639,8 +637,7 @@ static void InitColorMaps()
         // { L"tT", { CFLAG_TEMPORARY_ATTRIBUTE, ciTemporaryAttribute } },
         { L"tX", { CFLAG_TEMPORARY_EXTENSION, ciTemporaryExtension } },
 
-        // TODO: maybe punctuation?
-        // xx : “punctuation”, including many background UI elements
+        { L"xx", { CFLAG_NOT_A_TYPE, ciPunctuation } },
 
         //---- IGNORE FOR LS_COLORS COMPATIBILITY ----------------------------
         { L"so", { CFLAG_ZERO, ciZERO } },
@@ -1315,7 +1312,7 @@ next_rule:
 
     if (ci == ciFile)
     {
-        if (_wcsnicmp(name, L"readme", 6) == 0)
+        if (_wcsnicmp(name, L"readme", 6) == 0 && s_color_strings[ciBuild])
             ci = ciBuild;
         else
             ci = ColorIndexFromColorFlag(flags);
@@ -1356,7 +1353,7 @@ next_rule:
 const WCHAR* LookupColor(DWORD attr)
 {
     if (!attr)
-        return L"90";
+        return GetColorByKey(L"xx");
 
     assert(!(attr & (attr - 1)));
 
@@ -1773,5 +1770,78 @@ const WCHAR* ApplyGradient(const WCHAR* color, ULONGLONG value, ULONGLONG min, U
         s_color.Append(';');
     s_color.Printf(L"38;2;%u;%u;%u", GetRValue(rgb), GetGValue(rgb), GetBValue(rgb));
     return s_color.Text();
+}
+
+const WCHAR* StripLineStyles(const WCHAR* color)
+{
+    if (!color)
+        return color;
+
+    static StrW s_tmp;
+    s_tmp.Clear();
+
+    bool start = true;
+    unsigned num = 0;
+    int skip = 0;
+    for (const WCHAR* p = color; true; ++p)
+    {
+        if (!*p || *p == ';')
+        {
+            bool strip = false;
+
+            if (skip < 0)
+            {
+                if (num == 2)
+                    skip = 4;
+                else if (num == 5)
+                    skip = 2;
+                else
+                    skip = 0;
+            }
+            else if (skip > 0)
+            {
+                --skip;
+            }
+            else
+            {
+                switch (num)
+                {
+                case 4:     // Underline.
+                case 9:     // Strikethrough.
+                case 21:    // Double underline.
+                case 53:    // Overline.
+                    strip = true;
+                    break;
+                case 38:
+                case 48:
+                case 58:
+                    skip = -1;
+                    break;
+                }
+            }
+
+            if (!strip)
+                s_tmp.Printf(L";%u", num);
+
+            if (!*p)
+                break;
+
+            start = true;
+            num = 0;
+            continue;
+        }
+
+        if (iswdigit(*p))
+        {
+            num *= 10;
+            num += *p - '0';
+        }
+        else
+            return L"";
+
+        start = false;
+    }
+
+    return s_tmp.Text();
 }
 

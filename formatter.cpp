@@ -499,7 +499,7 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsi
         const WCHAR* icon = LookupIcon(name.Text(), attr);
         const WCHAR* icon_color = GetIconColor(color);
         if (icon_color)
-            s.Printf(L"\x1b[%sm", icon_color);
+            s.Printf(L"\x1b[0;%sm", icon_color);
         s.Append(icon ? icon : L" ");
         if (icon_color)
             s.Append(c_norm);
@@ -508,28 +508,8 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsi
             max_width -= s_icon_width;
     }
 
-    bool underlined = false;
-    if (flags & FMT_COLORS)
-    {
-        if (_wcsnicmp(L"readme", pfi->GetLongName().Text(), 6) == 0)
-        {
-            if (color)
-            {
-                static StrW s_tmp;
-                s_tmp.Set(L"4;");
-                s_tmp.Append(color);
-                color = s_tmp.Text();
-            }
-            else
-            {
-                color = L"4";
-            }
-            underlined = true;
-        }
-    }
-
     if (color)
-        s.Printf(L"\x1b[%sm", color);
+        s.Printf(L"\x1b[0;%sm", color);
 
     const bool hyperlinks = ((flags & FMT_HYPERLINKS) && dir);
     if (hyperlinks)
@@ -646,7 +626,7 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsi
             s.AppendSpaces(max_width - name_width);
     }
 
-    if (classify || hyperlinks || underlined)
+    if (classify || hyperlinks)
     {
         unsigned spaces = 0;
         unsigned len = s.Length();
@@ -671,8 +651,6 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsi
             }
             s.Append(&classify, 1);
         }
-        if (underlined)
-            s.Printf(L"\x1b[%s;24m", color);
         s.AppendSpaces(spaces);
     }
 
@@ -692,10 +670,18 @@ static void FormatReparsePoint(StrW& s, const FileInfo* const pfi, const FormatF
     EnsureTrailingSlash(full);
     full.Append(pfi->GetLongName());
 
+    const bool colors = !!(flags & FMT_COLORS);
+    const WCHAR* punct = colors ? GetColorByKey(L"xx") : nullptr;
+
     SHFile shFile = CreateFile(full.Text(), FILE_READ_EA, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT|FILE_FLAG_BACKUP_SEMANTICS, 0);
     if (shFile.Empty())
     {
-        s.Append(L" [..]");
+        s.Append(L" ");
+        if (punct)
+            s.Printf(L"\x1b[0;%sm", punct);
+        s.Append(L"[..]");
+        if (punct)
+            s.Append(c_norm);
     }
     else
     {
@@ -725,35 +711,66 @@ static void FormatReparsePoint(StrW& s, const FileInfo* const pfi, const FormatF
                 break;
             }
         }
-        s.Append(L" [");
+
+        s.Append(L" ");
+
         if (tmp.Length())
         {
+            if (punct)
+                s.Printf(L"\x1b[0;%sm", punct);
+
+            s.Append(L"[");
+
             const WCHAR* name = FindName(tmp.Text());
             const DWORD attr = pfi->GetAttributes();
             const int mode = (attr & FILE_ATTRIBUTE_DIRECTORY) ? S_IFDIR : S_IFREG;
-            const WCHAR* color = (flags & FMT_COLORS) ? LookupColor(name, attr, mode) : nullptr;
-            const WCHAR* path_color = (flags & FMT_COLORS) ? GetColorByKey(L"lp") : nullptr;
+            const WCHAR* color = colors ? LookupColor(name, attr, mode) : nullptr;
+            const WCHAR* path_color = colors ? GetColorByKey(L"lp") : nullptr;
             if (!path_color && !color)
+            {
+                if (punct)
+                    s.Append(c_norm);
+
                 s.Append(tmp);
+            }
             else
             {
                 if (!path_color)
                     path_color = color;
                 if (path_color)
-                    s.Printf(L"\x1b[%sm", path_color);
+                    s.Printf(L"\x1b[0;%sm", path_color);
+                else if (punct)
+                    s.Append(c_norm);
+
                 s.Append(tmp.Text(), name - tmp.Text());
+
                 if (color)
                     s.Printf(L"\x1b[0;%sm", color);
-                else
+                else if (path_color)
                     s.Append(c_norm);
+
                 s.Append(name);
-                if (color)
-                    s.Append(c_norm);
+
             }
+
+            if (punct)
+                s.Printf(L"\x1b[0;%sm", punct);
+
+            s.Append(L"]");
+
+            if (punct)
+                s.Append(c_norm);
         }
         else
-            s.Append(L"...");
-        s.Append(L"]");
+        {
+            if (punct)
+                s.Printf(L"\x1b[0;%sm", punct);
+
+            s.Append(L"[...]");
+
+            if (punct)
+                s.Append(c_norm);
+        }
     }
 }
 
@@ -838,7 +855,7 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
         }
     }
     if (color)
-        s.Printf(L"\x1b[%sm", color);
+        s.Printf(L"\x1b[0;%sm", StripLineStyles(color));
 
     switch (chStyle)
     {
@@ -976,7 +993,7 @@ static void FormatFileSize(StrW& s, const FileInfo* pfi, const DirFormatSettings
     if (tag)
     {
         if (fallback_color)
-            s.Printf(L"\x1b[%sm", fallback_color);
+            s.Printf(L"\x1b[0;%sm", StripLineStyles(fallback_color));
 
         const unsigned cchField = GetSizeFieldWidthByStyle(settings, chStyle);
         s.Printf(L"%-*s", cchField, tag);
@@ -1072,7 +1089,7 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
                 color = gradient;
         }
         if (color)
-            s.Printf(L"\x1b[%sm", color);
+            s.Printf(L"\x1b[0;%sm", StripLineStyles(color));
     }
 
     switch (chStyle)

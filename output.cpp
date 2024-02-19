@@ -523,7 +523,7 @@ static void WriteConsoleInternal(HANDLE h, const WCHAR* p, unsigned len, const W
     if (color)
     {
         StrW tmp;
-        tmp.Printf(L"\x1b[%sm", color);
+        tmp.Printf(L"\x1b[0;%sm", color);
         if (s_console)
         {
             WriteConsoleW(h, tmp.Text(), tmp.Length(), &written, nullptr);

@@ -17,7 +17,7 @@ typedef __int32 int32;
 typedef unsigned __int32 uint32;
 
 //------------------------------------------------------------------------------
-enum class ecma48_processor_flags { none = 0, bracket = 1<<0, apply_title = 1<<1, plaintext = 1<<2, colorless = 1<<3 };
+enum class ecma48_processor_flags { none = 0, plaintext = 1<<1, colorless = 1<<2, lineless = 1<<3 };
 DEFINE_ENUM_FLAG_OPERATORS(ecma48_processor_flags);
 void ecma48_processor(const WCHAR* in, StrW* out, uint32* cell_count, ecma48_processor_flags flags=ecma48_processor_flags::none);
 uint32 cell_count(const WCHAR*);
