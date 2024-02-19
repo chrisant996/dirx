@@ -21,6 +21,10 @@ ColumnWidths CalculateColumns(const std::function<unsigned(size_t)>&& item_width
         if (max_width > 1024)
             max_width = 1024;
 
+#if 0
+        const unsigned orig_max_columns = max_columns;
+#endif
+
         // Memory layout:
         //
         //      NUM_COLS    COL_1       COL_2       COL_3   ...
@@ -105,6 +109,27 @@ ColumnWidths CalculateColumns(const std::function<unsigned(size_t)>&& item_width
 
             for (const unsigned* col_widths = candidates[max_columns - 1].column_widths; max_columns--;)
                 out.emplace_back(*(col_widths++));
+
+#if 0
+            if (vertical && max_columns < orig_max_columns)
+            {
+                // Try to shave off rows by iteratively shifting items into
+                // another column.
+                while (count > max_columns)
+                {
+                    // Computer number of items in last row.
+                    CandidateColumns& candidate = candidates[max_columns - 1];
+                    const unsigned in_last_col = ((count - 1) % candidate.vertical_stride) + 1;
+                    const unsigned in_last_row = max_columns - (in_last_col < candidate.vertical_stride);
+
+                    // TODO: Does it require adding a new column?  If so,
+                    // initialize the new column structure.
+                    // TODO: Verify items fit in the columns they shift into.
+
+                    break;
+                }
+            }
+#endif
         }
 
         delete [] candidates;

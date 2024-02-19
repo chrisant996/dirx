@@ -1,7 +1,6 @@
 # FEATURES
 
 ### BUGS
-- Why is dirx using 3 columns in \wbin\clink but eza uses 4?
 - In nix mode, group adjacent patterns in same directory AND sort them all together.
 - In Win mode, show separate dir header per pattern, and don't group them.
   - And have an option to group them like nix mode does.
@@ -18,6 +17,8 @@
 - Git status column for files.  Be very careful about performance!
 
 ### Maybe
+- Post-process column computation to reduce rows by shifting items into a new
+  column?  `ls` does not, but `eza` does.
 - Configurable icon mappings?
 - Tree view?  The vertical extender lines can be tracked with a "more" bit per directory component.
 - Option to show column headers?  Format pictures make it difficult.
