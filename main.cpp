@@ -302,6 +302,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     DWORD dwAttrIncludeAny = 0;
     DWORD dwAttrMatch = 0;
     DWORD dwAttrExcludeAny = FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM;
+    bool fresh_a_flag = true;
     const WCHAR* picture = 0;
     const WCHAR* opt_value;
     const LongOption<WCHAR>* long_opt;
@@ -334,6 +335,57 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         case 'v':       flagsON = FMT_SORTVERTICAL; break;
         case 'x':       flagsON = FMT_SHORTNAMES; break;
 
+        case 'a':
+            if (fresh_a_flag)
+            {
+                fresh_a_flag = false;
+                dwAttrIncludeAny = 0;
+                dwAttrMatch = 0;
+                dwAttrExcludeAny = 0;
+            }
+            SkipColonOrEqual(opt_value);
+            if (wcscmp(opt_value, L"-") == 0)
+            {
+                fresh_a_flag = true;
+                dwAttrIncludeAny = 0;
+                dwAttrMatch = 0;
+                dwAttrExcludeAny = FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM;
+                HideDotFiles(true);
+                continue;
+            }
+            else if (!*opt_value)
+            {
+                HideDotFiles(false);
+                continue;
+            }
+            while (*opt_value)
+            {
+                DWORD* pdwAttr = &dwAttrMatch;
+                if (*opt_value == '-')
+                {
+                    pdwAttr = &dwAttrExcludeAny;
+                    opt_value++;
+                }
+                else if (*opt_value == '+')
+                {
+                    pdwAttr = &dwAttrIncludeAny;
+                    opt_value++;
+                }
+                if (!*opt_value)
+                    break;
+                const DWORD dwAttr = ParseAttribute(*opt_value);
+                if (!dwAttr)
+                {
+                    WCHAR sz[2];
+                    sz[0] = *opt_value;
+                    sz[1] = 0;
+                    e.Set(L"Unrecognized attribute '%1' in '-a%2'.") << sz << opts['a'];
+                    return e.Report();
+                }
+                *pdwAttr |= dwAttr;
+                opt_value++;
+            }
+            break;
         case 'n':
             if (long_opt || *opt_value == '+')
             {
@@ -512,57 +564,6 @@ unrecognized_long_opt_value:
         dwAttrIncludeAny = 0;
         dwAttrMatch = 0;
         dwAttrExcludeAny = 0;
-    }
-
-    for (unsigned ii = 0; opt_value = opts.GetValue('a', ii); ii++)
-    {
-        if (!ii)
-        {
-            dwAttrIncludeAny = 0;
-            dwAttrMatch = 0;
-            dwAttrExcludeAny = 0;
-        }
-        SkipColonOrEqual(opt_value);
-        if (wcscmp(opt_value, L"-") == 0)
-        {
-            dwAttrIncludeAny = 0;
-            dwAttrMatch = 0;
-            dwAttrExcludeAny = FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM;
-            HideDotFiles(true);
-            continue;
-        }
-        else if (!*opt_value)
-        {
-            HideDotFiles(false);
-            continue;
-        }
-        while (*opt_value)
-        {
-            DWORD* pdwAttr = &dwAttrMatch;
-            if (*opt_value == '-')
-            {
-                pdwAttr = &dwAttrExcludeAny;
-                opt_value++;
-            }
-            else if (*opt_value == '+')
-            {
-                pdwAttr = &dwAttrIncludeAny;
-                opt_value++;
-            }
-            if (!*opt_value)
-                break;
-            const DWORD dwAttr = ParseAttribute(*opt_value);
-            if (!dwAttr)
-            {
-                WCHAR sz[2];
-                sz[0] = *opt_value;
-                sz[1] = 0;
-                e.Set(L"Unrecognized attribute '%1' in '-a%2'.") << sz << opts['a'];
-                return e.Report();
-            }
-            *pdwAttr |= dwAttr;
-            opt_value++;
-        }
     }
 
     for (unsigned ii = 0; opt_value = opts.GetValue('f', ii); ii++)
