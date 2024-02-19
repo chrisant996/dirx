@@ -1558,9 +1558,12 @@ static COLORREF RgbFromColor(const WCHAR* color, bool prefer_background=false)
             case 100: case 101: case 102: case 103: case 104: case 105: case 106: case 107:
             case 40: case 41: case 42: case 43: case 44: case 45: case 46: case 47:
             case 49:
-                format = 0;
-                value = num;
-                bg = true;
+                if (prefer_background)
+                {
+                    format = 0;
+                    value = num;
+                    bg = true;
+                }
                 break;
             }
 
