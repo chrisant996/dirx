@@ -214,6 +214,7 @@ enum class Icons
     INFO,
     HISTORY,
     PDB,
+    OS_WINDOWS_EXE,
 
     __COUNT
 };
@@ -310,7 +311,7 @@ static const NerdFontIcon c_common_icons[] =
     { L"",      },     // OS_APPLE
     { L"",      },     // OS_LINUX
     { L"",      },     // OS_WINDOWS
-    { L"󰘔", L"ﬓ" },     // OS_WINDOWS_CMD
+    { L"", L"" },     // OS_WINDOWS_CMD
     { L"󰲹", ____ },     // PLAYLIST
     { L"", L"" },     // POWERSHELL
     { L"󰌆", L"" },     // PRIVATE_KEY
@@ -423,6 +424,7 @@ static const NerdFontIcon c_common_icons[] =
     { L"󰋼", L"" },     // INFO
     { L"", L"" },     // HISTORY
     { L"",      },     // PDB
+    { L"", L"ﬓ" },     // OS_WINDOWS_EXE
 };
 
 static_assert(size_t(Icons::__COUNT) == _countof(c_common_icons), "mismatched number of icons!");
@@ -779,7 +781,7 @@ static const CaselessMap& GetExtensionMap()
         { L"erb",                   Icons::LANG_RUBYRAILS },
         { L"erl",                   Icons::ERL },
         { L"ex",                    Icons::LANG_ELIXIR },
-        { L"exe",                   Icons::OS_WINDOWS_CMD },
+        { L"exe",                   Icons::OS_WINDOWS_EXE },
         { L"exs",                   Icons::LANG_ELIXIR },
         { L"f",                     Icons::LANG_FORTRAN },
         { L"f90",                   Icons::LANG_FORTRAN },
