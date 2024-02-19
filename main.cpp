@@ -30,7 +30,7 @@
 
 #include <memory>
 
-static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+C+E.f:F+h+i+j+J+k+l+n+N.o.p+q+r+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
+static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+C+E.f:F+h+i+j+J+k+l+n+o.p+q+Q.r+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
 static const WCHAR c_DIRXCMD[] = L"DIRXCMD";
 
 static const WCHAR* get_env_prio(const WCHAR* a, const WCHAR* b=nullptr, const WCHAR* c=nullptr)
@@ -340,6 +340,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             }
             continue;
         case 'Q':
+            SkipColonOrEqual(opt_value);
             if (!*opt_value)
             {
                 flags &= ~(FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY);
@@ -347,17 +348,17 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             }
             else
             {
-                bool enable = false;
-                for (const WCHAR* o = opt_value; *o; ++o)
+                bool enable = true;
+                for (const WCHAR* walk = opt_value; *walk; ++walk)
                 {
-                    switch (*opt_value)
+                    switch (*walk)
                     {
-                    case '-':   enable = false; break;
-                    case '+':   enable = true; break;
-                    case 'v':   FlipFlag(flags, FMT_NOVOLUMEINFO, enable, false); break;
-                    case 'h':   FlipFlag(flags, FMT_NOHEADER, enable, false); break;
-                    case 's':   FlipFlag(flags, FMT_NOSUMMARY, enable, false); break;
-                    default:    FailFlag(ch, opt_value, 'Q', long_opt, e); return e.Report();
+                    case '-':   enable = true; break;
+                    case '+':   enable = false; break;
+                    case 'v':   FlipFlag(flags, FMT_NOVOLUMEINFO, enable, true); break;
+                    case 'h':   FlipFlag(flags, enable ? FMT_NOHEADER : FMT_NOHEADER|FMT_NOVOLUMEINFO, enable, true); break;
+                    case 's':   FlipFlag(flags, FMT_NOSUMMARY, enable, true); break;
+                    default:    FailFlag(*walk, opt_value, ch, long_opt, e); return e.Report();
                     }
                 }
             }
@@ -367,6 +368,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             SetConsoleWidth(wcstoul(opt_value, nullptr, 10));
             continue;
         case 'X':
+            SkipColonOrEqual(opt_value);
             if (!*opt_value)
             {
                 flags &= ~(FMT_SKIPHIDDENDIRS|FMT_SKIPJUNCTIONS|FMT_ONLYALTDATASTREAMS);
@@ -375,16 +377,16 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             else
             {
                 bool enable = false;
-                for (const WCHAR* o = opt_value; *o; ++o)
+                for (const WCHAR* walk = opt_value; *walk; ++walk)
                 {
-                    switch (*opt_value)
+                    switch (*walk)
                     {
                     case '-':   enable = false; break;
                     case '+':   enable = true; break;
                     case 'd':   FlipFlag(flags, FMT_SKIPHIDDENDIRS, enable, false); break;
                     case 'j':   FlipFlag(flags, FMT_SKIPJUNCTIONS, enable, false); break;
                     case 'r':   FlipFlag(flags, FMT_ONLYALTDATASTREAMS, enable, false); break;
-                    default:    FailFlag(ch, opt_value, 'X', long_opt, e); return e.Report();
+                    default:    FailFlag(*walk, opt_value, ch, long_opt, e); return e.Report();
                     }
                 }
             }

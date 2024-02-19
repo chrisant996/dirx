@@ -28,12 +28,12 @@ void FailFlag(WCHAR ch, const WCHAR* value, WCHAR short_opt, const LongOption<WC
     WCHAR tmp[2] = { ch, '\0' };
     if (long_opt)
     {
-        e.Set(L"Unrecognized flag '%1' in '--%1=%2'.") << tmp << long_opt->name << value;
+        e.Set(L"Unrecognized option '%1' in '--%1=%2'.") << tmp << long_opt->name << value;
     }
     else
     {
         WCHAR short_name[2] = { short_opt, '\0' };
-        e.Set(L"Unrecognized flag '%1' in '-%2%3'.") << tmp << short_name, value;
+        e.Set(L"Unrecognized option '%1' in '-%2%3'.") << tmp << short_name << value;
     }
 }
 
