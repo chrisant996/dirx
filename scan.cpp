@@ -153,7 +153,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const DirPa
                         continue;
                     if (callbacks.Settings().m_dwAttrMatch && (fd.dwFileAttributes & callbacks.Settings().m_dwAttrMatch) != callbacks.Settings().m_dwAttrMatch)
                         continue;
-                    if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && callbacks.Settings().IsSet(FMT_HIDEDOTS) && IsPseudoDirectory(fd.cFileName))
+                    if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && callbacks.Settings().IsSet(FMT_HIDEPSEUDODIRS) && IsPseudoDirectory(fd.cFileName))
                         continue;
                     if (IsHiddenName(fd.cFileName))
                         continue;

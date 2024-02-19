@@ -99,6 +99,7 @@ private:
     StrW                m_sColor;
 
     bool                m_line_break_before_volume = false;
+    bool                m_line_break_before_miniheader = false;
 
     unsigned            m_cFiles = 0;
     unsigned            m_cDirs = 0;

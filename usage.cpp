@@ -8,6 +8,8 @@
 
 const char c_usage[] = "%s -? for help.";
 
+// --nix
+
 const char c_long_usage[] =
 "Displays a list of file and subdirectories in a directory.\n"
 "\n"
@@ -33,8 +35,10 @@ const char c_long_usage[] =
 "  -a, --all		Display all files (include hidden and system files).\n"
 "  -b, --bare		Bare mode; only display names, no header/detail/etc.\n"
 "  -c, --color		Display with colors (use '-? colors' for more info).\n"
+//"  -G, --grid		Synonym for --wide.\n"
 "  -i, --icons[=WHEN]	Display file icons (use '-? icons' for more info).\n"
 "			  always, auto, never (default)\n"
+//"  -l, --long		Synonym for -1.\n"
 "  -n, --normal		Force normal list format even on FAT volumes.\n"
 "  -Q..., --quash=...	Quash types of output:\n"
 "			  v  Suppress the volume information\n"
@@ -43,6 +47,7 @@ const char c_long_usage[] =
 "			  -  Prefix to suppress next type (the default)\n"
 "			  +  Prefix to un-suppress next type\n"
 "  -p, --paginate	Pause after each screen full of information.\n"
+//"  -R			Synonym for --recurse.\n"
 "  -s, --recurse		Subdirectories; recursively display files in specified\n"
 "			directory and all subdirectories.\n"
 "  -u, --usage		Display directory size usage data.\n"
@@ -132,7 +137,6 @@ const char c_long_usage[] =
 "  --justify[=WHEN]	Justify file names, in which list formats.  If WHEN is\n"
 "			omitted, 'always' is assumed.\n"
 "			  always, fat, normal, never (default)\n"
-"  -l, --lower		Show file names using lower case.\n"
 "  -SS			Show long file sizes (implies -S).  Note that some list\n"
 "			formats limit the file size width.\n"
 "  -TT			Show long dates and times (implies -T).  Note that some\n"
@@ -147,6 +151,7 @@ const char c_long_usage[] =
 "  --escape-codes[=WHEN]\n"
 "			For colors and hyperlinks in modern terminals.\n"
 "			  always, auto (default), never\n"
+"  --lower		Show file names using lower case.\n"
 "  --more-colors=LIST	Add color rules in the same format as the DIRX_COLORS\n"
 "			environment variable (use '-? colors' for more info).\n"
 "  --nerd-fonts=VER	Select which Nerd Fonts version to use (see '-? colors'\n"

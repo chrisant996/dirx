@@ -2055,7 +2055,7 @@ bool DirEntryFormatter::OnVolumeBegin(const WCHAR* dir, Error& e)
     m_cbCompressedTotal = 0;
     m_line_break_before_volume = true;
 
-    if (Settings().IsSet(FMT_NOVOLUMEINFO|FMT_NOHEADER))
+    if (Settings().IsSet(FMT_NOVOLUMEINFO))
         return false;
 
     if (Settings().IsSet(FMT_USAGE))
@@ -2106,6 +2106,8 @@ bool DirEntryFormatter::OnVolumeBegin(const WCHAR* dir, Error& e)
     s.Printf(L" Volume Serial Number is %04X-%04X\n",
              HIWORD(dwSerialNumber), LOWORD(dwSerialNumber));
     OutputConsole(m_hout, s.Text(), s.Length());
+
+    m_line_break_before_miniheader = true;
     return true;
 }
 
@@ -2156,10 +2158,19 @@ void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir)
     if (!m_dir.Length())
         m_dir.Set(dir);
 
-    if (!Settings().IsSet(FMT_BARE|FMT_NOHEADER))
+    if (!Settings().IsSet(FMT_BARE))
     {
         StrW s;
-        s.Printf(L"\n Directory of %s%s\n\n", dir, wcschr(dir, '\\') ? L"" : L"\\");
+        if (Settings().IsSet(FMT_MINIHEADER))
+        {
+            if (m_line_break_before_miniheader)
+                s.Append(L"\n");
+            s.Printf(L"%s%s:\n", dir, wcschr(dir, '\\') ? L"" : L"\\");
+        }
+        else if (!Settings().IsSet(FMT_NOHEADER))
+        {
+            s.Printf(L"\n Directory of %s%s\n\n", dir, wcschr(dir, '\\') ? L"" : L"\\");
+        }
         OutputConsole(m_hout, s.Text(), s.Length());
     }
 }
@@ -2536,6 +2547,8 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
         m_cbAllocated = 0;
         m_cbCompressed = 0;
     }
+
+    m_line_break_before_miniheader = true;
 }
 
 void DirEntryFormatter::OnVolumeEnd(const WCHAR* dir)

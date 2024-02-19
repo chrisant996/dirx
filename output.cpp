@@ -584,6 +584,8 @@ void OutputConsole(HANDLE h, const WCHAR* p, unsigned len, const WCHAR* color)
 {
     if (len == unsigned(-1))
         len = unsigned(wcslen(p));
+    if (!len)
+        return;
 
     if (!s_paginate)
     {

@@ -26,7 +26,7 @@ enum FormatFlags : ULONGLONG
     FMT_FULLNAME                = 0x000000001000,   // Show the fully qualified path in the file name column.
     FMT_HYPERLINKS              = 0x000000002000,   // Add hyperlink escape codes for file and directory names.
     FMT_LOWERCASE               = 0x000000004000,
-    FMT_HIDEDOTS                = 0x000000008000,   // Hide the "." and ".." directories.
+    FMT_HIDEPSEUDODIRS          = 0x000000008000,   // Hide the "." and ".." directories.
     FMT_DIRBRACKETS             = 0x000000010000,
     FMT_CLASSIFY                = 0x000000020000,   // Append type symbol after file name (\ for dir, @ for symlink file).
     FMT_SIZE                    = 0x000000040000,   // Include size even in multi-column formats.
@@ -52,6 +52,7 @@ enum FormatFlags : ULONGLONG
     FMT_NOVOLUMEINFO            = 0x004000000000,
     FMT_NOHEADER                = 0x008000000000,
     FMT_NOSUMMARY               = 0x010000000000,
+    FMT_MINIHEADER              = 0x020000000000,   // Show single line header per directory.
 };
 DEFINE_ENUM_FLAG_OPERATORS(FormatFlags);
 

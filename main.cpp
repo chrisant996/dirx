@@ -30,7 +30,7 @@
 
 #include <memory>
 
-static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+C+E.f:F+h+i+j+J+k+l+n+o.p+q+Q.r+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
+static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+C+E.f:F+G+h+i+j+J+k+l+n+o.p+q+Q.r+R+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
 static const WCHAR c_DIRXCMD[] = L"DIRXCMD";
 
 static const WCHAR* get_env_prio(const WCHAR* a, const WCHAR* b=nullptr, const WCHAR* c=nullptr)
@@ -89,7 +89,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
 
     const WCHAR* more_colors = nullptr;
     bool show_all_attributes = false;
-    int hide_dot_files = 0;         // By default, behave like CMD DIR.
+    int nix_defaults = 0;           // By default, behave like CMD DIR.
 #ifdef DEBUG
     int print_all_icons = 0;
 #endif
@@ -109,13 +109,18 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_ESCAPE_CODES,
         LOI_NO_FAT,
         LOI_NO_FULL_PATHS,
+        LOI_HIDE_DOT_FILES,
+        LOI_NO_HIDE_DOT_FILES,
         LOI_HORIZONTAL,
         LOI_HYPERLINKS,
         LOI_NO_HYPERLINKS,
         LOI_ICONS,
         LOI_NO_ICONS,
         LOI_JUSTIFY,
+        LOI_LOWER,
         LOI_NO_LOWER,
+        LOI_NIX,
+        LOI_NO_NIX,
         LOI_NO_NORMAL,
         LOI_MORE_COLORS,
         LOI_NERD_FONTS_VER,
@@ -151,19 +156,22 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-fat",                nullptr,            LOI_NO_FAT },
         { L"full-paths",            nullptr,            'F' },
         { L"no-full-paths",         nullptr,            LOI_NO_FULL_PATHS },
+        { L"grid",                  nullptr,            'G' },
         { L"help",                  nullptr,            '?' },
-        { L"hide-dot-files",        &hide_dot_files,    1 },
-        { L"no-hide-dot-files",     &hide_dot_files,    -1 },
+        { L"hide-dot-files",        nullptr,            LOI_HIDE_DOT_FILES },
+        { L"no-hide-dot-files",     nullptr,            LOI_NO_HIDE_DOT_FILES },
         { L"horizontal",            nullptr,            LOI_HORIZONTAL },
         { L"hyperlinks",            nullptr,            LOI_HYPERLINKS },
         { L"no-hyperlinks",         nullptr,            LOI_NO_HYPERLINKS },
         { L"icons",                 nullptr,            LOI_ICONS,              LOHA_OPTIONAL },
         { L"no-icons",              nullptr,            LOI_NO_ICONS },
         { L"justify",               nullptr,            LOI_JUSTIFY,            LOHA_OPTIONAL },
-        { L"lower",                 nullptr,            'l' },
+        { L"lower",                 nullptr,            LOI_LOWER },
         { L"no-lower",              nullptr,            LOI_NO_LOWER },
         { L"more-colors",           nullptr,            LOI_MORE_COLORS,        LOHA_REQUIRED },
         { L"nerd-fonts",            nullptr,            LOI_NERD_FONTS_VER,     LOHA_REQUIRED },
+        { L"nix",                   nullptr,            LOI_NIX },
+        { L"no-nix",                nullptr,            LOI_NO_NIX },
         { L"normal",                nullptr,            'n' },
         { L"no-normal",             nullptr,            LOI_NO_NORMAL },
         { L"owner",                 nullptr,            'q' },
@@ -299,8 +307,6 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     const LongOption<WCHAR>* long_opt;
     WCHAR ch;
 
-    HideDotFiles(hide_dot_files);
-
     for (unsigned ii = 0; opts.GetValue(ii, ch, opt_value, &long_opt); ii++)
     {
         FormatFlags flagsON = FMT_NONE;
@@ -312,15 +318,15 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         case 'b':       flagsON = FMT_BARE; break;
         case 'c':       flagsON = FMT_COLORS; break;
         case 'C':       flagsON = FMT_COMPRESSED; break;
-        case 'F':       flagsON = FMT_FULLNAME|FMT_FORCENONFAT|FMT_HIDEDOTS; break;
-        case 'h':       flagsON = FMT_HIDEDOTS; break;
+        case 'F':       flagsON = FMT_FULLNAME|FMT_FORCENONFAT|FMT_HIDEPSEUDODIRS; break;
+        case 'h':       flagsON = FMT_HIDEPSEUDODIRS; break;
         case 'i':       SetUseIcons((*opt_value == '-') ? L"never" : L"auto"); continue;
         case 'j':       flagsON = FMT_JUSTIFY_FAT; break;
         case 'J':       flagsON = FMT_JUSTIFY_NONFAT; break;
         case 'k':       SetColorScale((*opt_value == '-') ? L"none" : L"all"); continue;
-        case 'l':       flagsON = FMT_LOWERCASE; break;
         case 'q':       flagsON = FMT_SHOWOWNER; break;
         case 'r':       flagsON = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;
+        case 'R':       flagsON = FMT_SUBDIRECTORIES; break;
         case ':':       flagsON = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;
         case 's':       flagsON = FMT_SUBDIRECTORIES; break;
         case 't':       flagsON = FMT_ATTRIBUTES; break;
@@ -441,6 +447,17 @@ unrecognized_long_opt_value:
                 else
                     goto unrecognized_long_opt_value;
                 break;
+            case LOI_NIX:
+                nix_defaults = true;
+                HideDotFiles(true);
+                flags |= FMT_COLORS|FMT_FORCENONFAT|FMT_HIDEPSEUDODIRS|FMT_SORTVERTICAL|FMT_SKIPHIDDENDIRS|FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER;
+                flags &= ~(FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT|FMT_FAT|FMT_SHORTNAMES|FMT_ONLYSHORTNAMES|FMT_FULLNAME);
+                break;
+            case LOI_NO_NIX:
+                nix_defaults = false;
+                HideDotFiles(false);
+                flags &= ~(FMT_HIDEPSEUDODIRS|FMT_SORTVERTICAL|FMT_FORCENONFAT|FMT_FAT|FMT_SKIPHIDDENDIRS|FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER);
+                break;
             case LOI_TRUNCATE_CHAR:
                 SetTruncationCharacterInHex(opt_value);
                 break;
@@ -453,11 +470,12 @@ unrecognized_long_opt_value:
             case LOI_COMPACT_COLUMNS:       SetCanAutoFit(true); break;
             case LOI_NO_COMPACT_COLUMNS:    SetCanAutoFit(false); break;
             case LOI_NO_FAT:                flagsOFF = FMT_FAT; break;
-            case LOI_NO_FULL_PATHS:         flagsOFF = FMT_FULLNAME|FMT_FORCENONFAT|FMT_HIDEDOTS; break;
+            case LOI_NO_FULL_PATHS:         flagsOFF = FMT_FULLNAME|FMT_FORCENONFAT|FMT_HIDEPSEUDODIRS; break;
             case LOI_HORIZONTAL:            flagsOFF = FMT_SORTVERTICAL; break;
             case LOI_HYPERLINKS:            flagsON = FMT_HYPERLINKS; break;
             case LOI_NO_HYPERLINKS:         flagsOFF = FMT_HYPERLINKS; break;
             case LOI_NO_ICONS:              SetUseIcons(L"never"); break;
+            case LOI_LOWER:                 flagsON = FMT_LOWERCASE; break;
             case LOI_NO_LOWER:              flagsOFF = FMT_LOWERCASE; break;
             case LOI_NO_NORMAL:             flagsOFF = FMT_FORCENONFAT; break;
             case LOI_MORE_COLORS:           more_colors = opt_value; break;
@@ -638,6 +656,8 @@ unrecognized_long_opt_value:
     }
 
     unsigned cColumns = 1;
+    if (nix_defaults)
+        cColumns = 0;
 
     if (!(flags & (FMT_BARE|FMT_ATTRIBUTES|FMT_FULLNAME|FMT_FULLTIME|FMT_COMPRESSED|FMT_FORCENONFAT|FMT_SHOWOWNER|FMT_ONLYALTDATASTREAMS|FMT_ALTDATASTEAMS)))
     {
@@ -646,31 +666,36 @@ unrecognized_long_opt_value:
             switch (ch)
             {
             case '1':
-                cColumns = 1;
+            case 'l':
+                if (*opt_value != '-')
+                    cColumns = 1;
+                else if (cColumns == 1)
+                    cColumns = 0;
                 break;
             case '2':
                 if (!picture)
                 {
-                    if (*opt_value == '-' && cColumns == 2)
-                        cColumns = 1;
-                    else
+                    if (*opt_value != '-')
                         cColumns = 2;
+                    else if (cColumns == 2)
+                        cColumns = 1;
                 }
                 break;
             case '4':
                 if (!picture)
                 {
-                    if (*opt_value == '-' && cColumns == 4)
-                        cColumns = 1;
-                    else
+                    if (*opt_value != '-')
                         cColumns = 4;
+                    else if (cColumns == 4)
+                        cColumns = 1;
                 }
                 break;
+            case 'G':
             case 'w':
-                if (*opt_value == '-' && cColumns == 0)
-                    cColumns = 1;
-                else
+                if (*opt_value != '-')
                     cColumns = 0;
+                else if (cColumns == 0)
+                    cColumns = 1;
                 break;
             }
         }
@@ -678,7 +703,7 @@ unrecognized_long_opt_value:
 
     if (flags & FMT_FORCENONFAT)
         flags &= ~FMT_FAT;
-    if (cColumns != 1 && !(flags & (FMT_FAT|FMT_ATTRIBUTES|FMT_MINISIZE)))
+    if (cColumns != 1 && !nix_defaults && !(flags & (FMT_FAT|FMT_ATTRIBUTES|FMT_MINISIZE|FMT_CLASSIFY)))
         flags |= FMT_DIRBRACKETS;
     if (!(flags & FMT_FAT))
         flags |= FMT_FULLSIZE;
@@ -706,9 +731,6 @@ unrecognized_long_opt_value:
 
     if (cColumns != 1)
         flags &= ~FMT_FULLSIZE;
-
-    if (flags & FMT_CLASSIFY)
-        flags &= ~FMT_DIRBRACKETS;
 
     if ((flags & FMT_ATTRIBUTES) && show_all_attributes)
         flags |= FMT_ALLATTRIBUTES;
@@ -758,6 +780,11 @@ unrecognized_long_opt_value:
             return e.Report();
         }
     }
+
+    if (def.Settings().IsSet(FMT_MINIHEADER) &&
+        !def.Settings().IsSet(FMT_SUBDIRECTORIES) &&
+        (!patterns || !patterns->m_next))
+        def.Settings().m_flags &= ~FMT_MINIHEADER;
 
     const int rc = ScanDir(def, patterns, e);
 

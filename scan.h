@@ -32,6 +32,5 @@ public:
     virtual bool        IsRootSubDir() const = 0;
 };
 
-bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const DirPattern* pattern, bool top, Error& e);
 int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, Error& e);
 
