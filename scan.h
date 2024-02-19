@@ -17,6 +17,7 @@ public:
     virtual DirFormatSettings& Settings() = 0;
 
     virtual bool        OnVolumeBegin(const WCHAR* dir, Error& e) = 0;
+    virtual void        OnPatterns(bool grouped) = 0;
     virtual void        OnScanFiles(const WCHAR* dir, const WCHAR* pattern, bool implicit, bool top) = 0;
     virtual void        OnDirectoryBegin(const WCHAR* dir) = 0;
     virtual void        OnFile(const WCHAR* dir, const WIN32_FIND_DATA* pfd) = 0;

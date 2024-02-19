@@ -25,12 +25,12 @@ void SetSortOrder(const WCHAR* order, Error& e)
 
     SkipColonOrEqual(order);
 
-    if (lstrcmp(order, L"-") == 0)
+    if (wcscmp(order, L"-") == 0)
         return;
 
     if (!*order)
         *(set++) = 'g';
-    else if (!lstrcmpi(order, L"u"))
+    else if (!wcsicmp(order, L"u"))
         order++;
 
     while (*order)
@@ -65,7 +65,7 @@ void SetSortOrder(const WCHAR* order, Error& e)
         ++order;
     }
 
-    if (!lstrcmp(g_sort_order, L"-") ||
+    if (!wcscmp(g_sort_order, L"-") ||
         (g_sort_order[0] && !wcschr(g_sort_order, 'n')))
     {
         *(set++) = 'n';

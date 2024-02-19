@@ -75,6 +75,7 @@ public:
     DirFormatSettings&  Settings() override { return m_settings; }
 
     bool                OnVolumeBegin(const WCHAR* dir, Error& e) override;
+    void                OnPatterns(bool grouped) override;
     void                OnScanFiles(const WCHAR* dir, const WCHAR* pattern, bool implicit, bool root_pass) override;
     void                OnDirectoryBegin(const WCHAR* dir) override;
     void                OnFile(const WCHAR* dir, const WIN32_FIND_DATA* pfd) override;
@@ -121,6 +122,7 @@ private:
     StrW                m_root_group;
     bool                m_implicit = false;
     bool                m_root_pass = false;
+    bool                m_grouped_patterns = false;
     unsigned            m_count_usage_dirs = 0;
 
     StrW                m_dir;

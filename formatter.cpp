@@ -2111,6 +2111,11 @@ bool DirEntryFormatter::OnVolumeBegin(const WCHAR* dir, Error& e)
     return true;
 }
 
+void DirEntryFormatter::OnPatterns(bool grouped)
+{
+    m_grouped_patterns = grouped;
+}
+
 void DirEntryFormatter::OnScanFiles(const WCHAR* dir, const WCHAR* pattern, bool implicit, bool root_pass)
 {
     m_implicit = implicit;
@@ -2243,6 +2248,7 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
     const bool fUsage = Settings().IsSet(FMT_USAGE);
     const bool fImmediate = (!s_gradient &&
                              !*g_sort_order &&
+                             !m_grouped_patterns &&
                              Settings().m_num_columns == 1 &&
                              !m_picture.IsFilenameWidthNeeded());
 
@@ -2398,8 +2404,43 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
     {
         // Sort files.
 
+        bool clear_sort_order = false;
+        if (m_grouped_patterns && !*g_sort_order)
+        {
+            clear_sort_order = true;
+            wcscpy_s(g_sort_order, L"n");
+        }
+
         if (*g_sort_order)
             std::sort(m_files.begin(), m_files.end(), CmpFileInfo);
+
+        if (m_grouped_patterns && m_files.size())
+        {
+            // Remove duplicates.  By moving unique items into a new array.
+            // This is (much) more efficient than modifying the array in situ,
+            // because this doesn't insert or delete and thus doesn't shift
+            // items.  It's easy to overlook that insert and delete are O(N)
+            // operations.  But when inserting or deleting, the loop becomes
+            // exponential instead of linear.
+
+            // Move the first item, which by definition is unique.
+            std::vector<FileInfo> files;
+            files.emplace_back(std::move(m_files[0]));
+
+            // Loop and move other unique items.
+            for (size_t i = 1; i < m_files.size(); ++i)
+            {
+                auto& hare = m_files[i];
+                if (!hare.GetLongName().Equal(files.back().GetLongName()))
+                    files.emplace_back(std::move(hare));
+            }
+
+            // Swap the uniquely filtered array into place.
+            m_files.swap(files);
+        }
+
+        if (clear_sort_order)
+            *g_sort_order = '\0';
 
         // List files.
 

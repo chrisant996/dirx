@@ -93,11 +93,15 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const DirPa
         return false;
     }
 
+    const bool usage = callbacks.Settings().IsSet(FMT_USAGE);
+    assert(implies(usage, pattern->m_patterns.size() <= 1));
+
+    callbacks.OnPatterns(pattern->m_patterns.size() > 1);
+
     bool any_files_found = false;
     bool any_headers_displayed = false;
     bool call_OnDirectoryEnd = false;
     const bool subdirs = callbacks.Settings().IsSet(FMT_SUBDIRECTORIES);
-    const bool usage = callbacks.Settings().IsSet(FMT_USAGE);
     bool displayed_header = false;
     for (size_t ii = 0; ii < pattern->m_patterns.size(); ii++)
     {
