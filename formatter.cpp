@@ -1675,11 +1675,7 @@ unsigned PictureFormatter::GetMinWidth(const FileInfo* pfi) const
 bool PictureFormatter::CanAutoFitWidth() const
 {
     if (s_can_autofit &&
-        !m_settings.IsSet(FMT_ALTDATASTEAMS|
-                          FMT_BARE|
-                          FMT_FAT|
-                          FMT_FULLNAME|
-                          FMT_JUSTIFY_FAT))
+        !m_settings.IsSet(FMT_ALTDATASTEAMS|FMT_BARE|FMT_FAT|FMT_FULLNAME))
     {
         for (size_t ii = m_fields.size(); ii--;)
         {
