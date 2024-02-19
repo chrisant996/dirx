@@ -186,7 +186,7 @@ static void SelectFileTime(const FileInfo* const pfi, const WhichTimeStamp times
 
 static const WCHAR* SelectColor(const FileInfo* const pfi, const FormatFlags flags)
 {
-    if (!(flags & FMT_DISABLECOLORS))
+    if (flags & FMT_COLORS)
     {
         const WCHAR* color = LookupColor(pfi);
         if (color)
@@ -509,7 +509,7 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsi
     }
 
     bool underlined = false;
-    if (!(flags & FMT_DISABLECOLORS))
+    if (flags & FMT_COLORS)
     {
         if (_wcsnicmp(L"readme", pfi->GetLongName().Text(), 6) == 0)
         {
@@ -731,8 +731,8 @@ static void FormatReparsePoint(StrW& s, const FileInfo* const pfi, const FormatF
             const WCHAR* name = FindName(tmp.Text());
             const DWORD attr = pfi->GetAttributes();
             const int mode = (attr & FILE_ATTRIBUTE_DIRECTORY) ? S_IFDIR : S_IFREG;
-            const WCHAR* color = (flags & FMT_DISABLECOLORS) ? nullptr : LookupColor(name, attr, mode);
-            const WCHAR* path_color = GetColorByKey(L"lp");
+            const WCHAR* color = (flags & FMT_COLORS) ? LookupColor(name, attr, mode) : nullptr;
+            const WCHAR* path_color = (flags & FMT_COLORS) ? GetColorByKey(L"lp") : nullptr;
             if (!path_color && !color)
                 s.Append(tmp);
             else
@@ -824,7 +824,7 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
     const unsigned orig_len = s.Length();
 #endif
 
-    if (!settings.IsSet(FMT_DISABLECOLORS))
+    if (settings.IsSet(FMT_COLORS))
     {
         if (!color && which)
             color = GetSizeColor(cbSize);
@@ -1060,7 +1060,7 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
 #endif
 
     const WCHAR* color = nullptr;
-    if (!settings.IsSet(FMT_DISABLECOLORS))
+    if (settings.IsSet(FMT_COLORS))
     {
         color = GetColorByKey(L"da");
         if (!color)
@@ -1690,17 +1690,13 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WCHAR* dir, co
             case FLD_ATTRIBUTES:
             case FLD_OWNER:
             case FLD_SHORTNAME:
-// TODO: Color matters here because of background colors and columns.
+                // REVIEW: Color could be considered as mattering here because of background colors and columns.
                 s.AppendSpaces(m_fields[ii].m_cchWidth);
                 break;
             case FLD_FILESIZE:
                 {
                     // FUTURE: color scale for stream sizes.
-                    const WCHAR* size_color;
-                    if (m_settings.IsSet(FMT_DISABLECOLORS))
-                        size_color = nullptr;
-                    else
-                        size_color = GetSizeColor(pfsd->StreamSize.QuadPart);
+                    const WCHAR* size_color = m_settings.IsSet(FMT_COLORS) ? GetSizeColor(pfsd->StreamSize.QuadPart) : nullptr;
                     FormatSize(s, pfsd->StreamSize.QuadPart, nullptr, m_settings, GetEffectiveSizeFieldStyle(m_settings, m_fields[ii].m_chStyle), size_color ? size_color : color);
                 }
                 break;
@@ -1758,7 +1754,7 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WCHAR* dir, co
                 FormatCompressed(s, pfi, m_fields[ii].m_chSubField);
                 break;
             case FLD_ATTRIBUTES:
-                FormatAttributes(s, pfi->GetAttributes(), m_fields[ii].m_masks, m_fields[ii].m_chStyle, !m_settings.IsSet(FMT_DISABLECOLORS));
+                FormatAttributes(s, pfi->GetAttributes(), m_fields[ii].m_masks, m_fields[ii].m_chStyle, m_settings.IsSet(FMT_COLORS));
                 break;
             case FLD_OWNER:
                 // FUTURE: Color?
@@ -1818,7 +1814,7 @@ DirEntryFormatter::~DirEntryFormatter()
     g_settings = nullptr;
 }
 
-void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags, WhichTimeStamp whichtimestamp, WhichFileSize whichfilesize, DWORD dwAttrIncludeAny, DWORD dwAttrMatch, DWORD dwAttrExcludeAny, const WCHAR* disable_options, const WCHAR* picture)
+void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags, WhichTimeStamp whichtimestamp, WhichFileSize whichfilesize, DWORD dwAttrIncludeAny, DWORD dwAttrMatch, DWORD dwAttrExcludeAny, const WCHAR* picture)
 {
     m_root_pass = false;
     m_count_usage_dirs = 0;
@@ -1831,8 +1827,6 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags
     m_settings.m_dwAttrIncludeAny = dwAttrIncludeAny;
     m_settings.m_dwAttrMatch = dwAttrMatch;
     m_settings.m_dwAttrExcludeAny = dwAttrExcludeAny;
-    if (disable_options)
-        m_settings.m_sDisableOptions.Set(disable_options);
     m_settings.m_need_compressed_size = (whichfilesize == FILESIZE_COMPRESSED ||
                                          (flags & FMT_COMPRESSED) ||
                                          wcschr(g_sort_order, 'c'));
@@ -2031,8 +2025,7 @@ bool DirEntryFormatter::OnVolumeBegin(const WCHAR* dir, Error& e)
     m_cbCompressedTotal = 0;
     m_line_break_before_volume = true;
 
-    if (Settings().IsOptionDisabled('v') ||
-        Settings().IsOptionDisabled('h'))
+    if (Settings().IsSet(FMT_NOVOLUMEINFO|FMT_NOHEADER))
         return false;
 
     if (Settings().IsSet(FMT_USAGE))
@@ -2133,8 +2126,7 @@ void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir)
     if (!m_dir.Length())
         m_dir.Set(dir);
 
-    if (!Settings().IsSet(FMT_BARE) &&
-        !Settings().IsOptionDisabled('h'))
+    if (!Settings().IsSet(FMT_BARE|FMT_NOHEADER))
     {
         StrW s;
         s.Printf(L"\n Directory of %s%s\n\n", dir, wcschr(dir, '\\') ? L"" : L"\\");
@@ -2501,8 +2493,7 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
             OutputConsole(m_hout, s.Text(), s.Length());
             m_count_usage_dirs++;
         }
-        else if (!Settings().IsSet(FMT_BARE) &&
-                 !Settings().IsOptionDisabled('s'))
+        else if (!Settings().IsSet(FMT_BARE|FMT_NOSUMMARY))
         {
             StrW s;
             FormatFileTotals(s, CountFiles(), m_cbTotal, m_cbAllocated, m_cbCompressed, Settings());
@@ -2519,7 +2510,7 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
 
 void DirEntryFormatter::OnVolumeEnd(const WCHAR* dir)
 {
-    if (Settings().IsOptionDisabled('s'))
+    if (Settings().IsSet(FMT_NOSUMMARY))
         return;
 
     Error e;

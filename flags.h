@@ -5,11 +5,13 @@
 
 #pragma once
 
+#include "options.h"
+
 enum FormatFlags : ULONGLONG
 {
     FMT_NONE                    = 0x000000000000,
 
-    FMT_DISABLECOLORS           = 0x000000000001,
+    FMT_COLORS                  = 0x000000000001,
     FMT_REDIRECTED              = 0x000000000002,
     FMT_BARE                    = 0x000000000004,   // Prevents more than 1 column, suppresses all columns other than name.
     FMT_SUBDIRECTORIES          = 0x000000000008,
@@ -45,8 +47,16 @@ enum FormatFlags : ULONGLONG
     //                          = 0x000200000000,
     FMT_USAGE                   = 0x000400000000,
     FMT_USAGEGROUPED            = 0x000800000000,   // Show directory usage statistics grouped by top level directories.
+    FMT_SKIPHIDDENDIRS          = 0x001000000000,
+    FMT_SKIPJUNCTIONS           = 0x002000000000,
+    FMT_NOVOLUMEINFO            = 0x004000000000,
+    FMT_NOHEADER                = 0x008000000000,
+    FMT_NOSUMMARY               = 0x010000000000,
 };
 DEFINE_ENUM_FLAG_OPERATORS(FormatFlags);
+
+void FlipFlag(FormatFlags& flags, FormatFlags flag, bool& enable, bool default_enable);
+void FailFlag(WCHAR ch, const WCHAR* value, WCHAR short_opt, const LongOption<WCHAR>* long_opt, Error& e);
 
 enum FieldType
 {
@@ -83,7 +93,6 @@ inline ULONGLONG FileTimeToULONGLONG(const FILETIME& ft)
 struct DirFormatSettings
 {
     bool                IsSet(FormatFlags flag) const { return !!(m_flags & flag); }
-    bool                IsOptionDisabled(WCHAR ch) const { return !!wcschr(m_sDisableOptions.Text(), ch); }
     void                ClearMinMax();
     void                UpdateMinMaxTime(WhichTimeStamp which, const FILETIME& ft);
     void                UpdateMinMaxSize(WhichFileSize which, ULONGLONG size);
@@ -95,7 +104,6 @@ struct DirFormatSettings
     DWORD               m_dwAttrIncludeAny = 0;
     DWORD               m_dwAttrMatch = 0;
     DWORD               m_dwAttrExcludeAny = 0;
-    StrW                m_sDisableOptions;
     bool                m_need_compressed_size = false;
     bool                m_need_short_filenames = false;
 

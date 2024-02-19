@@ -14,6 +14,29 @@ void SkipColonOrEqual(const WCHAR*& p)
         ++p;
 }
 
+void FlipFlag(FormatFlags& flags, FormatFlags flag, bool& enable, bool default_enable)
+{
+    if (enable)
+        flags |= flag;
+    else
+        flags &= ~flag;
+    enable = default_enable;
+}
+
+void FailFlag(WCHAR ch, const WCHAR* value, WCHAR short_opt, const LongOption<WCHAR>* long_opt, Error& e)
+{
+    WCHAR tmp[2] = { ch, '\0' };
+    if (long_opt)
+    {
+        e.Set(L"Unrecognized flag '%1' in '--%1=%2'.") << tmp << long_opt->name << value;
+    }
+    else
+    {
+        WCHAR short_name[2] = { short_opt, '\0' };
+        e.Set(L"Unrecognized flag '%1' in '-%2%3'.") << tmp << short_name, value;
+    }
+}
+
 void DirFormatSettings::ClearMinMax()
 {
     memset(&m_min_time, 0xff, sizeof(m_min_time));

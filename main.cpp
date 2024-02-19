@@ -30,34 +30,8 @@
 
 #include <memory>
 
-static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+E.f:F+h+i+j+J+K+l+n.o.p+q+r+s+S.t+T.u+v+w+W:x+Y+z+Z+";
+static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+C+E.f:F+h+i+j+J+k+l+n+N.o.p+q+r+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
 static const WCHAR c_DIRXCMD[] = L"DIRXCMD";
-
-/**
- * Can only return non-zero when !fRestore and ch == 'w'.
- */
-static int HandleDisableOption(WCHAR ch, bool fRestore, FormatFlags& flags, Error& e)
-{
-    if (fRestore)
-    {
-        if (ch == 'r')
-            flags &= ~FMT_ONLYALTDATASTREAMS;
-        else if (ch == 'c')
-            flags &= ~FMT_DISABLECOLORS;
-        else if (ch == 'w')
-            g_dwCmpStrFlags &= ~SORT_STRINGSORT;
-    }
-    else
-    {
-        if (ch == 'r')
-            flags |= FMT_ONLYALTDATASTREAMS;
-        else if (ch == 'c')
-            flags |= FMT_DISABLECOLORS;
-        else if (ch == 'w')
-            g_dwCmpStrFlags |= SORT_STRINGSORT;
-    }
-    return 0;
-}
 
 static const WCHAR* get_env_prio(const WCHAR* a, const WCHAR* b=nullptr, const WCHAR* c=nullptr)
 {
@@ -126,12 +100,14 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_NO_ATTRIBUTES,
         LOI_CLASSIFY,
         LOI_NO_CLASSIFY,
+        LOI_NO_COLOR,
         LOI_COLOR_SCALE,
         LOI_NO_COLOR_SCALE,
         LOI_COLOR_SCALE_MODE,
         LOI_COMPACT_COLUMNS,
         LOI_NO_COMPACT_COLUMNS,
         LOI_ESCAPE_CODES,
+        LOI_NO_FAT,
         LOI_NO_FULL_PATHS,
         LOI_HORIZONTAL,
         LOI_HYPERLINKS,
@@ -140,6 +116,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_NO_ICONS,
         LOI_JUSTIFY,
         LOI_NO_LOWER,
+        LOI_NO_NORMAL,
         LOI_MORE_COLORS,
         LOI_NERD_FONTS_VER,
         LOI_NO_OWNER,
@@ -148,8 +125,10 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_NO_SHORT_NAMES,
         LOI_NO_SIZE,
         LOI_NO_STREAMS,
+        LOI_STRING_SORT,
         LOI_NO_TIME,
         LOI_TRUNCATE_CHAR,
+        LOI_WORD_SORT,
     };
 
     static LongOption<WCHAR> long_opts[] =
@@ -160,6 +139,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"bare",                  nullptr,            'b' },
         { L"classify",              nullptr,            LOI_CLASSIFY },
         { L"no-classify",           nullptr,            LOI_NO_CLASSIFY },
+        { L"color",                 nullptr,            'c' },
+        { L"no-color",              nullptr,            LOI_NO_COLOR },
         { L"color-scale",           nullptr,            LOI_COLOR_SCALE,        LOHA_OPTIONAL },
         { L"no-color-scale",        nullptr,            LOI_NO_COLOR_SCALE },
         { L"color-scale-mode",      nullptr,            LOI_COLOR_SCALE_MODE,   LOHA_REQUIRED },
@@ -167,6 +148,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-compact-columns",    nullptr,            LOI_NO_COMPACT_COLUMNS },
         { L"escape-codes",          nullptr,            LOI_ESCAPE_CODES,       LOHA_OPTIONAL },
         { L"fat",                   nullptr,            'z' },
+        { L"no-fat",                nullptr,            LOI_NO_FAT },
         { L"full-paths",            nullptr,            'F' },
         { L"no-full-paths",         nullptr,            LOI_NO_FULL_PATHS },
         { L"help",                  nullptr,            '?' },
@@ -183,19 +165,23 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"more-colors",           nullptr,            LOI_MORE_COLORS,        LOHA_REQUIRED },
         { L"nerd-fonts",            nullptr,            LOI_NERD_FONTS_VER,     LOHA_REQUIRED },
         { L"normal",                nullptr,            'n' },
+        { L"no-normal",             nullptr,            LOI_NO_NORMAL },
         { L"owner",                 nullptr,            'q' },
         { L"no-owner",              nullptr,            LOI_NO_OWNER },
         { L"pad-icons",             nullptr,            LOI_PAD_ICONS,          LOHA_REQUIRED },
         { L"paginate",              nullptr,            'p' },
-        { L"ratio",                 nullptr,            'c' },
+        { L"quash",                 nullptr,            'Q',                    LOHA_OPTIONAL },
+        { L"ratio",                 nullptr,            'C' },
         { L"no-ratio",              nullptr,            LOI_NO_RATIO },
         { L"recurse",               nullptr,            's' },
         { L"short-names",           nullptr,            'x' },
         { L"no-short-names",        nullptr,            LOI_NO_SHORT_NAMES },
         { L"size",                  nullptr,            'S',                    LOHA_OPTIONAL },
         { L"no-size",               nullptr,            LOI_NO_SIZE },
+        { L"skip",                  nullptr,            'X',                    LOHA_OPTIONAL },
         { L"streams",               nullptr,            'r' },
         { L"no-streams",            nullptr,            LOI_NO_STREAMS },
+        { L"string-sort",           nullptr,            LOI_STRING_SORT },
         { L"time",                  nullptr,            'T',                    LOHA_OPTIONAL },
         { L"no-time",               nullptr,            LOI_NO_TIME },
         { L"truncate-char",         nullptr,            LOI_TRUNCATE_CHAR,      LOHA_REQUIRED },
@@ -204,6 +190,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"vertical",              nullptr,            'v' },
         { L"wide",                  nullptr,            'w' },
         { L"width",                 nullptr,            'W',                    LOHA_REQUIRED },
+        { L"word-sort",             nullptr,            LOI_WORD_SORT },
 #ifdef DEBUG
         { L"print-all-icons",       &print_all_icons,   1 },
 #endif
@@ -307,7 +294,6 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     DWORD dwAttrIncludeAny = 0;
     DWORD dwAttrMatch = 0;
     DWORD dwAttrExcludeAny = FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM;
-    StrW sDisableOptions;
     const WCHAR* picture = 0;
     const WCHAR* opt_value;
     const LongOption<WCHAR>* long_opt;
@@ -324,13 +310,14 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         {
         case ',':       flagsON = FMT_SEPARATETHOUSANDS; flagsOFF = FMT_SEPARATETHOUSANDS|FMT_AUTOSEPTHOUSANDS; break;
         case 'b':       flagsON = FMT_BARE; break;
-        case 'c':       flagsON = FMT_COMPRESSED; break;
+        case 'c':       flagsON = FMT_COLORS; break;
+        case 'C':       flagsON = FMT_COMPRESSED; break;
         case 'F':       flagsON = FMT_FULLNAME|FMT_FORCENONFAT|FMT_HIDEDOTS; break;
         case 'h':       flagsON = FMT_HIDEDOTS; break;
         case 'i':       SetUseIcons((*opt_value == '-') ? L"never" : L"auto"); continue;
         case 'j':       flagsON = FMT_JUSTIFY_FAT; break;
         case 'J':       flagsON = FMT_JUSTIFY_NONFAT; break;
-        case 'K':       SetColorScale((*opt_value == '-') ? L"none" : L"all"); continue;
+        case 'k':       SetColorScale((*opt_value == '-') ? L"none" : L"all"); continue;
         case 'l':       flagsON = FMT_LOWERCASE; break;
         case 'q':       flagsON = FMT_SHOWOWNER; break;
         case 'r':       flagsON = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;
@@ -340,11 +327,80 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         case 'u':       flagsON = FMT_USAGE; break;
         case 'v':       flagsON = FMT_SORTVERTICAL; break;
         case 'x':       flagsON = FMT_SHORTNAMES; break;
-        case 'z':       flagsON = FMT_FAT; break;
+
+        case 'n':
+            if (long_opt || *opt_value == '+')
+            {
+                flags |= FMT_FORCENONFAT;
+                flags &= ~FMT_FAT;
+            }
+            else
+            {
+                flags &= ~FMT_FORCENONFAT;
+            }
+            continue;
+        case 'Q':
+            if (!*opt_value)
+            {
+                flags &= ~(FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY);
+                continue;
+            }
+            else
+            {
+                bool enable = false;
+                for (const WCHAR* o = opt_value; *o; ++o)
+                {
+                    switch (*opt_value)
+                    {
+                    case '-':   enable = false; break;
+                    case '+':   enable = true; break;
+                    case 'v':   FlipFlag(flags, FMT_NOVOLUMEINFO, enable, false); break;
+                    case 'h':   FlipFlag(flags, FMT_NOHEADER, enable, false); break;
+                    case 's':   FlipFlag(flags, FMT_NOSUMMARY, enable, false); break;
+                    default:    FailFlag(ch, opt_value, 'Q', long_opt, e); return e.Report();
+                    }
+                }
+            }
+            continue;
         case 'W':
             SkipColonOrEqual(opt_value);
             SetConsoleWidth(wcstoul(opt_value, nullptr, 10));
             continue;
+        case 'X':
+            if (!*opt_value)
+            {
+                flags &= ~(FMT_SKIPHIDDENDIRS|FMT_SKIPJUNCTIONS|FMT_ONLYALTDATASTREAMS);
+                continue;
+            }
+            else
+            {
+                bool enable = false;
+                for (const WCHAR* o = opt_value; *o; ++o)
+                {
+                    switch (*opt_value)
+                    {
+                    case '-':   enable = false; break;
+                    case '+':   enable = true; break;
+                    case 'd':   FlipFlag(flags, FMT_SKIPHIDDENDIRS, enable, false); break;
+                    case 'j':   FlipFlag(flags, FMT_SKIPJUNCTIONS, enable, false); break;
+                    case 'r':   FlipFlag(flags, FMT_ONLYALTDATASTREAMS, enable, false); break;
+                    default:    FailFlag(ch, opt_value, 'X', long_opt, e); return e.Report();
+                    }
+                }
+            }
+            continue;
+        case 'z':
+            if (long_opt || *opt_value == '+')
+            {
+                flags |= FMT_FAT;
+                flags &= ~FMT_FORCENONFAT;
+            }
+            else
+            {
+                flags &= ~FMT_FAT;
+            }
+            continue;
+
         default:
             if (!long_opt)
                 continue; // Other flags are handled separately further below.
@@ -390,15 +446,18 @@ unrecognized_long_opt_value:
             case LOI_NO_ATTRIBUTES:         flagsOFF = FMT_ATTRIBUTES; break;
             case LOI_CLASSIFY:              flagsON = FMT_CLASSIFY; break;
             case LOI_NO_CLASSIFY:           flagsOFF = FMT_CLASSIFY; break;
+            case LOI_NO_COLOR:              flagsOFF = FMT_COLORS; break;
             case LOI_NO_COLOR_SCALE:        SetColorScale(L"none"); break;
             case LOI_COMPACT_COLUMNS:       SetCanAutoFit(true); break;
             case LOI_NO_COMPACT_COLUMNS:    SetCanAutoFit(false); break;
+            case LOI_NO_FAT:                flagsOFF = FMT_FAT; break;
             case LOI_NO_FULL_PATHS:         flagsOFF = FMT_FULLNAME|FMT_FORCENONFAT|FMT_HIDEDOTS; break;
             case LOI_HORIZONTAL:            flagsOFF = FMT_SORTVERTICAL; break;
             case LOI_HYPERLINKS:            flagsON = FMT_HYPERLINKS; break;
             case LOI_NO_HYPERLINKS:         flagsOFF = FMT_HYPERLINKS; break;
             case LOI_NO_ICONS:              SetUseIcons(L"never"); break;
             case LOI_NO_LOWER:              flagsOFF = FMT_LOWERCASE; break;
+            case LOI_NO_NORMAL:             flagsOFF = FMT_FORCENONFAT; break;
             case LOI_MORE_COLORS:           more_colors = opt_value; break;
             case LOI_NERD_FONTS_VER:        SetNerdFontsVersion(wcstoul(opt_value, nullptr, 10)); break;
             case LOI_NO_OWNER:              flagsOFF = FMT_SHOWOWNER; break;
@@ -407,19 +466,21 @@ unrecognized_long_opt_value:
             case LOI_NO_SHORT_NAMES:        flagsOFF = FMT_SHORTNAMES; break;
             case LOI_NO_SIZE:               flagsOFF = FMT_SIZE; break;
             case LOI_NO_STREAMS:            flagsOFF = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;
+            case LOI_STRING_SORT:           g_dwCmpStrFlags |= SORT_STRINGSORT; break;
             case LOI_NO_TIME:               flagsOFF = FMT_DATE; break;
+            case LOI_WORD_SORT:             g_dwCmpStrFlags &= ~SORT_STRINGSORT; break;
             }
             break;
         }
 
-        if (flagsON != FMT_NONE || flagsOFF != FMT_NONE)
+        if (flagsON || flagsOFF)
         {
             if (!flagsOFF)
                 flagsOFF = flagsON;
 
-            if (*opt_value == '+' || (long_opt && flagsON != FMT_NONE))
+            if (*opt_value == '+' || (long_opt && flagsON))
                 flags |= flagsON;
-            else if (*opt_value == '-' || (long_opt && flagsOFF != FMT_NONE))
+            else if (*opt_value == '-' || (long_opt && flagsOFF))
                 flags &= ~flagsOFF;
             else
                 assert(false);
@@ -567,60 +628,6 @@ unrecognized_long_opt_value:
         }
     }
 
-    for (unsigned ii = 0; opt_value = opts.GetValue('T', ii); ii++)
-    {
-    }
-
-    for (unsigned ii = 0; opt_value = opts.GetValue('n', ii); ii++)
-    {
-        if (!*opt_value)
-        {
-            flags |= FMT_FORCENONFAT;
-            continue;
-        }
-        SkipColonOrEqual(opt_value);
-        if (wcscmp(opt_value, L"-") == 0)
-        {
-            for (size_t jj = 0; jj < sDisableOptions.Length(); jj++)
-                HandleDisableOption(sDisableOptions.Text()[jj], true, flags, e);
-            sDisableOptions.Clear();
-            continue;
-        }
-        bool fPlus = false;
-        for (; *opt_value; opt_value++)
-        {
-            const bool fWasPlus = fPlus;
-            fPlus = (*opt_value == '+');
-            if (!wcschr(L"-+vhdjsrcw", *opt_value))
-            {
-                e.Set(L"Unrecognized flag in '-n%1'.") << opts.GetValue('n', ii);
-                return e.Report();
-            }
-            if (fWasPlus)
-            {
-                StrW tmp;
-                for (size_t jj = 0; jj < sDisableOptions.Length(); jj++)
-                {
-                    if (sDisableOptions.Text()[jj] != *opt_value)
-                    {
-                        tmp.Append(sDisableOptions.Text()[jj]);
-                        continue;
-                    }
-                    HandleDisableOption(*opt_value, true, flags, e);
-                }
-                sDisableOptions = std::move(tmp);
-            }
-            else
-            {
-                if (wcschr(sDisableOptions.Text(), *opt_value))
-                    continue;
-                if (HandleDisableOption(*opt_value, false, flags, e))
-                    return e.Report();
-                sDisableOptions.Append(*opt_value);
-            }
-        }
-    }
-
     for (unsigned ii = 0; opt_value = opts.GetValue('o', ii); ii++)
     {
         SetSortOrder(opt_value, e);
@@ -711,15 +718,15 @@ unrecognized_long_opt_value:
 
     if (!CanUseEscapeCodes(GetStdHandle(STD_OUTPUT_HANDLE)))
     {
-        flags |= FMT_DISABLECOLORS;
+        flags &= ~FMT_COLORS;
         SetUseIcons(false);
         SetColorScale(L"none");
     }
 
     DirEntryFormatter def;
-    def.Initialize(cColumns, flags, timestamp, filesize, dwAttrIncludeAny, dwAttrMatch, dwAttrExcludeAny, sDisableOptions.Text(), picture);
+    def.Initialize(cColumns, flags, timestamp, filesize, dwAttrIncludeAny, dwAttrMatch, dwAttrExcludeAny, picture);
 
-    if (!def.Settings().IsSet(FMT_DISABLECOLORS))
+    if (def.Settings().IsSet(FMT_COLORS))
     {
         assert(!e.Test());
         InitColors(more_colors);

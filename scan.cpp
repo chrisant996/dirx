@@ -223,9 +223,9 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const DirPa
                 {
                     if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
                         continue;
-                    if (IsHidden(fd) && callbacks.Settings().IsOptionDisabled('d'))
+                    if (IsHidden(fd) && callbacks.Settings().IsSet(FMT_SKIPHIDDENDIRS))
                         continue;
-                    if (IsTraversableReparse(fd) && callbacks.Settings().IsOptionDisabled('j'))
+                    if (IsTraversableReparse(fd) && callbacks.Settings().IsSet(FMT_SKIPJUNCTIONS))
                         continue;
                     if (IsPseudoDirectory(fd.cFileName))
                         continue;
