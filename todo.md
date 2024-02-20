@@ -2,22 +2,24 @@
 
 ### BUGS
 
-### Rethink and simplify
+### Next
+- Configurable colors for attributes column; fall back to corresponding file attribute colors.
 - `-L`, `--level` to limit depth of recursion.
-- Be more user friendly like eza; but CMD DIR familiarity competes with that goal.
-- Built in date formats like eza (since they're mostly ISO based).
-- Document the `--nix` flag once it's more polished.
-- Default colors.
+- Document the `--nix` flag once it's more polished (also find a better name?).
+- Document the environment variables.
+- Write `icons` and `colors` and `regex` help topics.
+- Write README.md file as documentation.
 
 ### Git integration
 - Ignore files per `.gitignore`.
 - Git status column for files.  Be very careful about performance!
 
-### Maybe
-- Maybe a couple different presets of default colors to choose from?  E.g. attribute-based, and file-type-based?
-- Post-process column computation to reduce rows by shifting items into a new
-  column?  `ls` does not, but `eza` does.
-- Configurable icon mappings?
+### Back burner
+- Default colors.  Maybe a few different preset options; basic, attributes, file types?
 - Tree view?  The vertical extender lines can be tracked with a "more" bit per directory component.
-- Option to show column headers?  Format pictures make it difficult.
+- Post-process column computation to reduce rows by shifting items into a new column?  `ls` does not, but `eza` does.
+
+### Future; maybe
+- Configurable icon mappings?
+- Option to show column headers?
 
