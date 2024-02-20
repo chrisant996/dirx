@@ -45,6 +45,7 @@ static const WCHAR c_default_colors[] =
     // L"da=94:"
     // L"da=0:"
     L"lp=36:"
+    L"su=1;35:sf=1;35:ur=32:"
     ;
 
 enum ColorIndex : unsigned short
@@ -72,6 +73,14 @@ enum ColorIndex : unsigned short
     ciSizeM,
     ciSizeG,
     ciSizeT,
+
+    // Attribute letters.
+    ciAttributeLetterReadonly,  // r
+    ciAttributeLetterHidden,    // h
+    ciAttributeLetterSystem,    // s
+    ciAttributeLetterLink,      // j
+                                // a --> eza directly uses ciFile
+                                // d --> eza directly uses ciDirectory
 
     // Fields.
     ciSize,
@@ -167,6 +176,10 @@ static void InitColorMaps()
     s_color_fallback[ciCompressedArchive] = ciCompressed;
     s_color_fallback[ciTemporaryAttribute] = ciTemporary;
     s_color_fallback[ciTemporaryExtension] = ciTemporary;
+    s_color_fallback[ciAttributeLetterReadonly] = ciReadonly;
+    s_color_fallback[ciAttributeLetterHidden] = ciHidden;
+    s_color_fallback[ciAttributeLetterSystem] = ciSystem;
+    s_color_fallback[ciAttributeLetterLink] = ciLink;
     s_color_fallback[ciLossless] = ciMusic;
     // NOTE, there is intentionally no fallback for these fields:
     //  - ciCompressionField
@@ -653,9 +666,14 @@ static void InitColorMaps()
 
         { L"xx", { CFLAG_NOT_A_TYPE, ciPunctuation } },
 
+        //---- EZA REPURPOSED THESE TYPES ON WINDOWS AS FOLLOWS --------------
+        { L"ur", { CFLAG_NOT_A_TYPE, ciAttributeLetterReadonly } },
+        { L"su", { CFLAG_NOT_A_TYPE, ciAttributeLetterHidden } },
+        { L"sf", { CFLAG_NOT_A_TYPE, ciAttributeLetterSystem } },
+        { L"pi", { CFLAG_NOT_A_TYPE, ciAttributeLetterLink } },
+
         //---- IGNORE FOR LS_COLORS COMPATIBILITY ----------------------------
         { L"so", { CFLAG_ZERO, ciZERO } },
-        { L"pi", { CFLAG_ZERO, ciZERO } },
         { L"bd", { CFLAG_ZERO, ciZERO } },
         { L"cd", { CFLAG_ZERO, ciZERO } },
 
@@ -1369,25 +1387,30 @@ next_rule:
     return GetColorWithFallback(ci);
 }
 
-const WCHAR* LookupColor(DWORD attr)
+const WCHAR* GetAttrLetterColor(DWORD attr)
 {
     if (!attr)
         return GetColorByKey(L"xx");
 
     assert(!(attr & (attr - 1)));
 
+    // Some of these attribute letter color mappings are different than the
+    // mappings for file colors based on file attribute.  This makes it
+    // possible to color the attribute letters independently from the file
+    // names for the same attribute, or the fallback colors make it possible
+    // to make the letters and file name colors identical if desired.
     ColorIndex ci = ciZERO;
     switch (attr)
     {
-    case FILE_ATTRIBUTE_READONLY:               ci = ciReadonly; break;
-    case FILE_ATTRIBUTE_HIDDEN:                 ci = ciHidden; break;
-    case FILE_ATTRIBUTE_SYSTEM:                 ci = ciSystem; break;
+    case FILE_ATTRIBUTE_READONLY:               ci = ciAttributeLetterReadonly; break;
+    case FILE_ATTRIBUTE_HIDDEN:                 ci = ciAttributeLetterHidden; break;
+    case FILE_ATTRIBUTE_SYSTEM:                 ci = ciAttributeLetterSystem; break;
     case FILE_ATTRIBUTE_DIRECTORY:              ci = ciDirectory; break;
-    case FILE_ATTRIBUTE_ARCHIVE:                ci = ciArchiveAttribute; break;
+    case FILE_ATTRIBUTE_ARCHIVE:                ci = ciFile; break;
     case FILE_ATTRIBUTE_NORMAL:                 ci = ciFile; break;
     case FILE_ATTRIBUTE_TEMPORARY:              ci = ciTemporaryAttribute; break;
     case FILE_ATTRIBUTE_SPARSE_FILE:            ci = ciSparse; break;
-    case FILE_ATTRIBUTE_REPARSE_POINT:          ci = ciLink; break;
+    case FILE_ATTRIBUTE_REPARSE_POINT:          ci = ciAttributeLetterLink; break;
     case FILE_ATTRIBUTE_COMPRESSED:             ci = ciCompressedAttribute; break;
     case FILE_ATTRIBUTE_OFFLINE:                ci = ciOffline; break;
     case FILE_ATTRIBUTE_NOT_CONTENT_INDEXED:    ci = ciNotContentIndexed; break;

@@ -3,7 +3,6 @@
 ### BUGS
 
 ### Next
-- Configurable colors for attributes column; fall back to corresponding file attribute colors.
 - `-L`, `--level` to limit depth of recursion.
 - Document the `--nix` flag once it's more polished (also find a better name?).
 - Document the environment variables.

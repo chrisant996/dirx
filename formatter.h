@@ -14,8 +14,8 @@
 
 struct AttrChar
 {
-    DWORD dwAttr;
     WCHAR ch;
+    DWORD dwAttr;
 };
 
 struct FieldInfo

@@ -393,21 +393,21 @@ void InitLocale()
 
 static const AttrChar c_attr_chars[] =
 {
-    { FILE_ATTRIBUTE_READONLY, 'r' },
-    { FILE_ATTRIBUTE_HIDDEN, 'h' },
-    { FILE_ATTRIBUTE_SYSTEM, 's' },
-    { FILE_ATTRIBUTE_ARCHIVE, 'a' },
-    { FILE_ATTRIBUTE_DIRECTORY, 'd' },
-    { FILE_ATTRIBUTE_ENCRYPTED, 'e' },
-    { FILE_ATTRIBUTE_NORMAL, 'n' },
-    { FILE_ATTRIBUTE_TEMPORARY, 't' },
-    { FILE_ATTRIBUTE_SPARSE_FILE, 'p' },
-    { FILE_ATTRIBUTE_COMPRESSED, 'c' },
-    { FILE_ATTRIBUTE_OFFLINE, 'o' },
-    { FILE_ATTRIBUTE_NOT_CONTENT_INDEXED, 'i' },
-    { FILE_ATTRIBUTE_REPARSE_POINT, 'j' },
-    { FILE_ATTRIBUTE_REPARSE_POINT, 'l' },
-    //{ FILE_ATTRIBUTE_DEVICE, 'v' },
+    { 'r', FILE_ATTRIBUTE_READONLY },
+    { 'h', FILE_ATTRIBUTE_HIDDEN },
+    { 's', FILE_ATTRIBUTE_SYSTEM },
+    { 'a', FILE_ATTRIBUTE_ARCHIVE },
+    { 'd', FILE_ATTRIBUTE_DIRECTORY },
+    { 'e', FILE_ATTRIBUTE_ENCRYPTED },
+    { 'n', FILE_ATTRIBUTE_NORMAL },
+    { 't', FILE_ATTRIBUTE_TEMPORARY },
+    { 'p', FILE_ATTRIBUTE_SPARSE_FILE },
+    { 'c', FILE_ATTRIBUTE_COMPRESSED },
+    { 'o', FILE_ATTRIBUTE_OFFLINE },
+    { 'i', FILE_ATTRIBUTE_NOT_CONTENT_INDEXED },
+    { 'j', FILE_ATTRIBUTE_REPARSE_POINT },
+    { 'l', FILE_ATTRIBUTE_REPARSE_POINT },
+    //{ 'v', FILE_ATTRIBUTE_DEVICE },
 };
 static const WCHAR c_attr_mask_default[] = L"darhsj";
 static const WCHAR c_attr_mask_all[] = L"darhsjceotpni";
@@ -435,7 +435,7 @@ static void FormatAttributes(StrW& s, const DWORD dwAttr, const std::vector<Attr
         const DWORD bit = (dwAttr & pAttr->dwAttr);
         if (use_color)
         {
-            const WCHAR* color = LookupColor(bit);
+            const WCHAR* color = GetAttrLetterColor(bit);
             if (color != prev_color)
             {
                 if (color)
