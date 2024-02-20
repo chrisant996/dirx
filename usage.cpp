@@ -275,12 +275,13 @@ const char c_help_icons[] =
 "of the file name.  The icon mappings are hard-coded and aren't configurable at\n"
 "this time.\n"
 "\n"
-"Set DIRX_NERD_FONTS_VERSION=2 to select icons compatible with v2 fonts.\n"
+"Set environment variable DIRX_NERD_FONTS_VERSION=2 to select icons compatible\n"
+"with v2 fonts.\n"
 "\n"
-"Set DIRX_ICON_SPACING to specify how many spaces to print after an icon.  The\n"
-"default is 1, but some terminals or fonts may need a different number of spaces\n"
-"for icons to look good.  (If DIRX_ICON_SPACING isn't set, then EZA_ICON_SPACING\n"
-"and EXA_ICON_SPACING are checked as well.)\n"
+"Set environment variable DIRX_ICON_SPACING to specify how many spaces to\n"
+"print after an icon.  The default is 1, but some terminals or fonts may need\n"
+"a different number of spaces for icons to look good.  (If DIRX_ICON_SPACING\n"
+"isn't set, then EZA_ICON_SPACING and EXA_ICON_SPACING are checked as well.)\n"
 ;
 
 const WCHAR c_help_icons_examples[] =
