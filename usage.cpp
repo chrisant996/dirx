@@ -40,7 +40,8 @@ const char c_long_usage[] =
 "			  always, auto, never (default)\n"
 "  -l, --long		Long mode; display one file per line, plus attributes.\n"
 "  -n, --normal		Force normal list format even on FAT volumes.\n"
-"  -Q..., --quash=...	Quash types of output:\n"
+"  -Q, --quash[=TYPES]	Quash types of output.  Use -Q by itself as a synonym\n"
+"			for -Q+v+h+s."
 "			  v  Suppress the volume information\n"
 "			  h  Suppress the header\n"
 "			  s  Suppress the summary\n"
@@ -97,7 +98,8 @@ const char c_long_usage[] =
 "			  u  Unsorted\n"
 "			  r  Reverse order for all options\n"
 "			  -  Prefix to reverse order\n"
-"  -X..., --skip=...	Skip types during -s:\n"
+"  -X, --skip=TYPES	Skip types during -s.  Use -X by itself as a synonym\n"
+"			for -X+d+j+r options.\n"
 "			  d  Skip hidden directories (when used with -s)\n"
 "			  j  Skip junctions (when used with -s)\n"
 "			  r  Skip files with no alternate data streams\n"
@@ -164,25 +166,28 @@ const char c_long_usage[] =
 "			fit in the allotted space.  Specify a Unicode character\n"
 "			value in hexadecimal (e.g. -E2192 is a right-pointing\n"
 "			arrow and -E25b8 is a right-pointing triangle).\n"
-"  --pad-icons=SPACES	Select how many spaces to print after an icon.  The\n"
-"			default is 1 space.  Some terminals or fonts may need\n"
-"			a different number of spaces for icons to look good.\n"
-"\n"
-"Options may be preset in the DIRXCMD environment variable.  Override preset\n"
-"options by following any on/off option with - (hyphen), for example -h-.\n"
 "\n"
 "Long options that can be used without an argument also accept a 'no-' prefix\n"
 "to disable them.  For example, the --compact-columns option is enabled by\n"
 "default, and using --no-compact-columns disables it.\n"
 "\n"
-"Specify color coding rules in the DIRX_COLORS environment variable, or set it\n"
-"to * to use some predefined rules.  Use '-? colors' for more info.\n"
+"Options may be preset in the DIRXCMD environment variable.  Override preset\n"
+"options by following any on/off option with - (hyphen), for example -h-.  For\n"
+"interop compatibility with the CMD DIR command, slash options may also be\n"
+"used, for example /w.  Unlike the CMD DIR command, use /w- instead of /-w to\n"
+"override the option.\n"
+"\n"
+"Color coding rules may be set in the DIRX_COLORS environment variable.  Use\n"
+"'-? colors' for more info on color coding rules.\n"
 ;
 
 const char c_help_colors[] =
 "TBD.\n"
 // TODO: Rewrite help since the implementation totally changed.
 // TODO: Mention %NO_COLOR% and https://no-color.org/.
+// TODO: %DIRX_MIN_LUMINANCE%
+// TODO: %DIRX_COLOR_SCALE%, %EZA_COLOR_SCALE%, %EXA_COLOR_SCALE%
+// TODO: %DIRX_COLOR_SCALE_MODE%, %EZA_COLOR_SCALE_MODE%, %EXA_COLOR_SCALE_MODE%
 #if 0
 "Set the DIRX_COLORS environment variable to control how files and directories\n"
 "are colored.  The format is:\n"
@@ -260,6 +265,13 @@ const char c_help_colors[] =
 // TODO: write help text for icons.
 const char c_help_icons[] =
 "TBD.\n"
+// TODO: %DIRX_NERD_FONTS_VERSION%
+// TODO: %DIRX_ICON_SPACING%, %EZA_ICON_SPACING%, %EXA_ICON_SPACING%
+#if 0
+"  --pad-icons=SPACES	Select how many spaces to print after an icon.  The\n"
+"			default is 1 space.  Some terminals or fonts may need\n"
+"			a different number of spaces for icons to look good.\n"
+#endif
 ;
 
 const char c_help_pictures[] =
