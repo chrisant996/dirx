@@ -263,16 +263,35 @@ const char c_help_colors[] =
 #endif
 ;
 
-// TODO: write help text for icons.
 const char c_help_icons[] =
-"TBD.\n"
-// TODO: %DIRX_NERD_FONTS_VERSION%
-// TODO: %DIRX_ICON_SPACING%, %EZA_ICON_SPACING%, %EXA_ICON_SPACING%
-#if 0
-"  --pad-icons=SPACES	Select how many spaces to print after an icon.  The\n"
-"			default is 1 space.  Some terminals or fonts may need\n"
-"			a different number of spaces for icons to look good.\n"
-#endif
+"To see icons, a Nerd Font is required; https://nerdfonts.com\n"
+"By default, a Nerd Fonts v3 font is assumed.\n"
+"\n"
+"A few quick examples (without a Nerd Font these will look garbled):\n"
+"\n"
+"   archive.zip"
+"   clink.lua"
+"   image.png"
+"   diffs.patch"
+"   document.doc"
+"   Folder"
+"   LICENSE"
+"   main.cpp"
+"   music.mp3"
+"   README.md"
+"   script.cmd"
+"   todo.md"
+"\n"
+"Icons are selected based on the name of the file or folder, or the extension\n"
+"of the file name.  The icon mappings are hard-coded and aren't configurable at\n"
+"this time.\n"
+"\n"
+"Set DIRX_NERD_FONTS_VERSION=2 to select icons compatible with v2 fonts.\n"
+"\n"
+"Set DIRX_ICON_SPACING to specify how many spaces to print after an icon.  The\n"
+"default is 1, but some terminals or fonts may need a different number of spacesn"
+"for icons to look good.  (If DIRX_ICON_SPACING isn't set, then EZA_ICON_SPACING\n"
+"and EXA_ICON_SPACING are checked as well.)\n"
 ;
 
 const char c_help_pictures[] =
@@ -376,8 +395,12 @@ static const char c_help_regex[] =
 "Note that regular expressions are not natively supported by the OS, so all\n"
 "filenames must be retrieved and compared with the regular expression.  This can\n"
 "make using regular expressions much slower than using ? and * wildcards.\n"
-// TODO: Describe basics of ECMAScript regex and provide link to full docs.
-#if 0
+"\n"
+"The regular expression is the ECMAScript syntax described here:\n"
+"https://learn.microsoft.com/en-us/cpp/standard-library/regular-expressions-cpp\n"
+"\n"
+"Here is a quick summary; for details about the full syntax available, refer to\n"
+"the documentation link above.\n"
 "\n"
 "  Operator	Description\n"
 "  ^		Matches the null string at the beginning of a line.\n"
@@ -394,18 +417,24 @@ static const char c_help_regex[] =
 "		of the set).  The syntax for a complement set is the same as\n"
 "		the syntax for a normal set (above), except that it is preceded\n"
 "		by a ^ character.\n"
+"  [:class:]	Matches any character in the class (alnum, alpha, blank, cntrl,\n"
+"		digit, graph, lower, print, punct, space, upper, xdigit).\n"
 "  (abc)		Matches abc, and tags it as a sub-expression for retrieval.\n"
 "  abc|def	Matches abc or def.\n"
 "  x?		Matches 0 or 1 occurrences of the character x (or set, or\n"
 "		tagged sub-expression).\n"
 "  x+		Matches 1 or more occurrences of the character x (or set, or\n"
-"		tagged sub-expression).\n"
+"		tagged sub-expression).  x+? uses non-greedy repetition.\n"
 "  x*		Matches 0 or more occurrences of the character x (or set, or\n"
-"		tagged sub-expression).\n"
-"  \\<		Matches the null string at the beginning of a word.\n"
-"  \\>		Matches the null string at the end of a word.\n"
-"  \\x		Literally matches the special character x.  Special characters\n"
-"		are ^, $, ., [, (, ), |, ?, +, *, and \\.\n"
-#endif
+"		tagged sub-expression).  x*? uses non-greedy repitition.\n"
+"  !x		Matches anything but x.\n"
+"  \\b		Matches the null string at a word boundary (\\babc\\b matches\n"
+"		' abc ' but not abcx or xabc or xabcx).\n"
+"  \\B		Matches the null string not at a word boundary (\\Babc matches\n"
+"		xabc but not ' abc').\n"
+"  \\x		Some x characters have special meaning (refer to the the full\n"
+"		documentation).  For other characters, \\x literally matches the\n"
+"		character x.  Some characters require \\x to match them,\n"
+"		including ^, $, ., [, (, ), |, !, ?, +, *, and \\.\n"
 ;
 

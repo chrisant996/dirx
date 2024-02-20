@@ -5,7 +5,7 @@
 ### Next
 - Document the `--nix` flag once it's more polished (also find a better name?).
 - Document the environment variables.
-- Write `icons` and `colors` and `regex` help topics.
+- Write `colors` help topic.
 - Write README.md file as documentation.
 
 ### Git integration
