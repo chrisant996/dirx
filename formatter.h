@@ -137,6 +137,7 @@ unsigned GetPadIcons();
 bool SetColorScale(const WCHAR* s);
 bool IsScalingSize();
 bool SetColorScaleMode(const WCHAR* s);
+bool SetDefaultTimeStyle(const WCHAR* time_style);
 void SetTruncationCharacterInHex(const WCHAR* s);
 WCHAR GetTruncationCharacter();
 DWORD ParseAttribute(const WCHAR ch);

@@ -97,7 +97,9 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     enum
     {
         LOI_UNIQUE_IDS              = 0x7FFF,
+        LOI_ATTRIBUTES,
         LOI_NO_ATTRIBUTES,
+        LOI_NO_BARE,
         LOI_CLASSIFY,
         LOI_NO_CLASSIFY,
         LOI_NO_COLOR,
@@ -128,10 +130,13 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_PAD_ICONS,
         LOI_NO_RATIO,
         LOI_NO_SHORT_NAMES,
+        LOI_SIZE,
         LOI_NO_SIZE,
         LOI_NO_STREAMS,
         LOI_STRING_SORT,
+        LOI_TIME,
         LOI_NO_TIME,
+        LOI_TIME_STYLE,
         LOI_TRUNCATE_CHAR,
         LOI_WORD_SORT,
     };
@@ -139,9 +144,10 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     static LongOption<WCHAR> long_opts[] =
     {
         { L"all",                   nullptr,            'a' },
-        { L"attributes",            nullptr,            't' },
+        { L"attributes",            nullptr,            LOI_ATTRIBUTES },
         { L"no-attributes",         nullptr,            LOI_NO_ATTRIBUTES },
         { L"bare",                  nullptr,            'b' },
+        { L"no-bare",               nullptr,            LOI_NO_BARE },
         { L"classify",              nullptr,            LOI_CLASSIFY },
         { L"no-classify",           nullptr,            LOI_NO_CLASSIFY },
         { L"color",                 nullptr,            'c' },
@@ -157,6 +163,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"full-paths",            nullptr,            'F' },
         { L"no-full-paths",         nullptr,            LOI_NO_FULL_PATHS },
         { L"grid",                  nullptr,            'G' },
+        { L"no-grid",               nullptr,            '>' },
         { L"help",                  nullptr,            '?' },
         { L"hide-dot-files",        nullptr,            LOI_HIDE_DOT_FILES },
         { L"no-hide-dot-files",     nullptr,            LOI_NO_HIDE_DOT_FILES },
@@ -166,6 +173,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"icons",                 nullptr,            LOI_ICONS,              LOHA_OPTIONAL },
         { L"no-icons",              nullptr,            LOI_NO_ICONS },
         { L"justify",               nullptr,            LOI_JUSTIFY,            LOHA_OPTIONAL },
+        { L"long",                  nullptr,            'l' },
+        { L"no-long",               nullptr,            '<' },
         { L"lower",                 nullptr,            LOI_LOWER },
         { L"no-lower",              nullptr,            LOI_NO_LOWER },
         { L"more-colors",           nullptr,            LOI_MORE_COLORS,        LOHA_REQUIRED },
@@ -184,19 +193,21 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"recurse",               nullptr,            's' },
         { L"short-names",           nullptr,            'x' },
         { L"no-short-names",        nullptr,            LOI_NO_SHORT_NAMES },
-        { L"size",                  nullptr,            'S',                    LOHA_OPTIONAL },
+        { L"size",                  nullptr,            LOI_SIZE,               LOHA_OPTIONAL },
         { L"no-size",               nullptr,            LOI_NO_SIZE },
         { L"skip",                  nullptr,            'X',                    LOHA_OPTIONAL },
         { L"streams",               nullptr,            'r' },
         { L"no-streams",            nullptr,            LOI_NO_STREAMS },
         { L"string-sort",           nullptr,            LOI_STRING_SORT },
-        { L"time",                  nullptr,            'T',                    LOHA_OPTIONAL },
+        { L"time",                  nullptr,            LOI_TIME,               LOHA_OPTIONAL },
         { L"no-time",               nullptr,            LOI_NO_TIME },
+        { L"time-style",            nullptr,            LOI_TIME_STYLE,         LOHA_REQUIRED },
         { L"truncate-char",         nullptr,            LOI_TRUNCATE_CHAR,      LOHA_REQUIRED },
         { L"usage",                 nullptr,            'u' },
         { L"version",               nullptr,            'V' },
         { L"vertical",              nullptr,            'v' },
         { L"wide",                  nullptr,            'w' },
+        { L"no-wide",               nullptr,            '>' },
         { L"width",                 nullptr,            'W',                    LOHA_REQUIRED },
         { L"word-sort",             nullptr,            LOI_WORD_SORT },
 #ifdef DEBUG
@@ -263,8 +274,9 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             else if (!wcsicmp(argv[0], L"pictures"))
             {
                 StrW tmp;
+                WCHAR trunc[2] = { GetTruncationCharacter(), '\0' };
                 tmp.SetA(c_help_pictures);
-                s.Printf(tmp.Text(), GetTruncationCharacter());
+                s.Printf(tmp.Text(), trunc);
             }
             else if (!wcsicmp(argv[0], L"regex"))
             {
@@ -466,6 +478,14 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                 continue; // Other flags are handled separately further below.
             switch (long_opt->value)
             {
+            case LOI_ATTRIBUTES:
+                flags |= FMT_ATTRIBUTES;
+                flags &= ~FMT_LONGNOATTRIBUTES;
+                break;
+            case LOI_NO_ATTRIBUTES:
+                flags |= FMT_LONGNOATTRIBUTES;
+                flags &= ~FMT_ATTRIBUTES;
+                break;
             case LOI_COLOR_SCALE:
                 if (!SetColorScale(opt_value))
                 {
@@ -510,11 +530,31 @@ unrecognized_long_opt_value:
                 HideDotFiles(false);
                 flags &= ~(FMT_HIDEPSEUDODIRS|FMT_SORTVERTICAL|FMT_FORCENONFAT|FMT_FAT|FMT_SKIPHIDDENDIRS|FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER);
                 break;
+            case LOI_SIZE:
+                flags |= FMT_SIZE;
+                flags &= ~FMT_LONGNOSIZE;
+                break;
+            case LOI_NO_SIZE:
+                flags |= FMT_LONGNOSIZE;
+                flags &= ~FMT_SIZE;
+                break;
+            case LOI_TIME:
+                flags |= FMT_DATE;
+                flags &= ~FMT_LONGNODATE;
+                break;
+            case LOI_NO_TIME:
+                flags |= FMT_LONGNODATE;
+                flags &= ~FMT_DATE;
+                break;
+            case LOI_TIME_STYLE:
+                if (!SetDefaultTimeStyle(opt_value))
+                    goto unrecognized_long_opt_value;
+                break;
             case LOI_TRUNCATE_CHAR:
                 SetTruncationCharacterInHex(opt_value);
                 break;
 
-            case LOI_NO_ATTRIBUTES:         flagsOFF = FMT_ATTRIBUTES; break;
+            case LOI_NO_BARE:               flagsOFF = FMT_BARE; break;
             case LOI_CLASSIFY:              flagsON = FMT_CLASSIFY; break;
             case LOI_NO_CLASSIFY:           flagsOFF = FMT_CLASSIFY; break;
             case LOI_NO_COLOR:              flagsOFF = FMT_COLORS; break;
@@ -536,10 +576,8 @@ unrecognized_long_opt_value:
             case LOI_PAD_ICONS:             SetPadIcons(wcstoul(opt_value, nullptr, 10)); break;
             case LOI_NO_RATIO:              flagsOFF = FMT_COMPRESSED; break;
             case LOI_NO_SHORT_NAMES:        flagsOFF = FMT_SHORTNAMES; break;
-            case LOI_NO_SIZE:               flagsOFF = FMT_SIZE; break;
             case LOI_NO_STREAMS:            flagsOFF = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;
             case LOI_STRING_SORT:           g_dwCmpStrFlags |= SORT_STRINGSORT; break;
-            case LOI_NO_TIME:               flagsOFF = FMT_DATE; break;
             case LOI_WORD_SORT:             g_dwCmpStrFlags &= ~SORT_STRINGSORT; break;
             }
             break;
@@ -662,18 +700,28 @@ unrecognized_long_opt_value:
 
     if (!(flags & (FMT_BARE|FMT_ATTRIBUTES|FMT_FULLNAME|FMT_FULLTIME|FMT_COMPRESSED|FMT_FORCENONFAT|FMT_SHOWOWNER|FMT_ONLYALTDATASTREAMS|FMT_ALTDATASTEAMS)))
     {
+        bool long_attributes = false;
         for (unsigned ii = 0; opts.GetValue(ii, ch, opt_value); ii++)
         {
             switch (ch)
             {
-            case '1':
             case 'l':
-                if (*opt_value != '-')
+            case '<':
+            case '1':
+                if (*opt_value != '-' && ch != '<')
+                {
                     cColumns = 1;
+                    if (ch == 'l' && !(flags & FMT_LONGNOATTRIBUTES))
+                        long_attributes = true;
+                }
                 else if (cColumns == 1)
+                {
                     cColumns = 0;
+                    long_attributes = false;
+                }
                 break;
             case '2':
+                long_attributes = false;
                 if (!picture)
                 {
                     if (*opt_value != '-')
@@ -683,6 +731,7 @@ unrecognized_long_opt_value:
                 }
                 break;
             case '4':
+                long_attributes = false;
                 if (!picture)
                 {
                     if (*opt_value != '-')
@@ -693,13 +742,18 @@ unrecognized_long_opt_value:
                 break;
             case 'G':
             case 'w':
-                if (*opt_value != '-')
+            case '>':
+                long_attributes = false;
+                if (*opt_value != '-' && ch != '>')
                     cColumns = 0;
                 else if (cColumns == 0)
                     cColumns = 1;
                 break;
             }
         }
+
+        if (long_attributes)
+            flags |= FMT_ATTRIBUTES;
     }
 
     if (flags & FMT_FORCENONFAT)

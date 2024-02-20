@@ -28,6 +28,7 @@ static unsigned s_icon_width = 0;
 static bool s_scale_size = false;
 static bool s_scale_time = false;
 static bool s_gradient = true;
+static WCHAR s_time_style = 0;
 
 static const WCHAR c_hyperlink[] = L"\x1b]8;;";
 static const WCHAR c_BEL[] = L"\a";
@@ -176,6 +177,37 @@ bool SetColorScaleMode(const WCHAR* s)
     return true;
 }
 
+bool SetDefaultTimeStyle(const WCHAR* time_style)
+{
+    if (!time_style)
+        return false;
+
+    static const WCHAR* c_time_styles[] =
+    {
+        L"mmini",
+        L"Iiso",
+        L"Ccompact",
+        L"sshort",
+        L"nnormal",
+        L"Llong-iso",
+        L"xfull",
+#if 0
+        L"Ffull-iso",
+        L"Rrelative",
+#endif
+        L"llocale",
+    };
+
+    for (auto s : c_time_styles)
+        if ((time_style[0] == s[0] && !time_style[1]) || wcsicmp(s + 1, time_style) == 0)
+        {
+            s_time_style = s[0];
+            return true;
+        }
+
+    return false;
+}
+
 static void SelectFileTime(const FileInfo* const pfi, const WhichTimeStamp timestamp, SYSTEMTIME* const psystime)
 {
     FILETIME ft;
@@ -199,6 +231,9 @@ static LCID s_lcid = 0;
 static unsigned s_locale_date_time_len = 0;
 static WCHAR s_locale_date[80];
 static WCHAR s_locale_time[80];
+static WCHAR s_locale_monthname[12][10];
+static unsigned s_locale_monthname_len[12];
+static unsigned s_locale_monthname_longest_len = 1;
 static WCHAR s_decimal[2];
 static WCHAR s_thousand[2];
 
@@ -224,6 +259,31 @@ void InitLocale()
         wcscpy_s(s_decimal, L".");
     if (!GetLocaleInfo(s_lcid, LOCALE_STHOUSAND, s_thousand, _countof(s_thousand)))
         wcscpy_s(s_thousand, L",");
+
+    static const struct { LCTYPE lst; const WCHAR* dflt; } c_monthname_lookup[] =
+    {
+        { LOCALE_SABBREVMONTHNAME1,  L"Jan" },
+        { LOCALE_SABBREVMONTHNAME2,  L"Feb" },
+        { LOCALE_SABBREVMONTHNAME3,  L"Mar" },
+        { LOCALE_SABBREVMONTHNAME4,  L"Apr" },
+        { LOCALE_SABBREVMONTHNAME5,  L"May" },
+        { LOCALE_SABBREVMONTHNAME6,  L"Jun" },
+        { LOCALE_SABBREVMONTHNAME7,  L"Jul" },
+        { LOCALE_SABBREVMONTHNAME8,  L"Aug" },
+        { LOCALE_SABBREVMONTHNAME9,  L"Sep" },
+        { LOCALE_SABBREVMONTHNAME10, L"Oct" },
+        { LOCALE_SABBREVMONTHNAME11, L"Nov" },
+        { LOCALE_SABBREVMONTHNAME12, L"Dec" },
+    };
+    static_assert(_countof(c_monthname_lookup) == 12, "wrong number of month strings");
+    static_assert(_countof(c_monthname_lookup) == _countof(s_locale_monthname), "wrong number of month strings");
+    for (unsigned i = _countof(c_monthname_lookup); i--;)
+    {
+        if (!GetLocaleInfo(s_lcid, c_monthname_lookup[i].lst, s_locale_monthname[i], _countof(s_locale_monthname[i])))
+            wcscpy_s(s_locale_monthname[i], c_monthname_lookup[i].dflt);
+        s_locale_monthname_len[i] = __wcswidth(s_locale_monthname[i]);
+        s_locale_monthname_longest_len = clamp<unsigned>(s_locale_monthname_len[i], s_locale_monthname_longest_len, 9);
+    }
 
     // Get the locale-dependent short date and time formats.
     // (It looks like a loop, but it's just so 'break' can short circuit out.)
@@ -1027,7 +1087,9 @@ static WCHAR GetEffectiveTimeFieldStyle(const DirFormatSettings& settings, WCHAR
 {
     if (!chStyle)
     {
-        if (settings.IsSet(FMT_FAT))
+        if (s_time_style)
+            chStyle = s_time_style;
+        else if (settings.IsSet(FMT_FAT))
             chStyle = 's';
         else if (settings.IsSet(FMT_FULLTIME))
             chStyle = 'x';
@@ -1045,8 +1107,15 @@ static unsigned GetTimeFieldWidthByStyle(const DirFormatSettings& settings, WCHA
     switch (GetEffectiveTimeFieldStyle(settings, chStyle))
     {
     case 'l':           assert(s_locale_date_time_len); return s_locale_date_time_len;
+#if 0
+    case 'F':           return 29;      // "YYYY-MM-DD HH:mm:ss.mmm -0800"
+    case 'R':           return 0;       // ...variable width...
+#endif
     case 'x':           return 24;      // "YYYY/MM/DD  HH:mm:ss.mmm"
+    case 'L':           return 16;      // "YYYY-MM-DD HH:mm"
     case 's':           return 15;      // "MM/DD/YY  HH:mm"
+    case 'C':           return 12;      // "DD Mmm  YYYY"  or  "DD Mmm HH:mm"
+    case 'I':           return 11;      // "MM-DD HH:mm"
     case 'm':           return 11;      // "MM/DD HH:mm"  or  "MM/DD  YYYY"
     default:            return 17;      // "MM/DD/YYYY  HH:mm"
     }
@@ -1098,6 +1167,69 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
         // Locale format.
         FormatLocaleDateTime(s, &systime);
         break;
+
+    case 'C':
+        // Compact format, 12 characters (depending on width of longest
+        // abbreviated month name).
+        {
+            SYSTEMTIME systimeNow;
+            GetLocalTime(&systimeNow);
+            const unsigned iMonth = clamp<WORD>(systime.wMonth, 1, 12) - 1;
+            const unsigned iMonthFile = unsigned(systime.wYear) * 12 + iMonth;
+            const unsigned iMonthNow = unsigned(systimeNow.wYear) * 12 + systimeNow.wMonth - 1;
+            const bool fShowYear = (iMonthFile > iMonthNow || iMonthFile + 6 < iMonthNow);
+            s.Printf(s_locale_monthname[iMonth]);
+            s.AppendSpaces(s_locale_monthname_longest_len - s_locale_monthname_len[iMonth]);
+            s.Printf(L" %2u", systime.wDay);
+            if (fShowYear)
+                s.Printf(L"  %04u", systime.wYear);
+            else
+                s.Printf(L" %02u:%02u", systime.wHour, systime.wMinute);
+        }
+        break;
+
+    case 'I':
+        // iso format, 11 characters.
+        s.Printf(L"%02u-%02u %2u:%02u",
+                 systime.wMonth,
+                 systime.wDay,
+                 systime.wHour,
+                 systime.wMinute);
+        break;
+
+    case 'L':
+        // long-iso format, 16 characters.
+        s.Printf(L"%04u-%02u-%02u %2u:%02u",
+                 systime.wYear,
+                 systime.wMonth,
+                 systime.wDay,
+                 systime.wHour,
+                 systime.wMinute);
+        break;
+
+#if 0
+    case 'F':
+        // full-iso format, 29 characters.
+        s.Printf(L"%04u-%02u-%02u %2u:%02u:%02u.%03u %c%02u%02u",
+                 systime.wYear,
+                 systime.wMonth,
+                 systime.wDay,
+                 systime.wHour,
+                 systime.wMinute,
+                 systime.wSecond,
+                 systime.wMilliseconds,
+                 '?',                   // TODO: - or + of time zone bias
+                 0,                     // TODO: hours of time zone bias
+                 0);                    // TODO: minutes of time zone bias
+        break;
+#endif
+
+#if 0
+    case 'R':
+        // FUTURE: 'R': relative: "1 week" etc (minutes, hours, days, weeks,
+        // months, years).
+        break;
+#endif
 
     case 'x':
         // 24 characters.
@@ -1934,7 +2066,18 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags
             if (m_settings.IsSet(FMT_FAT))
                 picture = L"F Ss D  C?  T?";
             else
-                picture = L"D  S  C?  T?  X?  O?  F";
+            {
+                sPic.Clear();
+                if (!m_settings.IsSet(FMT_LONGNODATE))
+                    sPic.Append(L"D  ");
+                if (!m_settings.IsSet(FMT_LONGNOSIZE))
+                    sPic.Append(L"S  ");
+                sPic.Append(L"C?  ");
+                if (!m_settings.IsSet(FMT_LONGNOATTRIBUTES))
+                    sPic.Append(L"T?  ");
+                sPic.Append(L"X?  O?  F");
+                picture = sPic.Text();
+            }
             break;
         case 0:
             sPic.Set(L"F");
