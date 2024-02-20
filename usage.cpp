@@ -1,4 +1,4 @@
-// Copyright (c) 2024 by Christopher Antos
+﻿// Copyright (c) 2024 by Christopher Antos
 // License: http://opensource.org/licenses/MIT
 
 // vim: set noet ts=8 sw=4 cino={0s:
@@ -269,18 +269,7 @@ const char c_help_icons[] =
 "\n"
 "A few quick examples (without a Nerd Font these will look garbled):\n"
 "\n"
-"   archive.zip"
-"   clink.lua"
-"   image.png"
-"   diffs.patch"
-"   document.doc"
-"   Folder"
-"   LICENSE"
-"   main.cpp"
-"   music.mp3"
-"   README.md"
-"   script.cmd"
-"   todo.md"
+"%s"
 "\n"
 "Icons are selected based on the name of the file or folder, or the extension\n"
 "of the file name.  The icon mappings are hard-coded and aren't configurable at\n"
@@ -289,9 +278,24 @@ const char c_help_icons[] =
 "Set DIRX_NERD_FONTS_VERSION=2 to select icons compatible with v2 fonts.\n"
 "\n"
 "Set DIRX_ICON_SPACING to specify how many spaces to print after an icon.  The\n"
-"default is 1, but some terminals or fonts may need a different number of spacesn"
+"default is 1, but some terminals or fonts may need a different number of spaces\n"
 "for icons to look good.  (If DIRX_ICON_SPACING isn't set, then EZA_ICON_SPACING\n"
 "and EXA_ICON_SPACING are checked as well.)\n"
+;
+
+const WCHAR c_help_icons_examples[] =
+L"   archive.zip\n"
+L"   clink.lua\n"
+L"   image.png\n"
+L"   diffs.patch\n"
+L"   document.doc\n"
+L"   Folder\n"
+L"   LICENSE\n"
+L"   main.cpp\n"
+L"   music.mp3\n"
+L"   README.md\n"
+L"   script.cmd\n"
+L"   todo.md\n"
 ;
 
 const char c_help_pictures[] =

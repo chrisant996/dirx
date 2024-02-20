@@ -269,7 +269,9 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             }
             else if (!wcsicmp(argv[0], L"icons"))
             {
-                s.SetA(c_help_icons);
+                StrW tmp;
+                tmp.SetA(c_help_icons);
+                s.Printf(tmp.Text(), c_help_icons_examples);
             }
             else if (!wcsicmp(argv[0], L"pictures"))
             {

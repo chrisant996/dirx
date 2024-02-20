@@ -15,6 +15,8 @@
 #include "colors.h"
 #include "output.h"
 #include "formatter.h"
+#include "columns.h"
+#include "wcwidth.h"
 #include <algorithm>
 #endif
 
@@ -1206,17 +1208,38 @@ static void PrintIcons(HANDLE h, std::vector<std::wstring>& strings, DWORD attr,
 {
     StrW tmp;
     const unsigned spaces = GetPadIcons();
+    const unsigned console_width = LOWORD(GetConsoleColsRows(h));
 
     std::sort(strings.begin(), strings.end(), CmpCaseless);
 
-    for (const auto& s : strings)
+    ColumnWidths col_widths = CalculateColumns([spaces, &strings](size_t i){
+        return 1 + spaces + __wcswidth(strings[i].c_str());
+    }, strings.size(), true, 2, console_width - 1);
+
+    const size_t cols = col_widths.size();
+    const size_t rows = (strings.size() + cols - 1) / cols;
+    for (size_t i = 0; i < rows; ++i)
     {
-        const WCHAR* c = LookupColor(s.c_str(), attr, mode);
-        OutputConsole(h, LookupIcon(s.c_str(), attr), -1, GetIconColor(c));
-        tmp.Clear();
-        tmp.AppendSpaces(spaces);
-        OutputConsole(h, tmp.Text());
-        OutputConsole(h, s.c_str(), -1, c);
+        size_t index = i;
+
+        for (size_t j = 0; j < cols; ++j, index += rows)
+        {
+            if (index >= strings.size())
+                break;
+
+            if (j)
+                OutputConsole(h, L"  ");
+
+            const WCHAR* c = LookupColor(strings[index].c_str(), attr, mode);
+            OutputConsole(h, LookupIcon(strings[index].c_str(), attr), -1, GetIconColor(c));
+            tmp.Clear();
+            tmp.AppendSpaces(spaces);
+            OutputConsole(h, tmp.Text(), spaces);
+            tmp.Set(strings[index].c_str());
+            tmp.AppendSpaces(col_widths[j] - 1 - spaces - __wcswidth(strings[index].c_str()));
+            OutputConsole(h, tmp.Text(), tmp.Length(), c);
+        }
+
         OutputConsole(h, L"\n");
     }
 }
