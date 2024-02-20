@@ -186,7 +186,7 @@ bool OptionsTemplate<T>::Parse(
 
         // '--' is special and means subsequent arguments should not be
         // treated as flags even if they begin with '-' (or '/').
-        if (walk[0][1] == '-' && !walk[0][2])
+        if (walk[0][0] == '-' && walk[0][1] == '-' && !walk[0][2])
         {
             --argc;
             if (argv == walk)
@@ -206,130 +206,130 @@ bool OptionsTemplate<T>::Parse(
 
         const T* arg = walk[0];
 
+        // Handle long options specially.
+        if (arg[0] == '-' && long_opts && arg[1] == '-')
+        {
+            arg += 2;
+            const T* const name = arg;
+            const T* name_end = name;
+            while (*name_end &&
+                    *name_end != ' ' &&
+                    *name_end != '=')
+                ++name_end;
+            const size_t name_len = name_end - name;
+
+            // Look for a match.
+
+            LongOption<T>* found = nullptr;
+            LongOption<T>* abbrev = nullptr;
+            bool ambiguous = false;
+            const bool caseless = !!(flags & OPT_LONGANYCASE);
+
+            for (LongOption<T>* p = long_opts; p->name; ++p)
+            {
+                if (IsEqual(p->name, name, name_len, caseless))
+                {
+                    if (abbrev)
+                    {
+                        ambiguous = true;
+                        break;
+                    }
+
+                    abbrev = p;
+
+                    size_t long_name_len = 0;
+                    for (const T* long_name = p->name; *long_name; ++long_name)
+                        long_name_len++;
+
+                    if (name_len == long_name_len)
+                    {
+                        found = p;
+                        break;
+                    }
+                }
+            }
+
+            if (flags & OPT_LONGABBR)
+            {
+                if (ambiguous)
+                {
+                    T possibilities[256];
+                    T* append = possibilities;
+                    for (LongOption<T>* p = long_opts; p->name; ++p)
+                    {
+                        if (IsEqual(p->name, name, name_len, caseless))
+                        {
+                            const size_t len = Sprintf(possibilities, _countof(possibilities),
+                                                        append, c_errors[OTE_AMBIGUOUS_POSSIBILITY_S], p->name);
+                            if (len >= _countof(possibilities ) - (append - possibilities))
+                            {
+                                *append = 0;
+                                break;
+                            }
+                            append += len;
+                        }
+                    }
+                    SetError(OTE_AMBIGUOUS_OPTION_ASS, usage, name_len, name, possibilities);
+                    return false;
+                }
+
+                if (!found && abbrev)
+                    found = abbrev;
+            }
+
+            if (!found)
+            {
+                SetError(OTE_INVALID_OPTION_AS, usage, name_len, name);
+                return false;
+            }
+
+            // Handle the long option.
+
+            static const T empty_arg = '\0';
+            const T* long_arg = &empty_arg;
+
+            if (*name_end)
+            {
+                if (found->has_arg == LOHA_NOARG)
+                {
+                    SetError(OTE_ARGUMENT_NOT_ALLOWED_S, usage, found->name);
+                    return false;
+                }
+                long_arg = name_end + 1;
+            }
+            else if (found->has_arg == LOHA_REQUIRED)
+            {
+                long_arg = GetArg(0, argc, argv, move_to, walk, argc_to_process);
+                if (!long_arg)
+                {
+                    SetError(OTE_MISSING_REQUIRED_ARGUMENT_S, usage, found->name);
+                    return false;
+                }
+            }
+
+            if (m_count >= m_max)
+            {
+                SetError(OTE_TOO_MANY_OPTIONS, usage);
+                return false;
+            }
+
+            if (found->flag)
+                *found->flag = found->value;
+            if (found->arg)
+                *found->arg = long_arg;
+
+            m_flags[m_count] = found->value ? T(found->value) : '-';
+            m_values[m_count] = long_arg;
+            m_long_opts[m_count] = found;
+            ++m_count;
+            goto next_arg;
+        }
+
         while (true)
         {
             ++arg;                      // Skip the '-' or '/' option character.
             if (!*arg)
                 break;
-
-            // Handle long options specially.
-            if (*arg == '-' && long_opts)
-            {
-                ++arg;
-                const T* const name = arg;
-                const T* name_end = name;
-                while (*name_end &&
-                       *name_end != ' ' &&
-                       *name_end != '=')
-                    ++name_end;
-                const size_t name_len = name_end - name;
-
-                // Look for a match.
-
-                LongOption<T>* found = nullptr;
-                LongOption<T>* abbrev = nullptr;
-                bool ambiguous = false;
-                const bool caseless = !!(flags & OPT_LONGANYCASE);
-
-                for (LongOption<T>* p = long_opts; p->name; ++p)
-                {
-                    if (IsEqual(p->name, name, name_len, caseless))
-                    {
-                        if (abbrev)
-                        {
-                            ambiguous = true;
-                            break;
-                        }
-
-                        abbrev = p;
-
-                        size_t long_name_len = 0;
-                        for (const T* long_name = p->name; *long_name; ++long_name)
-                            long_name_len++;
-
-                        if (name_len == long_name_len)
-                        {
-                            found = p;
-                            break;
-                        }
-                    }
-                }
-
-                if (flags & OPT_LONGABBR)
-                {
-                    if (ambiguous)
-                    {
-                        T possibilities[256];
-                        T* append = possibilities;
-                        for (LongOption<T>* p = long_opts; p->name; ++p)
-                        {
-                            if (IsEqual(p->name, name, name_len, caseless))
-                            {
-                                const size_t len = Sprintf(possibilities, _countof(possibilities),
-                                                           append, c_errors[OTE_AMBIGUOUS_POSSIBILITY_S], p->name);
-                                if (len >= _countof(possibilities ) - (append - possibilities))
-                                {
-                                    *append = 0;
-                                    break;
-                                }
-                                append += len;
-                            }
-                        }
-                        SetError(OTE_AMBIGUOUS_OPTION_ASS, usage, name_len, name, possibilities);
-                        return false;
-                    }
-
-                    if (!found && abbrev)
-                        found = abbrev;
-                }
-
-                if (!found)
-                {
-                    SetError(OTE_INVALID_OPTION_AS, usage, name_len, name);
-                    return false;
-                }
-
-                // Handle the long option.
-
-                static const T empty_arg = '\0';
-                const T* long_arg = &empty_arg;
-
-                if (*name_end)
-                {
-                    if (found->has_arg == LOHA_NOARG)
-                    {
-                        SetError(OTE_ARGUMENT_NOT_ALLOWED_S, usage, found->name);
-                        return false;
-                    }
-                    long_arg = name_end + 1;
-                }
-                else if (found->has_arg == LOHA_REQUIRED)
-                {
-                    long_arg = GetArg(0, argc, argv, move_to, walk, argc_to_process);
-                    if (!long_arg)
-                    {
-                        SetError(OTE_MISSING_REQUIRED_ARGUMENT_S, usage, found->name);
-                        return false;
-                    }
-                }
-
-                if (m_count >= m_max)
-                {
-                    SetError(OTE_TOO_MANY_OPTIONS, usage);
-                    return false;
-                }
-
-                if (found->flag)
-                    *found->flag = found->value;
-                if (found->arg)
-                    *found->arg = long_arg;
-
-                m_flags[m_count] = found->value ? T(found->value) : '-';
-                m_values[m_count] = long_arg;
-                m_long_opts[m_count] = found;
-                ++m_count;
-                break;
-            }
 
             // Find the option character in opts.
             const T* o = opts;
@@ -355,7 +355,7 @@ bool OptionsTemplate<T>::Parse(
             }
 
             // '-' enables '--long' options.
-            if (*o == '-' && arg != walk[0] + 1)
+            if (*o == '-' && arg != walk[0] + 1 && *(o - 1) == '-')
             {
                 SetError(OTE_INVALID_OPTION_C, usage, *arg);
                 return false;
@@ -440,6 +440,7 @@ bool OptionsTemplate<T>::Parse(
             ++m_count;
         }
 
+next_arg:
         --argc;
         if (argv == walk)
         {
