@@ -244,9 +244,9 @@ static const NerdFontIcon c_common_icons[] =
     { L"󰇚", L"" },     // DOWNLOAD
     { L"", ____ },     // EMACS
     { L"", ____ },     // ESLINT
-    { L"", L"" },     // FILE
-    { L"", L"" },     // FILE_OUTLINE
-    { L"", L"" },     // FOLDER
+    { L"",      },     // FILE
+    { L"",      },     // FILE_OUTLINE
+    { L"",      },     // FOLDER
     { L"",      },     // FOLDER_CONFIG
     { L"",      },     // FOLDER_GIT
     { L"",      },     // FOLDER_GITHUB
@@ -421,7 +421,7 @@ static const NerdFontIcon c_common_icons[] =
     { L"", ____ },     // ZIG
 
     // More.
-    { L"󰋼", L"" },     // INFO
+    { L"",      },     // INFO
     { L"", L"" },     // HISTORY
     { L"",      },     // PDB
     { L"", L"ﬓ" },     // OS_WINDOWS_EXE
