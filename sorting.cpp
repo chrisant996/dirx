@@ -295,8 +295,8 @@ bool CmpFileInfo(const FileInfo& fi1, const FileInfo& fi2)
     return n < 0;
 }
 
-bool CmpSubDirs(const StrW& s1, const StrW& s2)
+bool CmpSubDirs(const SubDir& d1, const SubDir& d2)
 {
-    return CmpStrI(s1.Text(), s2.Text()) < 0;
+    return CmpStrI(d1.dir.Text(), d2.dir.Text()) < 0;
 }
 

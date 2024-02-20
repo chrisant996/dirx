@@ -24,14 +24,14 @@ public:
     virtual void        OnFileNotFound() = 0;
     virtual void        OnDirectoryEnd(bool next_is_different) = 0;
     virtual void        OnVolumeEnd(const WCHAR* dir) = 0;
-    virtual void        AddSubDir(const StrW& dir) = 0;
+    virtual void        AddSubDir(const StrW& dir, unsigned depth) = 0;
     virtual void        SortSubDirs() = 0;
-    virtual bool        NextSubDir(StrW& dir) = 0;
+    virtual bool        NextSubDir(StrW& dir, unsigned& depth) = 0;
     virtual unsigned    CountFiles() const = 0;
     virtual unsigned    CountDirs() const = 0;
     virtual bool        IsOnlyRootSubDir() const = 0;
     virtual bool        IsRootSubDir() const = 0;
 };
 
-int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, Error& e);
+int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned limit_depth, Error& e);
 

@@ -12,14 +12,21 @@
 struct DirFormatSettings;
 class Error;
 
+struct SubDir
+{
+    StrW                dir;
+    unsigned            depth;
+};
+
 struct DirPattern
 {
-    DirPattern() : m_implicit(false), m_next(0) {}
+    DirPattern() : m_implicit(false), m_next(nullptr) {}
 
     std::vector<StrW>   m_patterns;
     StrW                m_dir;
     bool                m_isFAT;
     bool                m_implicit;
+    unsigned            m_depth = 0;
 
     DirPattern*         m_next;
 };

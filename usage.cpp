@@ -87,6 +87,7 @@ const char c_long_usage[] =
 "			  +  Prefix meaning any\n"
 "			  -  Prefix meaning not\n"
 "  -h			Hide . and .. directories.\n"
+"  -L, --levels=DEPTH	Limit the depth of recursion with -s.\n"
 "  -o[...]		Sort the list by the specified options:\n"
 "			  n  Name [and extension if 'e' omitted] (alphabetic)\n"
 "			  e  Extension (alphabetic)\n"

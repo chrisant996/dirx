@@ -2527,7 +2527,7 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
 
     if (Settings().IsSet(FMT_USAGEGROUPED))
         do_end = (m_subdirs.empty() ||
-                  IsNewRootGroup(m_subdirs[0].Text()));
+                  IsNewRootGroup(m_subdirs[0].dir.Text()));
 
     if (do_end)
     {
@@ -2812,14 +2812,15 @@ void DirEntryFormatter::OnVolumeEnd(const WCHAR* dir)
     OutputConsole(m_hout, s.Text(), s.Length());
 }
 
-void DirEntryFormatter::AddSubDir(const StrW& dir)
+void DirEntryFormatter::AddSubDir(const StrW& dir, unsigned depth)
 {
     assert(Settings().IsSet(FMT_SUBDIRECTORIES));
     assert(!IsPseudoDirectory(dir.Text()));
 
-    m_subdirs.emplace_back();
-    StrW* subdir = &m_subdirs.back();
-    subdir->Set(dir);
+    SubDir subdir;
+    subdir.dir.Set(dir);
+    subdir.depth = depth;
+    m_subdirs.emplace_back(std::move(subdir));
 }
 
 void DirEntryFormatter::SortSubDirs()
@@ -2828,15 +2829,17 @@ void DirEntryFormatter::SortSubDirs()
         std::sort(m_subdirs.begin(), m_subdirs.end(), CmpSubDirs);
 }
 
-bool DirEntryFormatter::NextSubDir(StrW& dir)
+bool DirEntryFormatter::NextSubDir(StrW& dir, unsigned& depth)
 {
     if (m_subdirs.empty())
     {
         dir.Clear();
+        depth = 0;
         return false;
     }
 
-    dir.Set(*m_subdirs.begin());
+    dir = std::move(m_subdirs[0].dir);
+    depth = m_subdirs[0].depth;
     m_subdirs.erase(m_subdirs.begin());
     return true;
 }

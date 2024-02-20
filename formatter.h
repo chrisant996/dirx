@@ -12,6 +12,8 @@
 
 #include <vector>
 
+struct SubDir;
+
 struct AttrChar
 {
     WCHAR ch;
@@ -68,7 +70,11 @@ public:
                         DirEntryFormatter();
                         ~DirEntryFormatter();
 
-    void                Initialize(unsigned cColumns, FormatFlags flags, WhichTimeStamp whichtimestamp=TIMESTAMP_MODIFIED, WhichFileSize whichfilesize=FILESIZE_FILESIZE, DWORD dwAttrIncludeAny=0, DWORD dwAttrMatch=0, DWORD dwAttrExcludeAny=0, const WCHAR* picture=nullptr);
+    void                Initialize(unsigned cColumns, FormatFlags flags,
+                                   WhichTimeStamp whichtimestamp=TIMESTAMP_MODIFIED,
+                                   WhichFileSize whichfilesize=FILESIZE_FILESIZE,
+                                   DWORD dwAttrIncludeAny=0, DWORD dwAttrMatch=0, DWORD dwAttrExcludeAny=0,
+                                   const WCHAR* picture=nullptr);
 
     void                DisplayOne(const FileInfo* pfi);
 
@@ -82,9 +88,9 @@ public:
     void                OnFileNotFound() override;
     void                OnDirectoryEnd(bool next_dir_is_different) override;
     void                OnVolumeEnd(const WCHAR* dir) override;
-    void                AddSubDir(const StrW& dir) override;
+    void                AddSubDir(const StrW& dir, unsigned depth) override;
     void                SortSubDirs() override;
-    bool                NextSubDir(StrW& dir) override;
+    bool                NextSubDir(StrW& dir, unsigned& depth) override;
     unsigned            CountFiles() const override { return m_cFiles; }
     unsigned            CountDirs() const override { return m_cDirs; }
     bool                IsOnlyRootSubDir() const override;
@@ -117,7 +123,7 @@ private:
     unsigned __int64    m_cbCompressedTotal = 0;
 
     std::vector<FileInfo> m_files;
-    std::vector<StrW>   m_subdirs;
+    std::vector<SubDir> m_subdirs;
     StrW                m_root;
     StrW                m_root_group;
     bool                m_implicit = false;

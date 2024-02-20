@@ -30,7 +30,7 @@
 
 #include <memory>
 
-static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+C+E.f:F+G+h+i+j+J+k+l+n+o.p+q+Q.r+R+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
+static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+C+E.f:F+G+h+i+j+J+k+l+L:n+o.p+q+Q.r+R+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
 static const WCHAR c_DIRXCMD[] = L"DIRXCMD";
 
 static const WCHAR* get_env_prio(const WCHAR* a, const WCHAR* b=nullptr, const WCHAR* c=nullptr)
@@ -119,6 +119,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_ICONS,
         LOI_NO_ICONS,
         LOI_JUSTIFY,
+        LOI_LEVELS,
         LOI_LOWER,
         LOI_NO_LOWER,
         LOI_NIX,
@@ -172,6 +173,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"icons",                 nullptr,            LOI_ICONS,              LOHA_OPTIONAL },
         { L"no-icons",              nullptr,            LOI_NO_ICONS },
         { L"justify",               nullptr,            LOI_JUSTIFY,            LOHA_OPTIONAL },
+        { L"levels",                nullptr,            'L',                    LOHA_REQUIRED },
         { L"long",                  nullptr,            'l' },
         { L"no-long",               nullptr,            '<' },
         { L"lower",                 nullptr,            LOI_LOWER },
@@ -312,6 +314,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     DWORD dwAttrIncludeAny = 0;
     DWORD dwAttrMatch = 0;
     DWORD dwAttrExcludeAny = FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM;
+    unsigned limit_depth = 0;
     bool fresh_a_flag = true;
     const WCHAR* picture = 0;
     const WCHAR* opt_value;
@@ -394,6 +397,16 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                 }
                 *pdwAttr |= dwAttr;
                 opt_value++;
+            }
+            break;
+        case 'L':
+            SkipColonOrEqual(opt_value);
+            if (*opt_value)
+            {
+                unsigned long n = wcstoul(opt_value, nullptr, 10);
+                if (n > 0xfffffff0)
+                    n = 0xfffffff0;
+                limit_depth = n;
             }
             break;
         case 'n':
@@ -779,6 +792,7 @@ unrecognized_long_opt_value:
                   FMT_SEPARATETHOUSANDS|FMT_REDIRECTED|FMT_AUTOSEPTHOUSANDS|
                   FMT_USAGE|FMT_USAGEGROUPED|FMT_MINIDATE);
         flags |= FMT_BARE|FMT_SUBDIRECTORIES;
+        limit_depth = 0;
     }
 
     if (cColumns != 1)
@@ -838,7 +852,7 @@ unrecognized_long_opt_value:
         (!patterns || !patterns->m_next))
         def.Settings().m_flags &= ~FMT_MINIHEADER;
 
-    const int rc = ScanDir(def, patterns, e);
+    const int rc = ScanDir(def, patterns, limit_depth, e);
 
     if (e.Test())
         return e.Report();

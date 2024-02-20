@@ -3,7 +3,6 @@
 ### BUGS
 
 ### Next
-- `-L`, `--level` to limit depth of recursion.
 - Document the `--nix` flag once it's more polished (also find a better name?).
 - Document the environment variables.
 - Write `icons` and `colors` and `regex` help topics.

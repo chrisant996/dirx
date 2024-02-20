@@ -85,7 +85,7 @@ bool RegExpHelper::Match(const WCHAR* s)
  * Scan directories and files.
  */
 
-static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const DirPattern* pattern, const bool top, Error& e)
+static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, unsigned depth, const DirPattern* pattern, const bool top, unsigned limit_depth, Error& e)
 {
     if (wcslen(dir) >= MaxPath())
     {
@@ -223,9 +223,12 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const DirPa
             }
             else
             {
+                const unsigned new_depth = limit_depth ? depth + 1 : 0;
                 do
                 {
                     if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+                        continue;
+                    if (limit_depth && new_depth > limit_depth)
                         continue;
                     if (IsHidden(fd) && callbacks.Settings().IsSet(FMT_SKIPHIDDENDIRS))
                         continue;
@@ -240,7 +243,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const DirPa
                     strip = FindName(s.Text());
                     s.SetEnd(strip);
                     s.Append(fd.cFileName);
-                    callbacks.AddSubDir(s);
+                    callbacks.AddSubDir(s, new_depth);
                 }
                 while (FindNextFile(shFind, &fd));
 
@@ -263,7 +266,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const DirPa
     return any_files_found;
 }
 
-int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, Error& e)
+int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned limit_depth, Error& e)
 {
     int rc = 0;
 
@@ -286,6 +289,7 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, Error& e)
         }
 
         dir.Set(p->m_dir);
+        unsigned depth = p->m_depth;
 
         bool top = true;
         while (true)
@@ -325,7 +329,7 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, Error& e)
             if (!dir.Length())
                 break;
 
-            if (ScanFiles(callbacks, dir.Text(), p, top, e))
+            if (ScanFiles(callbacks, dir.Text(), depth, p, top, limit_depth, e))
             {
                 any_files_found = true;
                 // REVIEW: Does rc=0 match CMD DIR behavior?
@@ -375,7 +379,7 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, Error& e)
             // out if this is the last pattern, because then we'd
             // accidentally skip the summary information.
 
-            if (!callbacks.NextSubDir(dir) && p->m_next)
+            if (!callbacks.NextSubDir(dir, depth) && p->m_next)
                 break;
         }
 
