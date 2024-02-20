@@ -476,7 +476,7 @@ bool OptionsTemplate<T>::GetValue(
     const T*& value,
     const LongOption<T>** long_opt) const
 {
-    if (iOpt >= m_max)
+    if (iOpt >= m_count)
         return false;
     chOpt = m_flags[iOpt];
     value = m_values[iOpt];
@@ -490,7 +490,7 @@ const T* OptionsTemplate<T>::GetValue(
     T chOpt,
     unsigned iSubOpt) const
 {
-    for (unsigned ii = 0; ii < m_max; ++ii)
+    for (unsigned ii = 0; ii < m_count; ++ii)
     {
         if (chOpt == m_flags[ii])
         {
