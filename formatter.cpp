@@ -185,15 +185,15 @@ bool SetDefaultTimeStyle(const WCHAR* time_style)
     static const WCHAR* c_time_styles[] =
     {
         L"mmini",
-        L"Iiso",
-        L"Ccompact",
+        L"iiso",
+        L"pcompact",
         L"sshort",
         L"nnormal",
-        L"Llong-iso",
+        L"olong-iso",
         L"xfull",
 #if 0
-        L"Ffull-iso",
-        L"Rrelative",
+        L"ufull-iso",
+        L"rrelative",
 #endif
         L"llocale",
     };
@@ -1108,14 +1108,14 @@ static unsigned GetTimeFieldWidthByStyle(const DirFormatSettings& settings, WCHA
     {
     case 'l':           assert(s_locale_date_time_len); return s_locale_date_time_len;
 #if 0
-    case 'F':           return 29;      // "YYYY-MM-DD HH:mm:ss.mmm -0800"
-    case 'R':           return 0;       // ...variable width...
+    case 'u':           return 29;      // "YYYY-MM-DD HH:mm:ss.mmm -0800"
+    case 'r':           return 0;       // ...variable width...
 #endif
     case 'x':           return 24;      // "YYYY/MM/DD  HH:mm:ss.mmm"
-    case 'L':           return 16;      // "YYYY-MM-DD HH:mm"
+    case 'o':           return 16;      // "YYYY-MM-DD HH:mm"
     case 's':           return 15;      // "MM/DD/YY  HH:mm"
-    case 'C':           return 12;      // "DD Mmm  YYYY"  or  "DD Mmm HH:mm"
-    case 'I':           return 11;      // "MM-DD HH:mm"
+    case 'p':           return 12;      // "DD Mmm  YYYY"  or  "DD Mmm HH:mm"
+    case 'i':           return 11;      // "MM-DD HH:mm"
     case 'm':           return 11;      // "MM/DD HH:mm"  or  "MM/DD  YYYY"
     default:            return 17;      // "MM/DD/YYYY  HH:mm"
     }
@@ -1168,7 +1168,7 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
         FormatLocaleDateTime(s, &systime);
         break;
 
-    case 'C':
+    case 'p':
         // Compact format, 12 characters (depending on width of longest
         // abbreviated month name).
         {
@@ -1188,7 +1188,7 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
         }
         break;
 
-    case 'I':
+    case 'i':
         // iso format, 11 characters.
         s.Printf(L"%02u-%02u %2u:%02u",
                  systime.wMonth,
@@ -1197,7 +1197,7 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
                  systime.wMinute);
         break;
 
-    case 'L':
+    case 'o':
         // long-iso format, 16 characters.
         s.Printf(L"%04u-%02u-%02u %2u:%02u",
                  systime.wYear,
@@ -1208,7 +1208,7 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
         break;
 
 #if 0
-    case 'F':
+    case 'u':
         // full-iso format, 29 characters.
         s.Printf(L"%04u-%02u-%02u %2u:%02u:%02u.%03u %c%02u%02u",
                  systime.wYear,
@@ -1225,7 +1225,7 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
 #endif
 
 #if 0
-    case 'R':
+    case 'r':
         // FUTURE: 'R': relative: "1 week" etc (minutes, hours, days, weeks,
         // months, years).
         break;
