@@ -164,6 +164,8 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, unsigned de
 
                     if (reh.IsRegex() && !reh.Match(fd.cFileName))
                         continue;
+                    if (pattern->m_ignore.Count() && pattern->m_ignore.IsMatch(dir, fd.cFileName))
+                        continue;
 
                     if (!displayed_header)
                     {
@@ -238,6 +240,8 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, unsigned de
                         continue;
 
                     if (filter_dirs && reh.IsRegex() && !reh.Match(fd.cFileName))
+                        continue;
+                    if (pattern->m_ignore.Count() && pattern->m_ignore.IsMatch(dir, fd.cFileName))
                         continue;
 
                     strip = FindName(s.Text());

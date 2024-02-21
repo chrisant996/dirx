@@ -238,7 +238,49 @@ static void AdjustPattern(StrW& pattern, const WCHAR* regex, bool isFAT, StrW& d
     assert(pattern.Length());
 }
 
-DirPattern* MakePatterns(int argc, const WCHAR** argv, const DirFormatSettings& settings, Error& e)
+static const WCHAR* FindGlobEnd(const WCHAR* p)
+{
+    for (;;)
+    {
+        if (!*p || *p == ';' || *p == '|')
+            return p;
+        if (*p == '\\' && p[1])
+            ++p;
+        ++p;
+    }
+}
+
+static GlobPatterns MakeGlobs(const WCHAR* dir, const WCHAR* ignore_globs)
+{
+    StrW glob;
+    GlobPatterns globs;
+    globs.SetRoot(dir);
+
+    if (ignore_globs && *ignore_globs)
+    {
+        while (true)
+        {
+            const WCHAR* end = FindGlobEnd(ignore_globs);
+            while (*ignore_globs == ' ')
+                ++ignore_globs;
+            if (ignore_globs == end || !*ignore_globs)
+                break;
+
+            glob.Set(ignore_globs, end - ignore_globs);
+            glob.TrimRight();
+
+            globs.Append(glob.Text());
+
+            ignore_globs = end;
+            assert(!*ignore_globs || *ignore_globs == '|' || *ignore_globs == ';');
+            if (*ignore_globs == '|' || *ignore_globs == ';')
+                ++ignore_globs;
+        }
+    }
+    return globs;
+}
+
+DirPattern* MakePatterns(int argc, const WCHAR** argv, const DirFormatSettings& settings, const WCHAR* ignore_globs, Error& e)
 {
     DirPattern* patterns = nullptr;
     DirPattern* tail = nullptr;
@@ -307,6 +349,256 @@ DirPattern* MakePatterns(int argc, const WCHAR** argv, const DirFormatSettings& 
         }
     }
 
+    for (DirPattern* p = patterns; p; p = p->m_next)
+        p->m_ignore = MakeGlobs(p->m_dir.Text(), ignore_globs);
+
     return patterns;
+}
+
+void GlobPatterns::GlobPattern::Set(const WCHAR* p)
+{
+    m_pattern.Set(p);
+    Trim(m_pattern);
+
+    if (p[0] == '!')
+        ++p;
+
+    m_top_level = (p[0] == '/');
+    m_any_level = true;
+    m_multi_star_prefix_len = 0;
+
+    // fnmatch() says "**/foo" matches "x/foo" but not "foo", so "**/" prefix
+    // requires an extra call to fnmatch() with the "**/" prefix stripped.
+    while (p[m_multi_star_prefix_len] == '*')
+        m_multi_star_prefix_len++;
+    if (p[m_multi_star_prefix_len] == '/')
+        ++m_multi_star_prefix_len;
+    if (m_multi_star_prefix_len < 3)
+        m_multi_star_prefix_len = 0;
+
+    // "**/foo" needs to use FNM_LEADING_DIR, so skip past the "**/" prefix so
+    // m_anyLevel becomes true.
+    p += m_multi_star_prefix_len;
+    while (p[0])
+    {
+        // This triggers on "foo[!/]bar" BECAUSE empirical testing shows
+        // gitignore does as well!  Since git accomplishes the "match at any
+        // level" behavior through pre-processing, for compatibility the same
+        // approach is used here (which certainly simplifies things).
+        if (p[0] == '/' && p[1])
+        {
+            m_any_level = false;
+            break;
+        }
+
+        ++p;
+    }
+
+    assert(!(m_top_level && m_any_level));
+    assert(!(m_top_level && m_multi_star_prefix_len));
+}
+
+int GlobPatterns::GlobPattern::Flags() const
+{
+    return m_any_level ? WM_LEADING_DIR : 0;
+}
+
+GlobPatterns::GlobPatterns(int flags)
+: m_flags(flags)
+{
+}
+
+GlobPatterns::~GlobPatterns()
+{
+}
+
+void GlobPatterns::SetRoot(const WCHAR* root)
+{
+#ifdef DEBUG
+    m_root_initialized = true;
+#endif
+    m_root.Set(root);
+}
+
+bool GlobPatterns::IsMatch(const WCHAR* dir, const WCHAR* file) const
+{
+    bool result = false;
+    StrW full;
+
+    assert(dir);
+    assert(wcsncmp(dir, m_root.Text(), m_root.Length()) == 0);
+    if (wcsncmp(dir, m_root.Text(), m_root.Length()) != 0)
+        return false;
+
+    dir += m_root.Length();
+    while (IsPathSeparator(*dir))
+        ++dir;
+
+    full.Set(dir);
+    if (!full.Empty())
+        EnsureTrailingSlash(full);
+    full.Append(file);
+
+    for (const auto& pat : m_patterns)
+    {
+        const WCHAR* pattern = pat.Pattern().Text();
+
+        if (!*pattern || *pattern == '#')
+            continue;
+
+        const bool negate = (*pattern == '!');
+        if (negate)
+            ++pattern;
+
+        // Optimization:  if it's a match so far, only test negations; if it's
+        // not a match so far, don't test negations.
+        if (result == !negate)
+            continue;
+
+        const int flags = pat.Flags() | m_flags;
+
+        // First try the pattern as is.  And if index_to_filename > 0 then
+        // also try the pattern against the filename part, as long as the
+        // pattern doesn't start with "/" or "*/"
+        bool match = false;
+        if (pat.IsTopLevel())
+        {
+            // If it's a top level pattern (starts with a slash) then only
+            // match the beginning.
+            match = (wildmatch(pattern + 1, full.Text(), flags) == 0);
+        }
+        else if (pat.IsAnyLevel())
+        {
+            // Patterns without a slash at the beginning or middle can match
+            // any directory level.  The "**/" prefix is superfluous when
+            // IsAnyLevel(), so skip past it if present so its slash doesn't
+            // trigger a false mismatch (e.g. "**/foo" vs "foo").
+            //
+            // The implementation makes an optimization that relies on
+            // matching while traversing the directory structure (vs matching
+            // against a flat list of fully qualified file paths):  It only
+            // matches against the last filename component, and traversing the
+            // directory structure ends up making that have the same effect as
+            // comparing to every filename component without needing to waste
+            // computation time on redundant comparisons.
+            match = (wildmatch(pattern + pat.MultiStarPrefix(), file, flags|WM_PATHNAME) == 0);
+        }
+        else
+        {
+            // Do normal matching.
+            match = (wildmatch(pattern, full.Text(), flags) == 0);
+        }
+
+        if (match)
+        {
+            result = !negate;
+            if (!m_any_negations)
+                break;
+        }
+    }
+
+    if (!result)
+        return false;
+
+    return true;
+}
+
+void GlobPatterns::SetPattern(size_t index, const WCHAR* p)
+{
+    GlobPattern& pat = m_patterns[index];
+    const bool was_negate = pat.Pattern().Text()[0] == '!';
+    const bool is_negate = p[0] == '!';
+
+    pat.Set(p);
+
+    UpdateAnyNegations(is_negate, was_negate);
+}
+
+void GlobPatterns::SwapWithNext(size_t index)
+{
+    if (index + 1 < m_patterns.size())
+        std::swap(m_patterns[index], m_patterns[index + 1]);
+}
+
+void GlobPatterns::Insert(size_t index, const WCHAR* p)
+{
+    assert(m_root_initialized);
+
+    if (index > m_patterns.size())
+        index = m_patterns.size();
+
+    StrW s;
+
+    while (*p)
+    {
+        const WCHAR* next = p;
+        while (*next)
+        {
+            if (next[0] == ';')
+                break;
+            s.Append(next[0]);
+            if (next[0] == '\\' && next[1])
+            {
+                s.Append(next[1]);
+                ++next;
+            }
+            ++next;
+        }
+
+        s.Set(p, next - p);
+
+        GlobPattern pat;
+        pat.Set(s.Text());
+        m_patterns.insert(m_patterns.begin() + (index++), std::move(pat));
+        s.Clear();
+
+        p = next;
+        if (*p == ';')
+            ++p;
+    }
+}
+
+void GlobPatterns::Trim(StrW& s)
+{
+    const WCHAR* end = s.Text();
+
+    for (const WCHAR* p = end; *p; ++p)
+    {
+        if (*p == ' ')
+            continue;
+        if (*p == '\\')
+        {
+            ++p;
+            if (!*p)
+            {
+                end = p;
+                break;
+            }
+        }
+        end = p + 1;
+    }
+
+    s.SetEnd(end);
+}
+
+void GlobPatterns::UpdateAnyNegations(bool is_negate, bool was_negate)
+{
+    if (is_negate)
+    {
+        m_any_negations = true;
+    }
+    else if (was_negate && m_any_negations)
+    {
+        bool any = false;
+        for (const auto& pat : m_patterns)
+        {
+            if (pat.Pattern().Text()[0] == '!')
+            {
+                any = true;
+                break;
+            }
+        }
+        m_any_negations = any;
+    }
 }
 

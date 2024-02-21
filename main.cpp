@@ -31,7 +31,7 @@
 
 #include <memory>
 
-static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+C+E.f:F+G+h+i+j+J+k+l+L:n+o.p+q+Q.r+R+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
+static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+C+E.f:F+G+h+i+I:j+J+k+l+L:n+o.p+q+Q.r+R+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
 static const WCHAR c_DIRXCMD[] = L"DIRXCMD";
 
 static const WCHAR* get_env_prio(const WCHAR* a, const WCHAR* b=nullptr, const WCHAR* c=nullptr)
@@ -173,6 +173,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-hyperlinks",         nullptr,            LOI_NO_HYPERLINKS },
         { L"icons",                 nullptr,            LOI_ICONS,              LOHA_OPTIONAL },
         { L"no-icons",              nullptr,            LOI_NO_ICONS },
+        { L"ignore-glob",           nullptr,            'I',                    LOHA_REQUIRED },
         { L"justify",               nullptr,            LOI_JUSTIFY,            LOHA_OPTIONAL },
         { L"levels",                nullptr,            'L',                    LOHA_REQUIRED },
         { L"long",                  nullptr,            'l' },
@@ -328,6 +329,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     const WCHAR* picture = 0;
     const WCHAR* opt_value;
     const LongOption<WCHAR>* long_opt;
+    StrW ignore_globs;
     WCHAR ch;
 
     for (unsigned ii = 0; opts.GetValue(ii, ch, opt_value, &long_opt); ii++)
@@ -406,6 +408,17 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                 }
                 *pdwAttr |= dwAttr;
                 opt_value++;
+            }
+            break;
+        case 'I':
+            SkipColonOrEqual(opt_value);
+            if (wcscmp(opt_value, L"-") == 0)
+                ignore_globs.Clear();
+            else
+            {
+                if (!ignore_globs.Empty())
+                    ignore_globs.Append(L"|");
+                ignore_globs.Append(opt_value);
             }
             break;
         case 'L':
@@ -841,7 +854,7 @@ unrecognized_long_opt_value:
 
     // Determine path(s) to scan.
 
-    DirPattern* patterns = MakePatterns(argc, argv, def.Settings(), e);
+    DirPattern* patterns = MakePatterns(argc, argv, def.Settings(), ignore_globs.Text(), e);
     if (e.Test())
         return e.Report();
 

@@ -3,10 +3,8 @@
 ### BUGS
 
 ### Next
-- Document the `--nix` flag once it's more polished (also find a better name?).
-- Document the environment variables.
-- Write `colors` help topic.
 - Write README.md file as documentation.
+- Document the `--nix` flag once it's more polished (also find a better name?).
 
 ### Git integration
 - Ignore files per `.gitignore`.
