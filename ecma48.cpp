@@ -726,25 +726,25 @@ concat_verbatim:
                                     --skip;
                                 else
                                 {
-                                    // switch (csi.params[i])
-                                    // {
-                                    // case 4:     // Underline.
-                                    // case 9:     // Strikethrough.
-                                    // case 21:    // Double underline.
-                                    // case 53:    // Overline.
-                                    //     continue;
-                                    // case 38:
-                                    // case 48:
-                                    // case 58:
-                                    //     if (i + 1 < csi.param_count)
-                                    //     {
-                                    //         if (csi.params[i + 1] == 2)
-                                    //             skip = 4;
-                                    //         else if (csi.params[i + 1] == 5)
-                                    //             skip = 2;
-                                    //     }
-                                    //     break;
-                                    // }
+                                    switch (csi.params[i])
+                                    {
+                                    case 4:     // Underline.
+                                    case 9:     // Strikethrough.
+                                    case 21:    // Double underline.
+                                    case 53:    // Overline.
+                                        continue;
+                                    case 38:
+                                    case 48:
+                                    case 58:
+                                        if (i + 1 < csi.param_count)
+                                        {
+                                            if (csi.params[i + 1] == 2)
+                                                skip = 4;
+                                            else if (csi.params[i + 1] == 5)
+                                                skip = 2;
+                                        }
+                                        break;
+                                    }
                                 }
                                 tmp.Printf(L";%u", csi.params[i]);
                             }
