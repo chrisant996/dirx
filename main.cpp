@@ -25,6 +25,7 @@
 #include "formatter.h"
 #include "scan.h"
 #include "colors.h"
+#include "samples.h"
 #include "icons.h"
 #include "usage.h"
 
@@ -259,13 +260,18 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
 
     if (opts['?'])
     {
-        SetPagination(true);
         s.Clear();
         if (argv[0])
         {
             if (!wcsicmp(argv[0], L"colors"))
             {
                 s.SetA(c_help_colors);
+            }
+            else if (!wcsicmp(argv[0], L"colorsamples"))
+            {
+                SetUseEscapeCodes(L"always");
+                PrintColorSamples();
+                return 0;
             }
             else if (!wcsicmp(argv[0], L"icons"))
             {
@@ -291,6 +297,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             fmt.SetA(c_long_usage);
             s.Printf(fmt.Text(), app.Text());
         }
+        SetPagination(true);
         OutputConsole(GetStdHandle(STD_OUTPUT_HANDLE), s.Text());
         return 0;
     }
