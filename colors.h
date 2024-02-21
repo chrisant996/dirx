@@ -13,7 +13,8 @@ class FileInfo;
 int ValidateColor(const WCHAR* p, const WCHAR* end=nullptr);
 
 void InitColors(const WCHAR* custom);
-const WCHAR* LookupColor(const FileInfo* pfi);
+bool UseLinkTargetColor();
+const WCHAR* LookupColor(const FileInfo* pfi, const WCHAR* dir, bool ignore_target_color=false);
 const WCHAR* LookupColor(const WCHAR* name, DWORD attr, unsigned short mode);
 const WCHAR* GetAttrLetterColor(DWORD attr);
 const WCHAR* GetIconColor(const WCHAR* color);

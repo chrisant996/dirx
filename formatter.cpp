@@ -216,11 +216,11 @@ static void SelectFileTime(const FileInfo* const pfi, const WhichTimeStamp times
     FileTimeToSystemTime(&ft, psystime);
 }
 
-static const WCHAR* SelectColor(const FileInfo* const pfi, const FormatFlags flags)
+static const WCHAR* SelectColor(const FileInfo* const pfi, const FormatFlags flags, const WCHAR* dir, bool ignore_target_color=false)
 {
     if (flags & FMT_COLORS)
     {
-        const WCHAR* color = LookupColor(pfi);
+        const WCHAR* color = LookupColor(pfi, dir, ignore_target_color);
         if (color)
             return color;
     }
@@ -544,7 +544,7 @@ static void JustifyFilename(StrW& s, const StrW& name, unsigned max_name_width, 
     s.AppendSpaces(max_name_width + 1 + max_ext_width - __wcswidth(s.Text() + orig_len));
 }
 
-static void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsigned max_width=0, const WCHAR* dir=nullptr, const WCHAR* color=nullptr)
+static void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsigned max_width=0, const WCHAR* dir=nullptr, const WCHAR* color=nullptr, bool show_reparse=false)
 {
     StrW tmp;
     const StrW& name = pfi->GetFileName(flags);
@@ -675,7 +675,9 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsi
 
             if (flags & FMT_CLASSIFY)
             {
-                if (pfi->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY)
+                if (!show_reparse && pfi->IsReparseTag() && !UseLinkTargetColor())
+                    classify = L'@';
+                else if (pfi->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY)
                     classify = L'\\';
                 else if (pfi->IsSymLink())
                     classify = L'@';
@@ -721,9 +723,7 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsi
 static void FormatReparsePoint(StrW& s, const FileInfo* const pfi, const FormatFlags flags, const WCHAR* const dir)
 {
     assert(dir);
-
-    if (!pfi->IsReparseTag())
-        return;
+    assert(pfi->IsReparseTag());
 
     StrW full;
     full.Set(dir);
@@ -1825,7 +1825,7 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WCHAR* dir, co
     const unsigned max_file_width = m_max_file_width;
     const unsigned max_dir_width = m_max_dir_width + (m_settings.IsSet(FMT_DIRBRACKETS) ? 2 : 0);
 
-    const WCHAR* color = SelectColor(pfi, m_settings.m_flags);
+    const WCHAR* color = SelectColor(pfi, m_settings.m_flags, dir);
 
     // Format the fields.
 
@@ -1940,11 +1940,16 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WCHAR* dir, co
                     if (flags & FMT_FULLNAME)
                         width = 0;
 
-                    FormatFilename(s, pfi, flags, width, dir, color);
+                    const bool show_reparse = (fLast && dir && one_per_line && pfi->IsReparseTag());
+                    const WCHAR* field_color = color;
+                    if (show_reparse && UseLinkTargetColor())
+                        field_color = SelectColor(pfi, m_settings.m_flags, dir, true);
+
+                    FormatFilename(s, pfi, flags, width, dir, field_color, show_reparse);
                     if (fLast)
                     {
                         s.TrimRight();
-                        if (dir && one_per_line)
+                        if (show_reparse)
                             FormatReparsePoint(s, pfi, flags, dir);
                     }
                 }
@@ -2333,7 +2338,7 @@ void DirEntryFormatter::DisplayOne(const FileInfo* const pfi)
             s.Set(m_dir);
             EnsureTrailingSlash(s);
         }
-        FormatFilename(s, pfi, m_settings.m_flags, 0, m_dir.Text(), SelectColor(pfi, m_settings.m_flags));
+        FormatFilename(s, pfi, m_settings.m_flags, 0, m_dir.Text(), SelectColor(pfi, m_settings.m_flags, m_dir.Text()));
     }
     else
     {

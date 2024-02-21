@@ -217,6 +217,8 @@ enum class Icons
     HISTORY,
     PDB,
     OS_WINDOWS_EXE,
+    FOLDER_LINK,
+    FILE_LINK,
 
     __COUNT
 };
@@ -427,6 +429,8 @@ static const NerdFontIcon c_common_icons[] =
     { L"", L"" },     // HISTORY
     { L"",      },     // PDB
     { L"", L"ﬓ" },     // OS_WINDOWS_EXE
+    { L"",      },     // FOLDER_LINK
+    { L"",      },     // FILE_LINK
 };
 
 static_assert(size_t(Icons::__COUNT) == _countof(c_common_icons), "mismatched number of icons!");
@@ -1169,7 +1173,7 @@ const WCHAR* LookupIcon(const WCHAR* full, DWORD attr)
     {
         icon = GetDirectoryIcon(name);
         if (!icon)
-            icon = GetIcon(Icons::FOLDER);
+            icon = GetIcon((attr & FILE_ATTRIBUTE_REPARSE_POINT) ? Icons::FOLDER_LINK : Icons::FOLDER);
     }
     else
     {
@@ -1189,7 +1193,8 @@ const WCHAR* LookupIcon(const WCHAR* full, DWORD attr)
                 }
 
                 if (!icon)
-                    icon = GetIcon(ext ? Icons::FILE : Icons::FILE_OUTLINE);
+                    icon = GetIcon((attr & FILE_ATTRIBUTE_REPARSE_POINT) ? Icons::FILE_LINK :
+                                   (ext) ? Icons::FILE : Icons::FILE_OUTLINE);
             }
         }
     }

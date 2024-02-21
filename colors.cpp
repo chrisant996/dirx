@@ -46,6 +46,7 @@ static const WCHAR c_default_colors[] =
     // L"da=0:"
     L"lp=36:"
     L"su=1;35:sf=1;35:ur=32:"
+    L"or=31:"
     ;
 
 enum ColorIndex : unsigned short
@@ -643,6 +644,7 @@ static void InitColorMaps()
         // Gd : dirty branch of repo
 
         { L"lp", { CFLAG_NOT_A_TYPE, ciLinkPath } },
+        { L"or", { CFLAG_NOT_A_TYPE, ciOrphan } },
         // TODO: what is "bO" in eza?
         // bO : the overlay style for broken symlink paths
 
@@ -720,6 +722,11 @@ static ColorIndex ColorIndexFromColorFlag(ColorFlag flags)
 
 static WCHAR* s_color_strings[ciCOUNT];
 static bool s_link_target_color = false;
+
+bool UseLinkTargetColor()
+{
+    return s_link_target_color;
+}
 
 static void SetColorString(ColorIndex ci, WCHAR* color)
 {
@@ -1087,6 +1094,15 @@ static int ParseColorRule(const WCHAR* in, StrW& value, ColorRule& rule, bool ls
 
     if (num_attr == 1 && !(rule.m_not_attr & not_attr_mask) && !rule.m_not_flags && rule.m_patterns.empty())
     {
+        if (ci == ciLink)
+        {
+            s_link_target_color = !!value.EqualI(L"target");
+            if (s_link_target_color)
+            {
+                SetColorString(ciLink, nullptr);
+                return 0;
+            }
+        }
         if (ci > ciZERO && ValidateColor(value.Text()) >= 0)
         {
             assert(rule.m_attr || rule.m_flags);
@@ -1204,13 +1220,12 @@ void InitColors(const WCHAR* custom)
         const int x = clamp(_wtoi(env), -100, 100);
         s_min_luminance = double(x) / 100;
     }
-
-    const WCHAR* link_color = s_color_strings[ciLink];
-    s_link_target_color = (link_color && _wcsicmp(link_color, L"target") == 0);
 }
 
-const WCHAR* LookupColor(const FileInfo* pfi)
+const WCHAR* LookupColor(const FileInfo* pfi, const WCHAR* dir, bool ignore_target_color)
 {
+    assert(dir); // Otherwise can't check for orphaned symlinks.
+
     DWORD attr = pfi->GetAttributes();
     const StrW& long_name = pfi->GetLongName();
     const WCHAR* name = long_name.Text();
@@ -1223,12 +1238,20 @@ const WCHAR* LookupColor(const FileInfo* pfi)
 
     if (pfi->IsReparseTag())
     {
-        if (!s_link_target_color)
-            mode = S_IFLNK;
+        if (!s_link_target_color && !ignore_target_color)
+            mode |= S_IFLNK;
 
-        struct _stat64 st;
-        if (_wstat64(name, &st) < 0)
-            mode &= ~(S_IFDIR|S_IFREG);
+        if (dir) // Invalid...but don't crash if bug gets accidentally released.
+        {
+            StrW fullname;
+            fullname.Set(dir);
+            EnsureTrailingSlash(fullname);
+            fullname.Append(name);
+
+            struct _stat64 st;
+            if (_wstat64(fullname.Text(), &st) < 0)
+                mode &= ~(S_IFDIR|S_IFREG);
+        }
     }
 
     return LookupColor(name, attr, mode);
@@ -1260,7 +1283,12 @@ const WCHAR* LookupColor(const WCHAR* name, DWORD attr, unsigned short mode)
     }
     else
     {
-        if (S_ISREG(mode))
+        if (S_ISLNK(mode) && !s_link_target_color)
+        {
+            assert(attr & FILE_ATTRIBUTE_REPARSE_POINT);
+            ci = ciLink;
+        }
+        else if (S_ISREG(mode))
         {
             assert(!(attr & FILE_ATTRIBUTE_DIRECTORY));
             ci = ciFile;
@@ -1277,29 +1305,21 @@ const WCHAR* LookupColor(const WCHAR* name, DWORD attr, unsigned short mode)
                     flags = iter->second.flags;
             }
         }
+        else if (S_ISDIR(mode))
+        {
+            assert(attr & FILE_ATTRIBUTE_DIRECTORY);
+            ci = ciDirectory;
+        }
         else
         {
-            if (S_ISDIR(mode))
-            {
-                assert(attr & FILE_ATTRIBUTE_DIRECTORY);
-                ci = ciDirectory;
-            }
-            else if (S_ISLNK(mode) && !s_link_target_color)
-            {
-                assert(attr & FILE_ATTRIBUTE_REPARSE_POINT);
-                ci = ciLink;
-            }
-            else
-            {
-                ci = ciOrphan;
-                attr = 0;
-            }
-
-            if ((attr & FILE_ATTRIBUTE_TEMPORARY) && (s_color_strings[ciTemporaryAttribute] || s_color_strings[ciTemporary]))
-                ci = ciTemporaryAttribute;
-            else if ((attr & FILE_ATTRIBUTE_COMPRESSED) && (s_color_strings[ciCompressedAttribute] || s_color_strings[ciCompressed]))
-                ci = ciCompressedAttribute;
+            ci = ciOrphan;
+            attr = 0;
         }
+
+        if ((attr & FILE_ATTRIBUTE_TEMPORARY) && (s_color_strings[ciTemporaryAttribute] || s_color_strings[ciTemporary]))
+            ci = ciTemporaryAttribute;
+        else if ((attr & FILE_ATTRIBUTE_COMPRESSED) && (s_color_strings[ciCompressedAttribute] || s_color_strings[ciCompressed]))
+            ci = ciCompressedAttribute;
 
         if ((attr & FILE_ATTRIBUTE_READONLY) && s_color_strings[ciReadonly])
             ci = ciReadonly;
