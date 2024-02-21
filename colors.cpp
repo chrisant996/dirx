@@ -973,10 +973,10 @@ static const AttributeName c_attributes[] =
     { FILE_ATTRIBUTE_NORMAL,                ciFile,                 1,  L"fi" },
     { FILE_ATTRIBUTE_HIDDEN,                ciHidden,               0,  L"hi" },
     { FILE_ATTRIBUTE_REPARSE_POINT,         ciLink,                 1,  L"ln" },
-    { FILE_ATTRIBUTE_NOT_CONTENT_INDEXED,   ciNotContentIndexed,    0,  L"notindexed" },
+    { FILE_ATTRIBUTE_NOT_CONTENT_INDEXED,   ciNotContentIndexed,    0,  L"NI" },
     { FILE_ATTRIBUTE_OFFLINE,               ciOffline,              0,  L"of" },
     { FILE_ATTRIBUTE_READONLY,              ciReadonly,             0,  L"ro" },
-    { FILE_ATTRIBUTE_SPARSE_FILE,           ciSparse,               0,  L"sparse" },
+    { FILE_ATTRIBUTE_SPARSE_FILE,           ciSparse,               0,  L"SP" },
     { FILE_ATTRIBUTE_SYSTEM,                ciSystem,               0,  L"sy" },
     { FILE_ATTRIBUTE_TEMPORARY,             ciTemporaryAttribute,   0,  L"tT" },
 };
@@ -1026,6 +1026,7 @@ static int ParseColorRule(const WCHAR* in, StrW& value, ColorRule& rule, bool ls
                 }
             }
 
+#if 0
             if (!found && token.EqualI(L"any"))
             {
                 rule.m_attr = 0;
@@ -1037,6 +1038,7 @@ static int ParseColorRule(const WCHAR* in, StrW& value, ColorRule& rule, bool ls
                 ever_any = true;
                 found = true;
             }
+#endif
 
             if (!found)
             {
@@ -1096,7 +1098,7 @@ static int ParseColorRule(const WCHAR* in, StrW& value, ColorRule& rule, bool ls
     {
         if (ci == ciLink)
         {
-            s_link_target_color = !!value.EqualI(L"target");
+            s_link_target_color = (value.EqualI(L"target") || value.Empty());
             if (s_link_target_color)
             {
                 SetColorString(ciLink, nullptr);
