@@ -1785,10 +1785,6 @@ COLORREF Oklab::to_rgb() const
     float _g = -1.2684380046f * l + 2.6097574011f * m - 0.3413193965f * s;
     float _b = -0.0041960863f * l - 0.7034186147f * m + 1.7076147010f * s;
 
-    _r = clamp(_r, 0.0f, 1.0f);
-    _g = clamp(_g, 0.0f, 1.0f);
-    _b = clamp(_b, 0.0f, 1.0f);
-
     return RGB(linear_to_rgb(_r), linear_to_rgb(_g), linear_to_rgb(_b));
 }
 
