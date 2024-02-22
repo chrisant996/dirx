@@ -2346,12 +2346,8 @@ void DirEntryFormatter::DisplayOne(const FileInfo* const pfi)
         if (pfi->IsPseudoDirectory())
             return;
 
-        if (m_settings.IsSet(FMT_SUBDIRECTORIES))
-        {
-            s.Set(m_dir);
-            EnsureTrailingSlash(s);
-        }
-        FormatFilename(s, pfi, m_settings.m_flags, 0, m_dir.Text(), SelectColor(pfi, m_settings.m_flags, m_dir.Text()));
+        const FormatFlags flags = m_settings.m_flags | (m_settings.IsSet(FMT_SUBDIRECTORIES) ? FMT_FULLNAME : FMT_NONE);
+        FormatFilename(s, pfi, flags, 0, m_dir.Text(), SelectColor(pfi, flags, m_dir.Text()));
     }
     else
     {
