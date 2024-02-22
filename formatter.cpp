@@ -2826,7 +2826,7 @@ void DirEntryFormatter::OnVolumeEnd(const WCHAR* dir)
     OutputConsole(m_hout, s.Text(), s.Length());
 }
 
-void DirEntryFormatter::AddSubDir(const StrW& dir, unsigned depth)
+void DirEntryFormatter::AddSubDir(const StrW& dir, unsigned depth, const std::shared_ptr<GlobPatterns>& git_ignore)
 {
     assert(Settings().IsSet(FMT_SUBDIRECTORIES));
     assert(!IsPseudoDirectory(dir.Text()));
@@ -2834,7 +2834,22 @@ void DirEntryFormatter::AddSubDir(const StrW& dir, unsigned depth)
     SubDir subdir;
     subdir.dir.Set(dir);
     subdir.depth = depth;
+    subdir.git_ignore = git_ignore;
     m_subdirs.emplace_back(std::move(subdir));
+
+    if (Settings().IsSet(FMT_GITIGNORE))
+    {
+        StrW file(dir);
+        EnsureTrailingSlash(file);
+        file.Append(L".gitignore");
+        SHFile h = CreateFile(file.Text(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_DELETE|FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, 0);
+        if (!h.Empty())
+        {
+            std::shared_ptr<GlobPatterns> globs = std::make_shared<GlobPatterns>();
+            if (globs && globs->Load(h))
+                subdir.git_ignore = globs;
+        }
+    }
 }
 
 void DirEntryFormatter::SortSubDirs()
@@ -2843,17 +2858,19 @@ void DirEntryFormatter::SortSubDirs()
         std::sort(m_subdirs.begin(), m_subdirs.end(), CmpSubDirs);
 }
 
-bool DirEntryFormatter::NextSubDir(StrW& dir, unsigned& depth)
+bool DirEntryFormatter::NextSubDir(StrW& dir, unsigned& depth, std::shared_ptr<GlobPatterns>& git_ignore)
 {
     if (m_subdirs.empty())
     {
         dir.Clear();
         depth = 0;
+        git_ignore.reset();
         return false;
     }
 
     dir = std::move(m_subdirs[0].dir);
     depth = m_subdirs[0].depth;
+    git_ignore = std::move(m_subdirs[0].git_ignore);
     m_subdirs.erase(m_subdirs.begin());
     return true;
 }

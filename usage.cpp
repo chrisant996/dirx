@@ -114,6 +114,7 @@ const char c_long_usage[] =
 "			  r  Skip files with no alternate data streams\n"
 "			  -  Prefix to skip next type (this is the default)\n"
 "			  +  Prefix to un-skip next type\n"
+"  --git-ignore		Ignore files mentioned in .gitignore files.\n"
 "  --hide-dot-files	Hide file and directory names starting with '.' or '_'.\n"
 "			Using -a overrides this and shows them anyway.\n"
 "  --string-sort		Sort punctuation as symbols.\n"

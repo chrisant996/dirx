@@ -7,6 +7,7 @@
 #include "filesys.h"
 #include "fileinfo.h"
 #include "patterns.h"
+#include "handle.h"
 #include "flags.h"
 
 inline void AppendToTail(DirPattern*& head, DirPattern*& tail, DirPattern* p)
@@ -350,15 +351,23 @@ DirPattern* MakePatterns(int argc, const WCHAR** argv, const DirFormatSettings& 
     }
 
     for (DirPattern* p = patterns; p; p = p->m_next)
-        p->m_ignore = MakeGlobs(p->m_dir.Text(), ignore_globs);
+    {
+        p->m_ignore.emplace_back(std::move(MakeGlobs(p->m_dir.Text(), ignore_globs)));
+
+        if (settings.IsSet(FMT_GITIGNORE))
+            p->AddGitIgnore(p->m_dir.Text());
+    }
 
     return patterns;
 }
 
-void GlobPatterns::GlobPattern::Set(const WCHAR* p)
+void GlobPatterns::GlobPattern::Set(const WCHAR* p, size_t len)
 {
-    m_pattern.Set(p);
+    if (len == size_t(-1))
+        len = wcslen(p);
+    m_pattern.Set(p, len);
     Trim(m_pattern);
+    p = m_pattern.Text();
 
     if (p[0] == '!')
         ++p;
@@ -418,6 +427,15 @@ void GlobPatterns::SetRoot(const WCHAR* root)
     m_root_initialized = true;
 #endif
     m_root.Set(root);
+}
+
+bool GlobPatterns::IsApplicable(const WCHAR* dir) const
+{
+    if (wcsncmp(dir, m_root.Text(), m_root.Length()) != 0)
+        return false;
+    if (!IsPathSeparator(dir[m_root.Length()]))
+        return false;
+    return true;
 }
 
 bool GlobPatterns::IsMatch(const WCHAR* dir, const WCHAR* file) const
@@ -558,6 +576,46 @@ void GlobPatterns::Insert(size_t index, const WCHAR* p)
     }
 }
 
+bool GlobPatterns::Load(HANDLE h)
+{
+    assert(m_patterns.empty());
+
+    DWORD bytes;
+    DWORD size = GetFileSize(h, nullptr);
+    std::unique_ptr<char[]> buffer = std::make_unique<char[]>(size);
+    if (!ReadFile(h, buffer.get(), size, &bytes, 0 ) || bytes != size)
+        return false;
+
+    StrW line;
+    const char* walk = static_cast<char*>(buffer.get());
+    const char* end = static_cast<char*>(buffer.get()) + bytes;
+    while (walk < end)
+    {
+        const char* start = walk;
+        while (walk < end && *walk != '\r' && *walk != '\n')
+            ++walk;
+
+        const int needed = MultiByteToWideChar(CP_UTF8, 0, start, int(walk - start), nullptr, 0);
+        if (needed > 0)
+        {
+            WCHAR* out = line.Reserve(needed + 1);
+            MultiByteToWideChar(CP_UTF8, 0, start, int(walk - start), out, needed);
+            out[needed] = '\0';
+
+            GlobPattern glob;
+            glob.Set(out, needed);
+            m_patterns.emplace_back(std::move(glob));
+        }
+
+        if (*walk == '\r')
+            ++walk;
+        if (*walk == '\n')
+            ++walk;
+    }
+
+    return true;
+}
+
 void GlobPatterns::Trim(StrW& s)
 {
     const WCHAR* end = s.Text();
@@ -602,3 +660,26 @@ void GlobPatterns::UpdateAnyNegations(bool is_negate, bool was_negate)
     }
 }
 
+bool DirPattern::IsIgnore(const WCHAR* dir, const WCHAR* file) const
+{
+    if (!m_ignore.size())
+        return false;
+    for (const auto& ignore : m_ignore)
+        if (ignore.IsMatch(dir, file))
+            return true;
+    return false;
+}
+
+void DirPattern::AddGitIgnore(const WCHAR* dir)
+{
+    StrW file(dir);
+    EnsureTrailingSlash(file);
+    file.Append(L".gitignore");
+    SHFile h = CreateFile(file.Text(), GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_DELETE|FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, 0);
+    if (!h.Empty())
+    {
+        GlobPatterns globs;
+        if (globs.Load(h))
+            m_ignore.emplace_back(std::move(globs));
+    }
+}

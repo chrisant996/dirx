@@ -88,9 +88,9 @@ public:
     void                OnFileNotFound() override;
     void                OnDirectoryEnd(bool next_dir_is_different) override;
     void                OnVolumeEnd(const WCHAR* dir) override;
-    void                AddSubDir(const StrW& dir, unsigned depth) override;
+    void                AddSubDir(const StrW& dir, unsigned depth, const std::shared_ptr<GlobPatterns>& git_ignore) override;
     void                SortSubDirs() override;
-    bool                NextSubDir(StrW& dir, unsigned& depth) override;
+    bool                NextSubDir(StrW& dir, unsigned& depth, std::shared_ptr<GlobPatterns>& git_ignore) override;
     unsigned            CountFiles() const override { return m_cFiles; }
     unsigned            CountDirs() const override { return m_cDirs; }
     bool                IsOnlyRootSubDir() const override;

@@ -7,7 +7,6 @@
 - Document the `--nix` flag once it's more polished (also find a better name?).
 
 ### Git integration
-- Ignore files per `.gitignore`.
 - Git status column for files.  Be very careful about performance!
 
 ### Back burner

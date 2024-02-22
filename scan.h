@@ -7,6 +7,9 @@
 
 #include <windows.h>
 #include "flags.h"
+#include "patterns.h"
+
+#include <memory>
 
 struct DirPattern;
 class Error;
@@ -24,9 +27,9 @@ public:
     virtual void        OnFileNotFound() = 0;
     virtual void        OnDirectoryEnd(bool next_is_different) = 0;
     virtual void        OnVolumeEnd(const WCHAR* dir) = 0;
-    virtual void        AddSubDir(const StrW& dir, unsigned depth) = 0;
+    virtual void        AddSubDir(const StrW& dir, unsigned depth, const std::shared_ptr<GlobPatterns>& git_ignore) = 0;
     virtual void        SortSubDirs() = 0;
-    virtual bool        NextSubDir(StrW& dir, unsigned& depth) = 0;
+    virtual bool        NextSubDir(StrW& dir, unsigned& depth, std::shared_ptr<GlobPatterns>& git_ignore) = 0;
     virtual unsigned    CountFiles() const = 0;
     virtual unsigned    CountDirs() const = 0;
     virtual bool        IsOnlyRootSubDir() const = 0;

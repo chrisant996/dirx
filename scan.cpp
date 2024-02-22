@@ -85,7 +85,8 @@ bool RegExpHelper::Match(const WCHAR* s)
  * Scan directories and files.
  */
 
-static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, unsigned depth, const DirPattern* pattern, const bool top, unsigned limit_depth, Error& e)
+static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, unsigned depth, const DirPattern* pattern,
+                      const bool top, unsigned limit_depth, const std::shared_ptr<GlobPatterns>& git_ignore, Error& e)
 {
     if (wcslen(dir) >= MaxPath())
     {
@@ -164,7 +165,9 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, unsigned de
 
                     if (reh.IsRegex() && !reh.Match(fd.cFileName))
                         continue;
-                    if (pattern->m_ignore.Count() && pattern->m_ignore.IsMatch(dir, fd.cFileName))
+                    if (pattern->IsIgnore(dir, fd.cFileName))
+                        continue;
+                    if (git_ignore && git_ignore.get()->IsMatch(dir, fd.cFileName))
                         continue;
 
                     if (!displayed_header)
@@ -241,13 +244,15 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, unsigned de
 
                     if (filter_dirs && reh.IsRegex() && !reh.Match(fd.cFileName))
                         continue;
-                    if (pattern->m_ignore.Count() && pattern->m_ignore.IsMatch(dir, fd.cFileName))
+                    if (pattern->IsIgnore(dir, fd.cFileName))
+                        continue;
+                    if (git_ignore && git_ignore.get()->IsMatch(dir, fd.cFileName))
                         continue;
 
                     strip = FindName(s.Text());
                     s.SetEnd(strip);
                     s.Append(fd.cFileName);
-                    callbacks.AddSubDir(s, new_depth);
+                    callbacks.AddSubDir(s, new_depth, git_ignore);
                 }
                 while (FindNextFile(shFind, &fd));
 
@@ -282,6 +287,7 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
     StrW prev_drive_dir; // OnVolumeBegin/OnVolumeEnd take a dir because they need to test for failure when converting the dir to a drive.
     bool in_volume = false;
     bool any_files_found = false;
+    std::shared_ptr<GlobPatterns> git_ignore;
     for (const DirPattern* p = patterns; p; p = p->m_next)
     {
         const FormatFlags flagsRestore = callbacks.Settings().m_flags;
@@ -333,7 +339,7 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
             if (!dir.Length())
                 break;
 
-            if (ScanFiles(callbacks, dir.Text(), depth, p, top, limit_depth, e))
+            if (ScanFiles(callbacks, dir.Text(), depth, p, top, limit_depth, git_ignore, e))
             {
                 any_files_found = true;
                 // REVIEW: Does rc=0 match CMD DIR behavior?
@@ -383,7 +389,7 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
             // out if this is the last pattern, because then we'd
             // accidentally skip the summary information.
 
-            if (!callbacks.NextSubDir(dir, depth) && p->m_next)
+            if (!callbacks.NextSubDir(dir, depth, git_ignore) && p->m_next)
                 break;
         }
 

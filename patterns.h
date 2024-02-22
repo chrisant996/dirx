@@ -9,6 +9,7 @@
 #include "str.h"
 #include "wildmatch/wildmatch.h"
 #include <vector>
+#include <memory>
 
 struct DirFormatSettings;
 class Error;
@@ -18,7 +19,7 @@ class GlobPatterns
     struct GlobPattern
     {
     public:
-        void            Set(const WCHAR* p);
+        void            Set(const WCHAR* p, size_t len=-1);
 
         const StrW&     Pattern() const { return m_pattern; }
         int             Flags() const;
@@ -40,6 +41,7 @@ public:
                         ~GlobPatterns();
 
     void                SetRoot(const WCHAR* root);
+    bool                IsApplicable(const WCHAR* root) const;
     bool                IsMatch(const WCHAR* dir, const WCHAR* file) const;
 
     size_t              Count() const { return m_patterns.size(); }
@@ -48,6 +50,8 @@ public:
     void                SwapWithNext(size_t index);
     void                Insert(size_t index, const WCHAR* p);
     void                Append(const WCHAR* p) { Insert(-1, p); }
+
+    bool                Load(HANDLE h);
 
     static void         Trim(StrW& s);
 
@@ -69,14 +73,18 @@ struct SubDir
 {
     StrW                dir;
     unsigned            depth;
+    std::shared_ptr<GlobPatterns> git_ignore;
 };
 
 struct DirPattern
 {
-    DirPattern() : m_implicit(false), m_next(nullptr) {}
+                        DirPattern() : m_implicit(false), m_next(nullptr) {}
+
+    bool                IsIgnore(const WCHAR* dir, const WCHAR* file) const;
+    void                AddGitIgnore(const WCHAR* dir);
 
     std::vector<StrW>   m_patterns;
-    GlobPatterns        m_ignore;
+    std::vector<GlobPatterns> m_ignore;
     StrW                m_dir;
     bool                m_isFAT;
     bool                m_implicit;

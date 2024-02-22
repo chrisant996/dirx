@@ -58,6 +58,8 @@ enum FormatFlags : ULONGLONG
     FMT_LONGNODATE              = 0x0000100000000000,   // Omit date in long mode.
     FMT_LONGNOSIZE              = 0x0000200000000000,   // Omit size in long mode.
     FMT_LONGNOATTRIBUTES        = 0x0000400000000000,   // Omit attributes in long mode.
+    //                          = 0x0000800000000000,
+    FMT_GITIGNORE               = 0x0001000000000000,
 };
 DEFINE_ENUM_FLAG_OPERATORS(FormatFlags);
 
