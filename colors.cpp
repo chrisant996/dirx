@@ -1827,7 +1827,7 @@ const WCHAR* StripLineStyles(const WCHAR* color)
     static StrW s_tmp;
     s_tmp.Clear();
 
-    bool start = true;
+    const WCHAR* start = color;
     unsigned num = 0;
     int skip = 0;
     for (const WCHAR* p = color; true; ++p)
@@ -1839,9 +1839,9 @@ const WCHAR* StripLineStyles(const WCHAR* color)
             if (skip < 0)
             {
                 if (num == 2)
-                    skip = 4;
+                    skip = 3;
                 else if (num == 5)
-                    skip = 2;
+                    skip = 1;
                 else
                     skip = 0;
             }
@@ -1868,12 +1868,12 @@ const WCHAR* StripLineStyles(const WCHAR* color)
             }
 
             if (!strip)
-                s_tmp.Printf(L";%u", num);
+                s_tmp.Append(start, unsigned(p - start));
 
             if (!*p)
                 break;
 
-            start = true;
+            start = p;
             num = 0;
             continue;
         }
@@ -1885,8 +1885,6 @@ const WCHAR* StripLineStyles(const WCHAR* color)
         }
         else
             return L"";
-
-        start = false;
     }
 
     return s_tmp.Text();
