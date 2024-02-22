@@ -797,7 +797,7 @@ unrecognized_long_opt_value:
     if (flags & FMT_BARE)
     {
         flags &= ~(FMT_ALTDATASTEAMS|FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
-        SetUseIcons(false);
+        SetUseIcons(L"never");
     }
 
     if (flags & FMT_SEPARATETHOUSANDS)
@@ -831,7 +831,7 @@ unrecognized_long_opt_value:
     if (!CanUseEscapeCodes(GetStdHandle(STD_OUTPUT_HANDLE)))
     {
         flags &= ~FMT_COLORS;
-        SetUseIcons(false);
+        SetUseIcons(L"never");
         SetColorScale(L"none");
     }
 
