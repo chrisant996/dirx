@@ -193,8 +193,8 @@ bool SetDefaultTimeStyle(const WCHAR* time_style)
         L"xfull",
 #if 0
         L"ufull-iso",
-        L"rrelative",
 #endif
+        L"rrelative",
         L"llocale",
     };
 
@@ -921,7 +921,16 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
     {
     case 'm':
         {
+#define MORE_PRECISION
+#ifdef MORE_PRECISION
+            const unsigned iLoFrac = 1;
+            const unsigned iHiFrac = 9;
+            static const WCHAR c_size_chars[] = { 0, 'K', 'M', 'G', 'T' };
+#else
+            const unsigned iLoFrac = 2;
+            const unsigned iHiFrac = 2;
             static const WCHAR c_size_chars[] = { 'K', 'K', 'M', 'G', 'T' };
+#endif
             static_assert(_countof(c_size_chars) == 5, "size mismatch");
 
             double dSize = double(cbSize);
@@ -933,7 +942,7 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
                 iChSize++;
             }
 
-            if (iChSize == 2 && dSize + 0.05 < 10.0)
+            if (iChSize >= iLoFrac && iChSize <= iHiFrac && dSize + 0.05 < 10.0)
             {
                 dSize += 0.05;
                 cbSize = static_cast<unsigned __int64>(dSize * 10);
@@ -943,11 +952,21 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
             {
                 dSize += 0.5;
                 cbSize = static_cast<unsigned __int64>(dSize);
-                // Special case:  show 1..999 bytes as "1K", 0 bytes as "0K".
-                if (!iChSize && cbSize)
+                if (!iChSize)
                 {
-                    cbSize = 1;
-                    iChSize++;
+#ifdef MORE_PRECISION
+                    if (cbSize <= 999)
+                    {
+                        s.Printf(L"%4I64u", cbSize);
+                        break;
+                    }
+#endif
+                    // Special case:  show 1..999 bytes as "1K", 0 bytes as "0K".
+                    if (cbSize)
+                    {
+                        cbSize = 1;
+                        iChSize++;
+                    }
                 }
                 s.Printf(L"%3I64u%c", cbSize, c_size_chars[iChSize]);
             }
@@ -1122,8 +1141,8 @@ static unsigned GetTimeFieldWidthByStyle(const DirFormatSettings& settings, WCHA
     case 'l':           assert(s_locale_date_time_len); return s_locale_date_time_len;
 #if 0
     case 'u':           return 29;      // "YYYY-MM-DD HH:mm:ss.mmm -0800"
-    case 'r':           return 0;       // ...variable width...
 #endif
+    case 'r':           return 6;       // " 17 hr"  (now, mn, hr, dy, wk, mo, yr, cn)
     case 'x':           return 24;      // "YYYY/MM/DD  HH:mm:ss.mmm"
     case 'o':           return 16;      // "YYYY-MM-DD HH:mm"
     case 's':           return 15;      // "MM/DD/YY  HH:mm"
@@ -1143,6 +1162,71 @@ static WhichTimeStamp WhichTimeStampByField(const DirFormatSettings& settings, W
     case 'w':           return TIMESTAMP_MODIFIED;
     default:            return settings.m_whichtimestamp;
     }
+}
+
+static const SYSTEMTIME& NowAsLocalSystemTime()
+{
+    static const SYSTEMTIME now = [](){
+        SYSTEMTIME systime;
+        GetLocalTime(&systime);
+        return systime;
+    }();
+    return now;
+}
+
+static const SYSTEMTIME& NowAsSystemTime()
+{
+    static const SYSTEMTIME now = [](){
+        SYSTEMTIME systime;
+        GetSystemTime(&systime);
+        return systime;
+    }();
+    return now;
+}
+
+static const FILETIME& NowAsFileTime()
+{
+    static const FILETIME now = [](){
+        FILETIME ft;
+        SystemTimeToFileTime(&NowAsSystemTime(), &ft);
+        return ft;
+    }();
+    return now;
+}
+
+static void FormatRelativeTime(StrW& s, const FILETIME& ft)
+{
+    const ULONGLONG now = FileTimeToULONGLONG(NowAsFileTime()) / 10000000;  // Seconds.
+    const ULONGLONG then = FileTimeToULONGLONG(ft) / 10000000;              // Seconds.
+    LONGLONG delta = now - then;
+
+    if (delta < 1)
+    {
+        s.Append(L"   now");
+        return;
+    }
+
+    if (delta < 60)
+    {
+        s.Printf(L"%3llu s ", delta);
+    }
+
+    delta /= 60;    // Minutes.
+
+    if (delta < 60)
+        s.Printf(L"%3llu m ", delta);
+    else if (delta < 24*60)
+        s.Printf(L"%3llu hr", delta / 60);
+    else if (delta < 7*24*60)
+        s.Printf(L"%3llu dy", delta / (24*60));
+    else if (delta < 31*24*60)
+        s.Printf(L"%3llu wk", delta / (7*24*60));
+    else if (delta < 365*24*60)
+        s.Printf(L"%3llu mo", delta / ((365*24*60)/12));
+    else if (delta < 100*365*24*60 + 24*24*60)
+        s.Printf(L"%3llu yr", delta / (365*24*60));
+    else
+        s.Printf(L"%3llu C ", delta / (100*365*24*60 + 24*24*60));
 }
 
 static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& settings, WCHAR chStyle=0, WCHAR chField=0, const WCHAR* fallback_color=nullptr)
@@ -1185,8 +1269,7 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
         // Compact format, 12 characters (depending on width of longest
         // abbreviated month name).
         {
-            SYSTEMTIME systimeNow;
-            GetLocalTime(&systimeNow);
+            const SYSTEMTIME& systimeNow = NowAsLocalSystemTime();
             const unsigned iMonth = clamp<WORD>(systime.wMonth, 1, 12) - 1;
             const unsigned iMonthFile = unsigned(systime.wYear) * 12 + iMonth;
             const unsigned iMonthNow = unsigned(systimeNow.wYear) * 12 + systimeNow.wMonth - 1;
@@ -1237,12 +1320,10 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
         break;
 #endif
 
-#if 0
     case 'r':
-        // FUTURE: 'R': relative: "1 week" etc (minutes, hours, days, weeks,
-        // months, years).
+        // 6 characters.
+        FormatRelativeTime(s, pfi->GetFileTime(which));
         break;
-#endif
 
     case 'x':
         // 24 characters.
@@ -1270,8 +1351,7 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
     case 'm':
         // 11 characters.
         {
-            SYSTEMTIME systimeNow;
-            GetLocalTime(&systimeNow);
+            const SYSTEMTIME& systimeNow = NowAsLocalSystemTime();
             const unsigned iMonthFile = unsigned(systime.wYear) * 12 + systime.wMonth - 1;
             const unsigned iMonthNow = unsigned(systimeNow.wYear) * 12 + systimeNow.wMonth - 1;
             const bool fShowYear = (iMonthFile > iMonthNow || iMonthFile + 6 < iMonthNow);

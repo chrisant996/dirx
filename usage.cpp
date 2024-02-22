@@ -140,7 +140,7 @@ const char c_long_usage[] =
 "  --time-style=STYLE	Which time format to use for display by default when\n"
 "			in single column :\n"
 "			  locale (default), mini, compact, short, normal,\n"
-"			  full, iso, long-iso\n"
+"			  full, iso, long-iso, relative\n"
 "\n"
 "FORMATTING OPTIONS:\n"
 "  -,			Show the thousand separator in sizes (the default).\n"

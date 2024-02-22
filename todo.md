@@ -10,6 +10,7 @@
 - Git status column for files.  Be very careful about performance!
 
 ### Back burner
+- Variable width relative time format with longer unit names?
 - Default colors.  Maybe a few different preset options; basic, attributes, file types?
 - Tree view?  The vertical extender lines can be tracked with a "more" bit per directory component.
 - Post-process column computation to reduce rows by shifting items into a new column?  `ls` does not, but `eza` does.
