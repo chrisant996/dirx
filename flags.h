@@ -41,7 +41,7 @@ enum FormatFlags : ULONGLONG
     FMT_SHOWOWNER               = 0x0000000008000000,   // Include file owner.
     FMT_SEPARATETHOUSANDS       = 0x0000000010000000,
     FMT_AUTOSEPTHOUSANDS        = 0x0000000020000000,   // If -, and -,- are not used then FMT_FULLSIZE|FMT_SEPARATETHOUSANDS are used iff the 1 column format is used.
-    //                          = 0x0000000040000000,
+    FMT_NODIRTAGINSIZE          = 0x0000000040000000,   // Show - instead of <D> or <J> in size column.
     //                          = 0x0000000080000000,
     FMT_SORTVERTICAL            = 0x0000000100000000,
     //                          = 0x0000000200000000,

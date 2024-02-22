@@ -1052,14 +1052,27 @@ static void FormatFileSize(StrW& s, const FileInfo* pfi, const DirFormatSettings
 
     if (tag)
     {
-        if (fallback_color)
-            s.Printf(L"\x1b[0;%sm", StripLineStyles(fallback_color));
+        if (settings.IsSet(FMT_NODIRTAGINSIZE))
+        {
+            const unsigned trailing = (chStyle == 's');
+            s.AppendSpaces(GetSizeFieldWidthByStyle(settings, chStyle) - 1 - trailing);
+            if (settings.IsSet(FMT_COLORS))
+                s.Printf(L"\x1b[0;%sm-%s", GetColorByKey(L"xx"), c_norm);
+            else
+                s.Append(L"-");
+            s.AppendSpaces(trailing);
+        }
+        else
+        {
+            if (fallback_color)
+                s.Printf(L"\x1b[0;%sm", StripLineStyles(fallback_color));
 
-        const unsigned cchField = GetSizeFieldWidthByStyle(settings, chStyle);
-        s.Printf(L"%-*s", cchField, tag);
+            const unsigned cchField = GetSizeFieldWidthByStyle(settings, chStyle);
+            s.Printf(L"%-*s", cchField, tag);
 
-        if (fallback_color)
-            s.Append(c_norm);
+            if (fallback_color)
+                s.Append(c_norm);
+        }
     }
     else
     {
