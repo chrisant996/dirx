@@ -1071,7 +1071,8 @@ static void FormatFileSize(StrW& s, const FileInfo* pfi, const DirFormatSettings
 
     if (tag)
     {
-        if (settings.IsSet(FMT_NODIRTAGINSIZE))
+        if ((settings.IsSet(FMT_NODIRTAGINSIZE)) ||
+            (settings.IsSet(FMT_COLORS) && s_scale_size))
         {
             const unsigned trailing = (chStyle == 's');
             s.AppendSpaces(GetSizeFieldWidthByStyle(settings, chStyle) - 1 - trailing);
