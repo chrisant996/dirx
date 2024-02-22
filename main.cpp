@@ -730,7 +730,7 @@ unrecognized_long_opt_value:
     if (nix_defaults)
         cColumns = 0;
 
-    if (!(flags & (FMT_BARE|FMT_ATTRIBUTES|FMT_FULLNAME|FMT_FULLTIME|FMT_COMPRESSED|FMT_FORCENONFAT|FMT_SHOWOWNER|FMT_ONLYALTDATASTREAMS|FMT_ALTDATASTEAMS)))
+    if (!(flags & (FMT_BARE|FMT_ATTRIBUTES|FMT_FULLNAME|FMT_FULLTIME|FMT_COMPRESSED|FMT_SHOWOWNER|FMT_ONLYALTDATASTREAMS|FMT_ALTDATASTEAMS)))
     {
         bool long_attributes = false;
         for (unsigned ii = 0; opts.GetValue(ii, ch, opt_value); ii++)
