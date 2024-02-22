@@ -168,6 +168,7 @@ const char c_long_usage[] =
 "			For colors and hyperlinks in modern terminals.\n"
 "			  always, auto (default), never\n"
 "  --lower		Show file names using lower case.\n"
+"  --mini-bytes		Show bytes in the mini size format when less than 1000.\n"
 "  --more-colors=LIST	Add color rules in the same format as the DIRX_COLORS\n"
 "			environment variable (use '-? colors' for more info).\n"
 "  --nerd-fonts=VER	Select which Nerd Fonts version to use (see '-? colors'\n"

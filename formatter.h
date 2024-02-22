@@ -140,6 +140,7 @@ void SetConsoleWidth(unsigned long width);
 bool SetUseIcons(const WCHAR* s);
 void SetPadIcons(unsigned spaces);
 unsigned GetPadIcons();
+void SetMiniBytes(bool mini_bytes);
 bool SetColorScale(const WCHAR* s);
 bool IsScalingSize();
 bool SetColorScaleMode(const WCHAR* s);

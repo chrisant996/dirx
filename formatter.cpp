@@ -25,6 +25,7 @@ static bool s_can_autofit = true;
 static bool s_use_icons = false;
 static BYTE s_icon_padding = 1;
 static unsigned s_icon_width = 0;
+static bool s_mini_bytes = false;
 static bool s_scale_size = false;
 static bool s_scale_time = false;
 static bool s_gradient = true;
@@ -140,6 +141,11 @@ void SetPadIcons(unsigned spaces)
 unsigned GetPadIcons()
 {
     return s_icon_padding;
+}
+
+void SetMiniBytes(bool mini_bytes)
+{
+    s_mini_bytes = mini_bytes;
 }
 
 bool SetColorScale(const WCHAR* s)
@@ -921,11 +927,11 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
     {
     case 'm':
         {
-#define MORE_PRECISION
+//#define MORE_PRECISION
 #ifdef MORE_PRECISION
-            const unsigned iLoFrac = 1;
+            const unsigned iLoFrac = 2;
             const unsigned iHiFrac = 9;
-            static const WCHAR c_size_chars[] = { 0, 'K', 'M', 'G', 'T' };
+            static const WCHAR c_size_chars[] = { 'b', 'K', 'M', 'G', 'T' };
 #else
             const unsigned iLoFrac = 2;
             const unsigned iHiFrac = 2;
@@ -954,13 +960,14 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
                 cbSize = static_cast<unsigned __int64>(dSize);
                 if (!iChSize)
                 {
-#ifdef MORE_PRECISION
-                    if (cbSize <= 999)
+                    if (s_mini_bytes && cbSize <= 999)
                     {
                         s.Printf(L"%4I64u", cbSize);
+                        // s.Printf(L"%3I64u%c", cbSize, c_size_chars[iChSize]);
+                        // s.Printf(L"%I64u.%I64u%c", cbSize / 100, (cbSize / 10) % 10, c_size_chars[iChSize + 1]);
                         break;
                     }
-#endif
+
                     // Special case:  show 1..999 bytes as "1K", 0 bytes as "0K".
                     if (cbSize)
                     {

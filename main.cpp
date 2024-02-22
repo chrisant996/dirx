@@ -125,11 +125,13 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_LEVELS,
         LOI_LOWER,
         LOI_NO_LOWER,
+        LOI_MINI_BYTES,
+        LOI_NO_MINI_BYTES,
+        LOI_MORE_COLORS,
+        LOI_NERD_FONTS_VER,
         LOI_NIX,
         LOI_NO_NIX,
         LOI_NO_NORMAL,
-        LOI_MORE_COLORS,
-        LOI_NERD_FONTS_VER,
         LOI_NO_OWNER,
         LOI_NO_RATIO,
         LOI_NO_SHORT_NAMES,
@@ -184,6 +186,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-long",               nullptr,            '<' },
         { L"lower",                 nullptr,            LOI_LOWER },
         { L"no-lower",              nullptr,            LOI_NO_LOWER },
+        { L"mini-bytes",            nullptr,            LOI_MINI_BYTES },
+        { L"no-mini-bytes",         nullptr,            LOI_NO_MINI_BYTES },
         { L"more-colors",           nullptr,            LOI_MORE_COLORS,        LOHA_REQUIRED },
         { L"nerd-fonts",            nullptr,            LOI_NERD_FONTS_VER,     LOHA_REQUIRED },
         { L"nix",                   nullptr,            LOI_NIX },
@@ -608,9 +612,11 @@ unrecognized_long_opt_value:
             case LOI_NO_ICONS:              SetUseIcons(L"never"); break;
             case LOI_LOWER:                 flagsON = FMT_LOWERCASE; break;
             case LOI_NO_LOWER:              flagsOFF = FMT_LOWERCASE; break;
-            case LOI_NO_NORMAL:             flagsOFF = FMT_FORCENONFAT; break;
+            case LOI_MINI_BYTES:            SetMiniBytes(true); break;
+            case LOI_NO_MINI_BYTES:         SetMiniBytes(false); break;
             case LOI_MORE_COLORS:           more_colors = opt_value; break;
             case LOI_NERD_FONTS_VER:        SetNerdFontsVersion(wcstoul(opt_value, nullptr, 10)); break;
+            case LOI_NO_NORMAL:             flagsOFF = FMT_FORCENONFAT; break;
             case LOI_NO_OWNER:              flagsOFF = FMT_SHOWOWNER; break;
             case LOI_NO_RATIO:              flagsOFF = FMT_COMPRESSED; break;
             case LOI_NO_SHORT_NAMES:        flagsOFF = FMT_SHORTNAMES; break;
