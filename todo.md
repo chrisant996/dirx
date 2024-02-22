@@ -3,6 +3,9 @@
 ### BUGS
 
 ### Next
+- Size unit colors.
+- Short directory header color.
+- An option to use short directory header (without needing to use --nix).
 - Write README.md file as documentation.
 - Document the `--nix` flag once it's more polished (also find a better name?).
 
