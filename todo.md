@@ -1,9 +1,9 @@
 # FEATURES
 
 ### BUGS
-- The git (or git-repo) column should be omitted if the directory isn't in a repo (or isn't a repo root).
 
 ### Next
+- Variable width relative time format with longer unit names.
 - Size unit colors.
 - Short directory header color.
 - An option to use short directory header (without needing to use --nix).
@@ -12,7 +12,6 @@
 
 ### Back burner
 - Debugging output.
-- Variable width relative time format with longer unit names?
 - Default colors.  Maybe a few different preset options; basic, attributes, file types?
 - Tree view?  The vertical extender lines can be tracked with a "more" bit per directory component.
 - Unit tests.
