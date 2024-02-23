@@ -55,6 +55,18 @@ void StrW::SetA(const char* p, size_t len)
     m_p[used] = '\0';
 }
 
+WCHAR* CopyStr(const WCHAR* p)
+{
+    if (!p)
+        return nullptr;
+
+    size_t len = wcslen(p) + 1;
+    size_t bytes = len * sizeof(*p);
+    WCHAR* out = (WCHAR*)malloc(bytes);
+    memcpy(out, p, bytes);
+    return out;
+}
+
 void StripTrailingSlashes(StrW& s)
 {
     while (IsPathSeparator(s.Text()[s.Length() - 1]))
@@ -72,6 +84,22 @@ void EnsureTrailingSlash(StrW& s)
             s.SetLength(s.Length() - 1);
         s.Append('\\');
     }
+}
+
+void PathJoin(StrW& out, const WCHAR* dir, const WCHAR* file)
+{
+    out.Set(dir);
+    if (*dir)
+        EnsureTrailingSlash(out);
+    out.Append(file);
+}
+
+void PathJoin(StrW& out, const WCHAR* dir, const StrW& file)
+{
+    out.Set(dir);
+    if (*dir)
+        EnsureTrailingSlash(out);
+    out.Append(file);
 }
 
 unsigned TruncateWcwidth(StrW& s, unsigned truncate_width, WCHAR truncation_char)
@@ -120,6 +148,16 @@ unsigned TruncateWcwidth(StrW& s, unsigned truncate_width, WCHAR truncation_char
     }
 
     return width;
+}
+
+bool SortCase::operator()(const WCHAR* a, const WCHAR* b) const noexcept
+{
+    return wcscmp(a, b) < 0;
+}
+
+bool SortCaseless::operator()(const WCHAR* a, const WCHAR* b) const noexcept
+{
+    return _wcsicmp(a, b) < 0;
 }
 
 bool EqualCase::operator()(const WCHAR* a, const WCHAR* b) const noexcept

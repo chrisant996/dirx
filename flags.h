@@ -60,6 +60,8 @@ enum FormatFlags : ULONGLONG
     FMT_LONGNOATTRIBUTES        = 0x0000400000000000,   // Omit attributes in long mode.
     //                          = 0x0000800000000000,
     FMT_GITIGNORE               = 0x0001000000000000,
+    FMT_GIT                     = 0x0002000000000000,
+    FMT_GITREPOS                = 0x0004000000000000,
 };
 DEFINE_ENUM_FLAG_OPERATORS(FormatFlags);
 
@@ -75,6 +77,8 @@ enum FieldType
     FLD_OWNER,                  // Owner name.
     FLD_SHORTNAME,              // Short name, or empty if short name == file name.
     FLD_FILENAME,               // File name or short name, depending on flags/etc.
+    FLD_GITFILE,                // Git file status.
+    FLD_GITREPO,                // Git repo status.
 };
 
 enum WhichTimeStamp

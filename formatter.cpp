@@ -30,6 +30,9 @@ static bool s_scale_size = false;
 static bool s_scale_time = false;
 static bool s_gradient = true;
 static WCHAR s_time_style = 0;
+constexpr unsigned c_max_branch_name = 10;
+
+static RepoMap s_repo_map;
 
 static const WCHAR c_hyperlink[] = L"\x1b]8;;";
 static const WCHAR c_BEL[] = L"\a";
@@ -732,9 +735,7 @@ static void FormatReparsePoint(StrW& s, const FileInfo* const pfi, const FormatF
     assert(pfi->IsReparseTag());
 
     StrW full;
-    full.Set(dir);
-    EnsureTrailingSlash(full);
-    full.Append(pfi->GetLongName());
+    PathJoin(full, dir, pfi->GetLongName());
 
     const bool colors = !!(flags & FMT_COLORS);
     const WCHAR* punct = colors ? GetColorByKey(L"xx") : nullptr;
@@ -1150,7 +1151,7 @@ static unsigned GetTimeFieldWidthByStyle(const DirFormatSettings& settings, WCHA
 #if 0
     case 'u':           return 29;      // "YYYY-MM-DD HH:mm:ss.mmm -0800"
 #endif
-    case 'r':           return 6;       // " 17 hr"  (now, mn, hr, dy, wk, mo, yr, cn)
+    case 'r':           return 0;       // Variable width.
     case 'x':           return 24;      // "YYYY/MM/DD  HH:mm:ss.mmm"
     case 'o':           return 16;      // "YYYY-MM-DD HH:mm"
     case 's':           return 15;      // "MM/DD/YY  HH:mm"
@@ -1329,7 +1330,7 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
 #endif
 
     case 'r':
-        // 6 characters.
+        // Variable width.
         FormatRelativeTime(s, pfi->GetFileTime(which));
         break;
 
@@ -1480,6 +1481,136 @@ static void FormatOwner(StrW& s, const FileInfo* pfi, const FormatFlags flags, c
         s.Append(c_norm);
 }
 
+static void FormatGitFile(StrW& s, const FileInfo* pfi, const WCHAR* dir, const FormatFlags flags, const RepoStatus* repo)
+{
+    GitFileState staged;
+    GitFileState working;
+
+    StrW full;
+    PathJoin(full, dir, pfi->GetLongName());
+
+    const auto& status = repo->status.find(full.Text());
+    if (status == repo->status.end())
+    {
+        staged = GitFileState::NONE;
+        working = GitFileState::NONE;
+    }
+    else
+    {
+        staged = status->second.staged;
+        working = status->second.working;
+    }
+
+    static struct { WCHAR symbol; WCHAR color_key[3]; } c_symbols[] =
+    {
+        { '-', L"xx" },
+        { 'N', L"ga" }, // GitFileState::NEW
+        { 'M', L"gm" }, // GitFileState::MODIFIED
+        { 'D', L"gd" }, // GitFileState::DELETED
+        { 'R', L"gv" }, // GitFileState::RENAMED
+        { 'T', L"gt" }, // GitFileState::TYPECHANGE
+        { 'I', L"gi" }, // GitFileState::IGNORED
+        { 'U', L"gc" }, // GitFileState::UNMERGED
+    };
+    static_assert(_countof(c_symbols) == unsigned(GitFileState::COUNT), "wrong number of GitFileState symbols");
+
+    const WCHAR* color1;
+    const WCHAR* color2;
+    if (flags & FMT_COLORS)
+    {
+        color1 = GetColorByKey(c_symbols[unsigned(staged)].color_key);
+        color2 = GetColorByKey(c_symbols[unsigned(working)].color_key);
+        if (!color1)
+            color1 = L"";
+        if (!color2)
+            color2 = L"";
+    }
+    else
+    {
+        color1 = nullptr;
+        color2 = nullptr;
+    }
+
+    if (color1)
+        s.Printf(L"\x1b[0;%sm", color1);
+    s.Append(&c_symbols[unsigned(staged)].symbol, 1);
+    if (color1 != color2)
+        s.Printf(L"\x1b[0;%sm", color2);
+    s.Append(&c_symbols[unsigned(working)].symbol, 1);
+    if (color1)
+        s.Append(c_norm);
+}
+
+static void FormatGitRepo(StrW& s, const FileInfo* pfi, const WCHAR* dir, const FormatFlags flags, unsigned max_width)
+{
+    WCHAR status;
+    StrW branch;
+    unsigned branch_width;
+
+    StrW full;
+    PathJoin(full, dir, pfi->GetLongName());
+
+    const WCHAR* color1;
+    const WCHAR* color2;
+    const auto repo = s_repo_map.Find(full.Text());
+    if (repo)
+    {
+        assert(repo->root.Equal(full.Text()));
+        assert(repo->repo);
+        status = repo->clean ? '|' : '+';
+        branch.Set(repo->branch);
+        branch_width = TruncateWcwidth(branch, max_width - 2, GetTruncationCharacter());
+        if (flags & FMT_COLORS)
+        {
+            color1 = GetColorByKey(repo->clean ? L"Gc" : L"Gd");
+            if (!color1)
+                color1 = L"";
+            color2 = GetColorByKey(branch.Empty() ? L"xx" : repo->main ? L"Gm" : L"Go");
+            if (!color2)
+                color2 = L"";
+        }
+        if (branch.Empty())
+        {
+            branch.Set(L"-");
+            branch_width = 1;
+        }
+    }
+    else
+    {
+        status = '-';
+        branch.Set(L"-");
+        branch_width = 1;
+        if (flags & FMT_COLORS)
+        {
+            color1 = GetColorByKey(L"xx");
+            if (!color1)
+                color1 = L"";
+            color2 = color1;
+        }
+    }
+
+    if (color1)
+        s.Printf(L"\x1b[0;%sm", color1);
+    s.Append(&status, 1);
+    if (color1)
+        s.Append(c_norm);
+
+    s.AppendSpaces(1);
+
+    if (color2)
+        s.Printf(L"\x1b[0;%sm", color2);
+    s.Append(branch);
+    if (color2)
+    {
+        const WCHAR* pad_color = StripLineStyles(color2);
+        if (pad_color != color2)
+            s.Printf(L"\x1b[0;%sm", pad_color);
+    }
+    s.AppendSpaces(max_width - 2 - branch_width);
+    if (color2)
+        s.Append(c_norm);
+}
+
 /*
  * PictureFormatter.
  */
@@ -1508,7 +1639,7 @@ PictureFormatter::PictureFormatter(const DirFormatSettings& settings)
 void PictureFormatter::ParsePicture(const WCHAR* picture)
 {
     assert(picture);
-    assert(!m_picture.Length());
+    assert(implies(m_finished_initial_parse, !m_orig_picture.Empty()));
 
     bool skip = false;
     size_t count = 0;
@@ -1516,10 +1647,13 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
     bool any_short_filename_fields = false;
     StrW mask;
 
-    m_max_file_width = 0;
-    m_max_dir_width = 0;
-    m_need_filename_width = false;
-    m_need_compressed_size = false;
+    if (!m_finished_initial_parse)
+        m_orig_picture.Set(picture);
+
+    m_has_date = false;
+    m_has_git = false;
+    m_picture.Clear();
+    m_fields.clear();
 
     while (*picture)
     {
@@ -1630,9 +1764,13 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
                     {
                     case 'l':
                     case 'm':
-                    case 'n':
+                    case 'i':
+                    case 'p':
                     case 's':
+                    case 'o':
+                    case 'n':
                     case 'x':
+                    case 'r':
                         chStyle = picture[1];
                         break;
                     case 'a':
@@ -1651,7 +1789,7 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
                 p->m_cchWidth = GetTimeFieldWidthByStyle(m_settings, chStyle);
                 p->m_ichInsert = m_picture.Length();
                 m_picture.Append('!');
-                m_fHasDate = true;
+                m_has_date = true;
             }
             break;
         case 'C':
@@ -1754,6 +1892,43 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
             }
             SkipPictureOptions(picture);
             break;
+        case 'R':
+            skip = (picture[1] == '?' && (!m_settings.IsSet(FMT_GITREPOS) ||
+                                          (m_finished_initial_parse && !m_any_repo_roots)));
+            if (!skip)
+            {
+                m_fields.emplace_back();
+                FieldInfo* const p = &m_fields.back();
+                p->m_field = FLD_GITREPO;
+                p->m_cchWidth = m_max_branch_width ? 2 + m_max_branch_width : 0;
+                p->m_ichInsert = m_picture.Length();
+                m_picture.Append('!');
+            }
+            else if (reset_on_skip_len == unsigned(-1))
+            {
+                m_picture.TrimRight();
+            }
+            SkipPictureOptions(picture);
+            break;
+        case 'G':
+            skip = (picture[1] == '?' && (!m_settings.IsSet(FMT_GIT) ||
+                                          (m_finished_initial_parse && (!m_repo || !m_repo->repo))));
+            if (!skip)
+            {
+                m_fields.emplace_back();
+                FieldInfo* const p = &m_fields.back();
+                p->m_field = FLD_GITFILE;
+                p->m_cchWidth = 2;
+                p->m_ichInsert = m_picture.Length();
+                m_picture.Append('!');
+                m_has_git = true;
+            }
+            else if (reset_on_skip_len == unsigned(-1))
+            {
+                m_picture.TrimRight();
+            }
+            SkipPictureOptions(picture);
+            break;
 
         case ' ':
             m_picture.Append(' ');
@@ -1798,24 +1973,61 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
 
     for (size_t ii = m_fields.size(); ii--;)
     {
-        if (m_fields[ii].m_field == FLD_FILENAME &&
-            !m_fields[ii].m_cchWidth &&
-            (ii + 1 < m_fields.size() ||
-             m_fields[ii].m_ichInsert + 1 < m_picture.Length() ||
-             m_settings.m_num_columns != 1))
+        const auto& field = m_fields[ii];
+        if (field.m_cchWidth)
+            continue;
+        switch (field.m_field)
         {
-            m_need_filename_width = true;
+        case FLD_FILENAME:
+            if (ii + 1 < m_fields.size() ||
+                field.m_ichInsert + 1 < m_picture.Length() ||
+                m_settings.m_num_columns != 1)
+            {
+                m_need_filename_width = true;
+                m_immediate = false;
+            }
+            break;
+        case FLD_GITREPO:
+            m_need_branch_width = true;
+            m_immediate = false;
+            break;
+        case FLD_DATETIME:
+            if (field.m_chStyle == 'r')
+            {
+                m_need_relative_width = true;
+                m_immediate = false;
+            }
             break;
         }
     }
 
     m_need_short_filenames = any_short_filename_fields || m_settings.IsSet(FMT_SHORTNAMES);
+    m_finished_initial_parse = true;
 }
 
 void PictureFormatter::SetMaxFileDirWidth(unsigned max_file_width, unsigned max_dir_width)
 {
     m_max_file_width = max_file_width;
     m_max_dir_width = max_dir_width;
+
+    if (m_need_branch_width)
+    {
+        const unsigned width = 2 + clamp<unsigned>(m_max_branch_width, 1, c_max_branch_name);
+        for (auto& field : m_fields)
+            if (field.m_field == FLD_GITREPO)
+                field.m_cchWidth = width;
+    }
+
+    if (m_need_relative_width)
+    {
+        const unsigned width = std::max<unsigned>(m_max_relative_width, 1);
+        for (auto& field : m_fields)
+            if (field.m_field == FLD_DATETIME && field.m_chStyle == 'r')
+                field.m_cchWidth = width;
+    }
+
+    if (m_settings.IsSet(FMT_GIT|FMT_GITREPOS))
+        ParsePicture(m_orig_picture.Text());
 }
 
 unsigned PictureFormatter::GetMaxWidth(unsigned fit_in_width, bool recalc_auto_width_fields)
@@ -1919,13 +2131,47 @@ bool PictureFormatter::CanAutoFitWidth() const
     return false;
 }
 
-void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WCHAR* dir, const WIN32_FIND_STREAM_DATA* pfsd, bool one_per_line) const
+void PictureFormatter::SetDirContext(const WCHAR* dir, const std::shared_ptr<const RepoStatus>& repo)
+{
+    m_dir = dir;
+    m_repo = repo;
+    m_max_branch_width = 0;
+    m_max_relative_width = 0;
+}
+
+inline void PictureFormatter::OnFile(const FileInfo* pfi)
+{
+    if (m_need_branch_width && m_max_branch_width < 10)
+    {
+        StrW full;
+        PathJoin(full, m_dir, pfi->GetLongName());
+
+        const auto repo = s_repo_map.Find(full.Text());
+        if (repo && repo->repo)
+        {
+            const unsigned width = __wcswidth(repo->branch.Text());
+            if (m_max_branch_width < width)
+            {
+                m_max_branch_width = width;
+                if (m_max_branch_width >= 10)
+                    m_max_branch_width = 10;
+            }
+            m_any_repo_roots = true;
+        }
+    }
+
+    // TODO: m_need_relative_width
+    m_max_relative_width = 6;
+}
+
+void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STREAM_DATA* pfsd, bool one_per_line) const
 {
     assert(!s.Length() || s.Text()[s.Length() - 1] == '\n');
 
     const unsigned max_file_width = m_max_file_width;
     const unsigned max_dir_width = m_max_dir_width + (m_settings.IsSet(FMT_DIRBRACKETS) ? 2 : 0);
 
+    const WCHAR* dir = m_dir;
     const WCHAR* color = SelectColor(pfi, m_settings.m_flags, dir);
 
     // Format the fields.
@@ -1951,6 +2197,8 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WCHAR* dir, co
             case FLD_ATTRIBUTES:
             case FLD_OWNER:
             case FLD_SHORTNAME:
+            case FLD_GITFILE:
+            case FLD_GITREPO:
                 // REVIEW: Color could be considered as mattering here because of background colors and columns.
                 s.AppendSpaces(m_fields[ii].m_cchWidth);
                 break;
@@ -2055,6 +2303,12 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WCHAR* dir, co
                     }
                 }
                 break;
+            case FLD_GITFILE:
+                FormatGitFile(s, pfi, dir, m_settings.m_flags, m_repo.get());
+                break;
+            case FLD_GITREPO:
+                FormatGitRepo(s, pfi, dir, m_settings.m_flags, m_fields[ii].m_cchWidth);
+                break;
             default:
                 assert(false);
                 break;
@@ -2121,7 +2375,7 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags
             break;
         case 2:
             if (m_settings.IsSet(FMT_FAT))
-                picture = L"F Ss D";
+                picture = L"F Ss D G?";
             else
             {
                 unsigned width = 38;
@@ -2164,13 +2418,13 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags
                         width -= 1 + 17;
                     }
                 }
-                sPic.Printf(L"F%u%s", width, tmp.Text());
+                sPic.Printf(L"F%u%s G?", width, tmp.Text());
                 picture = sPic.Text();
             }
             break;
         case 1:
             if (m_settings.IsSet(FMT_FAT))
-                picture = L"F Ss D  C?  T?";
+                picture = L"F Ss D  C?  T?  G?  R?";
             else
             {
                 sPic.Clear();
@@ -2181,7 +2435,7 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags
                 sPic.Append(L"C?  ");
                 if (!m_settings.IsSet(FMT_LONGNOATTRIBUTES))
                     sPic.Append(L"T?  ");
-                sPic.Append(L"X?  O?  F");
+                sPic.Append(L"X?  O?  G?  R?  F");
                 picture = sPic.Text();
             }
             break;
@@ -2191,6 +2445,7 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags
                 sPic.Append(m_settings.IsSet(FMT_MINISIZE) ? L" Sm" : L" S");
             if (m_settings.IsSet(FMT_DATE|FMT_MINIDATE))
                 sPic.Append(m_settings.IsSet(FMT_MINIDATE) ? L" Dm" : L" D");
+            sPic.Append(L" G?");
             picture = sPic.Text();
             break;
         default:
@@ -2205,6 +2460,10 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags
         m_settings.m_need_compressed_size = true;
     if (m_picture.AreShortFilenamesNeeded())
         m_settings.m_need_short_filenames = true;
+
+    m_fImmediate = (!s_gradient &&
+                    !*g_sort_order &&
+                    Settings().m_num_columns == 1);
 }
 
 bool DirEntryFormatter::IsOnlyRootSubDir() const
@@ -2373,7 +2632,7 @@ void DirEntryFormatter::OnScanFiles(const WCHAR* dir, const WCHAR* pattern, bool
     }
 }
 
-void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir)
+void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const std::shared_ptr<const RepoStatus>& repo)
 {
     const bool fReset = (Settings().IsSet(FMT_USAGEGROUPED) ?
                          IsRootSubDir() || IsNewRootGroup(dir) :
@@ -2408,6 +2667,8 @@ void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir)
     if (!m_dir.Length())
         m_dir.Set(dir);
 
+    m_picture.SetDirContext(dir, repo);
+
     if (!Settings().IsSet(FMT_BARE))
     {
         StrW s;
@@ -2439,7 +2700,7 @@ void DirEntryFormatter::DisplayOne(const FileInfo* const pfi)
     }
     else
     {
-        m_picture.Format(s, pfi, m_dir.Text());
+        m_picture.Format(s, pfi);
     }
 
     if (m_settings.IsSet(FMT_ALTDATASTEAMS|FMT_ONLYALTDATASTREAMS))
@@ -2447,9 +2708,7 @@ void DirEntryFormatter::DisplayOne(const FileInfo* const pfi)
         assert(implies(m_settings.IsSet(FMT_ALTDATASTEAMS), !m_settings.IsSet(FMT_FAT|FMT_BARE)));
 
         StrW tmp;
-        tmp.Set(m_dir);
-        EnsureTrailingSlash(tmp);
-        tmp.Append(pfi->GetLongName());
+        PathJoin(tmp, m_dir.Text(), pfi->GetLongName());
 
         StrW full;
         full.Set(tmp);
@@ -2467,7 +2726,7 @@ void DirEntryFormatter::DisplayOne(const FileInfo* const pfi)
                 if (!m_settings.IsSet(FMT_ALTDATASTEAMS))
                     break;
                 s.Append('\n');
-                m_picture.Format(s, pfi, m_dir.Text(), &fsd);
+                m_picture.Format(s, pfi, &fsd);
             }
             while (__FindNextStreamW(shFind, &fsd));
         }
@@ -2487,11 +2746,9 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
     FileInfo* pfi;
     std::unique_ptr<FileInfo> spfi;
     const bool fUsage = Settings().IsSet(FMT_USAGE);
-    const bool fImmediate = (!s_gradient &&
-                             !*g_sort_order &&
-                             !m_grouped_patterns &&
-                             Settings().m_num_columns == 1 &&
-                             !m_picture.IsFilenameWidthNeeded());
+    const bool fImmediate = (m_fImmediate &&
+                             m_picture.IsImmediate() &&
+                             !m_grouped_patterns);
 
     if (fImmediate || fUsage)
     {
@@ -2505,6 +2762,14 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
     }
 
     pfi->Init(dir, m_granularity, pfd, Settings());
+
+    if (Settings().IsSet(FMT_GIT|FMT_GITREPOS))
+    {
+        StrW full;
+        PathJoin(full, dir, pfd->cFileName);
+        auto repo = GitStatus(full.Text(), Settings().IsSet(FMT_SUBDIRECTORIES));
+        s_repo_map.Add(repo);
+    }
 
     if (fImmediate && !fUsage)
         DisplayOne(pfi);
@@ -2565,23 +2830,23 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
                     }
                 }
             }
-            if (s_gradient)
+            if (s_gradient && s_scale_size)
             {
-                if (s_scale_size)
+                for (WhichFileSize which = FILESIZE_ARRAY_SIZE; which = WhichFileSize(int(which) - 1);)
                 {
-                    for (WhichFileSize which = FILESIZE_ARRAY_SIZE; which = WhichFileSize(int(which) - 1);)
-                    {
-                        if (which != FILESIZE_COMPRESSED || Settings().m_need_compressed_size)
-                            Settings().UpdateMinMaxSize(which, pfi->GetFileSize(which));
-                    }
-                }
-                if (s_scale_time)
-                {
-                    for (WhichTimeStamp which = TIMESTAMP_ARRAY_SIZE; which = WhichTimeStamp(int(which) - 1);)
-                        Settings().UpdateMinMaxTime(which, pfi->GetFileTime(which));
+                    if (which != FILESIZE_COMPRESSED || Settings().m_need_compressed_size)
+                        Settings().UpdateMinMaxSize(which, pfi->GetFileSize(which));
                 }
             }
         }
+
+        if (s_scale_time)
+        {
+            for (WhichTimeStamp which = TIMESTAMP_ARRAY_SIZE; which = WhichTimeStamp(int(which) - 1);)
+                Settings().UpdateMinMaxTime(which, pfi->GetFileTime(which));
+        }
+
+        m_picture.OnFile(pfi);
     }
 }
 
@@ -2726,7 +2991,8 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
 
                 StrW s;
                 const bool vertical = Settings().IsSet(FMT_SORTVERTICAL);
-                const unsigned spacing = (num_columns != 0 || isFAT || m_picture.HasDate()) ? 3 : 2;
+                const unsigned spacing = (num_columns != 0 || isFAT || m_picture.HasDate() ||
+                                          (num_columns == 0 && m_picture.HasGit())) ? 3 : 2;
 
                 ColumnWidths col_widths;
                 std::vector<PictureFormatter> col_pictures;
@@ -2777,7 +3043,7 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
                         }
 
                         s.Clear();
-                        picture->Format(s, pfi, m_dir.Text(), nullptr, false/*one_per_line*/);
+                        picture->Format(s, pfi, nullptr, false/*one_per_line*/);
                         OutputConsole(m_hout, s.Text(), s.Length());
 
                         ++picture;
@@ -2914,7 +3180,7 @@ void DirEntryFormatter::OnVolumeEnd(const WCHAR* dir)
     OutputConsole(m_hout, s.Text(), s.Length());
 }
 
-void DirEntryFormatter::AddSubDir(const StrW& dir, unsigned depth, const std::shared_ptr<GlobPatterns>& git_ignore)
+void DirEntryFormatter::AddSubDir(const StrW& dir, unsigned depth, const std::shared_ptr<const GlobPatterns>& git_ignore, const std::shared_ptr<const RepoStatus>& repo)
 {
     assert(Settings().IsSet(FMT_SUBDIRECTORIES));
     assert(!IsPseudoDirectory(dir.Text()));
@@ -2938,6 +3204,13 @@ void DirEntryFormatter::AddSubDir(const StrW& dir, unsigned depth, const std::sh
                 subdir.git_ignore = globs;
         }
     }
+
+    if (Settings().IsSet(FMT_GIT|FMT_GITREPOS))
+    {
+        subdir.repo = s_repo_map.Find(dir.Text());
+        if (!subdir.repo)
+            subdir.repo = repo;
+    }
 }
 
 void DirEntryFormatter::SortSubDirs()
@@ -2946,20 +3219,31 @@ void DirEntryFormatter::SortSubDirs()
         std::sort(m_subdirs.begin(), m_subdirs.end(), CmpSubDirs);
 }
 
-bool DirEntryFormatter::NextSubDir(StrW& dir, unsigned& depth, std::shared_ptr<GlobPatterns>& git_ignore)
+bool DirEntryFormatter::NextSubDir(StrW& dir, unsigned& depth, std::shared_ptr<const GlobPatterns>& git_ignore, std::shared_ptr<const RepoStatus>& repo)
 {
     if (m_subdirs.empty())
     {
         dir.Clear();
         depth = 0;
         git_ignore.reset();
+        repo.reset();
         return false;
     }
 
     dir = std::move(m_subdirs[0].dir);
     depth = m_subdirs[0].depth;
     git_ignore = std::move(m_subdirs[0].git_ignore);
+    repo = std::move(m_subdirs[0].repo);
     m_subdirs.erase(m_subdirs.begin());
+
+    // The only thing that needs the map is FormatGitRepo(), to avoid running
+    // "git status" twice for the same repo.  So, once traversal dives into a
+    // directory, nothing will try to print that directory entry again, so the
+    // map doesn't need to hold a reference anymore.  Removing it from the map
+    // ensures the data structures can be freed once traversal through that
+    // repo tree finishes.
+    s_repo_map.Remove(dir.Text());
+
     return true;
 }
 

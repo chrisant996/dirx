@@ -176,6 +176,15 @@ bool IsHiddenName(const WCHAR* p)
             (p[0] == '.' || p[0] == '_'));
 }
 
+bool IsDir(const WCHAR* p)
+{
+    WIN32_FIND_DATA fd;
+    SHFind h = FindFirstFile(p, &fd);
+    if (h.Empty())
+        return false;
+    return !!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+}
+
 bool IsTraversableReparse(const WIN32_FIND_DATA& fd)
 {
     return ((fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) &&

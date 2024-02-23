@@ -456,10 +456,15 @@ inline void StrW::SetA(const StrA& s)
  * String helpers.
  */
 
+WCHAR* CopyStr(const WCHAR* p);
 void StripTrailingSlashes(StrW& s);
 void EnsureTrailingSlash(StrW& s);
+void PathJoin(StrW& out, const WCHAR* dir, const WCHAR* file);
+void PathJoin(StrW& out, const WCHAR* dir, const StrW& file);
 unsigned TruncateWcwidth(StrW& s, unsigned truncate_width, WCHAR truncation_char);
 
+struct SortCase         { bool operator()(const WCHAR* a, const WCHAR* b) const noexcept; };
+struct SortCaseless     { bool operator()(const WCHAR* a, const WCHAR* b) const noexcept; };
 struct EqualCase        { bool operator()(const WCHAR* a, const WCHAR* b) const noexcept; };
 struct EqualCaseless    { bool operator()(const WCHAR* a, const WCHAR* b) const noexcept; };
 struct HashCase         { _NODISCARD size_t operator()(const WCHAR* key) const noexcept; };

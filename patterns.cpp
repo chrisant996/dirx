@@ -9,6 +9,7 @@
 #include "patterns.h"
 #include "handle.h"
 #include "flags.h"
+#include "git.h"
 
 inline void AppendToTail(DirPattern*& head, DirPattern*& tail, DirPattern* p)
 {
@@ -356,6 +357,8 @@ DirPattern* MakePatterns(int argc, const WCHAR** argv, const DirFormatSettings& 
 
         if (settings.IsSet(FMT_GITIGNORE))
             p->AddGitIgnore(p->m_dir.Text());
+        if (settings.IsSet(FMT_GIT|FMT_GITREPOS))
+            p->m_repo = GitStatus(p->m_dir.Text(), true, true);
     }
 
     return patterns;
@@ -452,10 +455,7 @@ bool GlobPatterns::IsMatch(const WCHAR* dir, const WCHAR* file) const
     while (IsPathSeparator(*dir))
         ++dir;
 
-    full.Set(dir);
-    if (!full.Empty())
-        EnsureTrailingSlash(full);
-    full.Append(file);
+    PathJoin(full, dir, file);
 
     for (const auto& pat : m_patterns)
     {

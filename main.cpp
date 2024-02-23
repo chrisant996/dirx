@@ -112,8 +112,12 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_ESCAPE_CODES,
         LOI_NO_FAT,
         LOI_NO_FULL_PATHS,
+        LOI_GIT,
+        LOI_NO_GIT,
         LOI_GIT_IGNORE,
         LOI_NO_GIT_IGNORE,
+        LOI_GIT_REPOS,
+        LOI_GIT_REPOS_NO_STATUS,
         LOI_HIDE_DOT_FILES,
         LOI_NO_HIDE_DOT_FILES,
         LOI_HORIZONTAL,
@@ -167,8 +171,12 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-fat",                nullptr,            LOI_NO_FAT },
         { L"full-paths",            nullptr,            'F' },
         { L"no-full-paths",         nullptr,            LOI_NO_FULL_PATHS },
+        { L"git",                   nullptr,            LOI_GIT },
+        { L"no-git",                nullptr,            LOI_NO_GIT },
         { L"git-ignore",            nullptr,            LOI_GIT_IGNORE },
         { L"no-git-ignore",         nullptr,            LOI_NO_GIT_IGNORE },
+        { L"git-repos",             nullptr,            LOI_GIT_REPOS },
+        { L"git-repos-no-status",   nullptr,            LOI_GIT_REPOS_NO_STATUS },
         { L"grid",                  nullptr,            'G' },
         { L"no-grid",               nullptr,            '>' },
         { L"help",                  nullptr,            '?' },
@@ -604,8 +612,12 @@ unrecognized_long_opt_value:
             case LOI_NO_COMPACT_COLUMNS:    SetCanAutoFit(false); break;
             case LOI_NO_FAT:                flagsOFF = FMT_FAT; break;
             case LOI_NO_FULL_PATHS:         flagsOFF = FMT_FULLNAME|FMT_FORCENONFAT|FMT_HIDEPSEUDODIRS; break;
+            case LOI_GIT:                   flagsON = FMT_GIT; break;
+            case LOI_NO_GIT:                flagsOFF = FMT_GIT|FMT_GITREPOS; break;
             case LOI_GIT_IGNORE:            flagsON = FMT_GITIGNORE; break;
             case LOI_NO_GIT_IGNORE:         flagsOFF = FMT_GITIGNORE; break;
+            case LOI_GIT_REPOS:             flagsON = FMT_GIT|FMT_GITREPOS; break;
+            case LOI_GIT_REPOS_NO_STATUS:   flagsOFF = FMT_GITREPOS; break;
             case LOI_HORIZONTAL:            flagsOFF = FMT_SORTVERTICAL; break;
             case LOI_HYPERLINKS:            flagsON = FMT_HYPERLINKS; break;
             case LOI_NO_HYPERLINKS:         flagsOFF = FMT_HYPERLINKS; break;
@@ -830,7 +842,9 @@ unrecognized_long_opt_value:
     }
 
     if (cColumns != 1)
-        flags &= ~FMT_FULLSIZE;
+        flags &= ~(FMT_FULLSIZE|FMT_GITREPOS);
+    if (cColumns > 2)
+        flags &= ~(FMT_GIT);
 
     if ((flags & FMT_ATTRIBUTES) && show_all_attributes)
         flags |= FMT_ALLATTRIBUTES;

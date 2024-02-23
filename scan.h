@@ -22,14 +22,14 @@ public:
     virtual bool        OnVolumeBegin(const WCHAR* dir, Error& e) = 0;
     virtual void        OnPatterns(bool grouped) = 0;
     virtual void        OnScanFiles(const WCHAR* dir, const WCHAR* pattern, bool implicit, bool top) = 0;
-    virtual void        OnDirectoryBegin(const WCHAR* dir) = 0;
+    virtual void        OnDirectoryBegin(const WCHAR* dir, const std::shared_ptr<const RepoStatus>& repo) = 0;
     virtual void        OnFile(const WCHAR* dir, const WIN32_FIND_DATA* pfd) = 0;
     virtual void        OnFileNotFound() = 0;
     virtual void        OnDirectoryEnd(bool next_is_different) = 0;
     virtual void        OnVolumeEnd(const WCHAR* dir) = 0;
-    virtual void        AddSubDir(const StrW& dir, unsigned depth, const std::shared_ptr<GlobPatterns>& git_ignore) = 0;
+    virtual void        AddSubDir(const StrW& dir, unsigned depth, const std::shared_ptr<const GlobPatterns>& git_ignore, const std::shared_ptr<const RepoStatus>& repo) = 0;
     virtual void        SortSubDirs() = 0;
-    virtual bool        NextSubDir(StrW& dir, unsigned& depth, std::shared_ptr<GlobPatterns>& git_ignore) = 0;
+    virtual bool        NextSubDir(StrW& dir, unsigned& depth, std::shared_ptr<const GlobPatterns>& git_ignorem, std::shared_ptr<const RepoStatus>& repo) = 0;
     virtual unsigned    CountFiles() const = 0;
     virtual unsigned    CountDirs() const = 0;
     virtual bool        IsOnlyRootSubDir() const = 0;

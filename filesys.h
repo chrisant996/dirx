@@ -16,6 +16,7 @@ bool GetDrive(const WCHAR* pattern, StrW& drive, Error& e);
 bool IsFATDrive(const WCHAR* path, Error& e);
 bool IsHidden(const WIN32_FIND_DATA& fd);
 bool IsHiddenName(const WCHAR* p);
+bool IsDir(const WCHAR* p);
 bool IsTraversableReparse(const WIN32_FIND_DATA& fd);
 
 bool EnsureFileStreamFunctions();

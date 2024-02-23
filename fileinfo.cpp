@@ -29,11 +29,7 @@ void FileInfo::Init(const WCHAR* dir, DWORD granularity, const WIN32_FIND_DATA* 
                                       settings.m_need_compressed_size);
 
     if (get_compressed_size || settings.IsSet(FMT_SHOWOWNER))
-    {
-        full.Set(dir);
-        EnsureTrailingSlash(full);
-        full.Append(m_long);
-    }
+        PathJoin(full, dir, m_long);
 
     if (get_compressed_size)
         m_ulCompressed.LowPart = GetCompressedFileSize(full.Text(), &m_ulCompressed.HighPart);

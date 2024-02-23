@@ -47,6 +47,8 @@ static const WCHAR c_default_colors[] =
     L"lp=36:"
     L"su=1;35:sf=1;35:ur=32:"
     L"or=31:"
+    L"ga=32:gm=34:gd=31:gv=33:gt=35:gi=90:gc=31:"
+    L"Gm=32:Go=33:Gc=32:Gd=1;33:"
     ;
 
 enum ColorIndex : unsigned short
@@ -88,6 +90,19 @@ enum ColorIndex : unsigned short
     ciTime,
     ciCompressionField,
     ciOwnerField,
+
+    // Git.
+    ciGitNew,
+    ciGitModified,
+    ciGitDeleted,
+    ciGitRenamed,
+    ciGitTypeChanged,
+    ciGitIgnored,
+    ciGitConflicted,
+    ciGitMainBranch,
+    ciGitOtherBranch,
+    ciGitClean,
+    ciGitDirty,
 
     // File extension groups.
     ciCompressedArchive,        // A compressed archive (for example, a .zip file).
@@ -157,18 +172,6 @@ static std::unordered_map<const WCHAR*, ExtensionInfo, HashCaseless, EqualCasele
 static std::unordered_map<const WCHAR*, ExtensionInfo, HashCaseless, EqualCaseless> s_filenames;
 static std::unordered_map<const WCHAR*, KeyInfo, HashCase, EqualCase> s_key_to_info;
 static ColorIndex s_color_fallback[ciCOUNT];
-
-static WCHAR* CopyStr(const WCHAR* p)
-{
-    if (!p)
-        return nullptr;
-
-    size_t len = wcslen(p) + 1;
-    size_t bytes = len * sizeof(*p);
-    WCHAR* out = (WCHAR*)malloc(bytes);
-    memcpy(out, p, bytes);
-    return out;
-}
 
 static void InitColorMaps()
 {
@@ -615,7 +618,7 @@ static void InitColorMaps()
         { L"ng", { CFLAG_NOT_A_TYPE, ciSizeG } },       // the numbers of a file’s size if it is between 1 GB/GiB and 1 TB/TiB
         { L"nt", { CFLAG_NOT_A_TYPE, ciSizeT } },       // the numbers of a file’s size if it is 1 TB/TiB or higher
 
-        // TODO: size unit colors.
+        // TODO: size unit colors, when color-scale affects size and color-scale-mode is fixed (but why only when color-scale?).
         // sb : the units of a file’s size (sets ub, uk, um, ug and ut)
         // ub : the units of a file’s size if it is lower than 1 KB/Kib
         // uk : the units of a file’s size if it is between 1 KB/KiB and 1 MB/MiB
@@ -628,24 +631,21 @@ static void InitColorMaps()
         { L"cF", { CFLAG_NOT_A_TYPE, ciCompressionField } }, // the compression ratio field
         { L"oF", { CFLAG_NOT_A_TYPE, ciOwnerField } },  // the owner field
 
-        // TODO: git file status.
-        // ga : a new flag in Git
-        // gm : a modified flag in Git
-        // gd : a deleted flag in Git
-        // gv : a renamed flag in Git
-        // gt : a modified metadata flag in Git
-        // gi : an ignored flag in Git
-        // gc : a conflicted flag in Git
+        { L"ga", { CFLAG_NOT_A_TYPE, ciGitNew } },
+        { L"gm", { CFLAG_NOT_A_TYPE, ciGitModified } },
+        { L"gd", { CFLAG_NOT_A_TYPE, ciGitDeleted } },
+        { L"gv", { CFLAG_NOT_A_TYPE, ciGitRenamed } },
+        { L"gt", { CFLAG_NOT_A_TYPE, ciGitTypeChanged } },
+        { L"gi", { CFLAG_NOT_A_TYPE, ciGitIgnored } },
+        { L"gc", { CFLAG_NOT_A_TYPE, ciGitConflicted } },
 
-        // TODO: how does eza choose the branch colors?
-        // Gm : main branch of repo
-        // Go : other branch of repo
-        // Gc : clean branch of repo
-        // Gd : dirty branch of repo
+        { L"Gm", { CFLAG_NOT_A_TYPE, ciGitMainBranch } },
+        { L"Go", { CFLAG_NOT_A_TYPE, ciGitOtherBranch } },
+        { L"Gc", { CFLAG_NOT_A_TYPE, ciGitClean } },
+        { L"Gd", { CFLAG_NOT_A_TYPE, ciGitDirty } },
 
         { L"lp", { CFLAG_NOT_A_TYPE, ciLinkPath } },
         { L"or", { CFLAG_NOT_A_TYPE, ciOrphan } },
-        // TODO: what is "bO" in eza?
         // bO : the overlay style for broken symlink paths
 
         { L"ex", { CFLAG_EXECUTABLE, ciExecutable } },
@@ -933,7 +933,6 @@ static bool GetSpacedToken(const WCHAR*& in, StrW& out, bool& quoted)
 
     in = end;
 
-    out.ToLower();
     return !out.Empty();
 }
 
@@ -960,8 +959,7 @@ struct AttributeName
     const DWORD attr;
     const ColorIndex ci;
     bool LS;                // Supported by LS_COLORS.
-    const WCHAR* name;
-    const WCHAR* key;       // The lookup key (accepted verbatim).
+    const WCHAR* key;       // The color lookup key.
 };
 
 static const AttributeName c_attributes[] =
@@ -1002,7 +1000,7 @@ static int ParseColorRule(const WCHAR* in, StrW& value, ColorRule& rule, bool ls
             return -1;
         }
 
-        if (!ls_colors && (token.EqualI(L"not") || token.EqualI(L"!")))
+        if (!ls_colors && (token.EqualI(L"not") || token.Equal(L"!")))
         {
             not = true;
             continue;
@@ -1013,7 +1011,7 @@ static int ParseColorRule(const WCHAR* in, StrW& value, ColorRule& rule, bool ls
         {
             for (const auto& a : c_attributes)
             {
-                if ((a.key && token.EqualI(a.key)) || token.EqualI(a.name))
+                if (token.Equal(a.key))
                 {
                     ++num_attr;
                     ci = a.ci;
@@ -1246,9 +1244,7 @@ const WCHAR* LookupColor(const FileInfo* pfi, const WCHAR* dir, bool ignore_targ
         if (dir) // Invalid...but don't crash if bug gets accidentally released.
         {
             StrW fullname;
-            fullname.Set(dir);
-            EnsureTrailingSlash(fullname);
-            fullname.Append(name);
+            PathJoin(fullname, dir, long_name);
 
             struct _stat64 st;
             if (_wstat64(fullname.Text(), &st) < 0)
@@ -1830,6 +1826,7 @@ const WCHAR* StripLineStyles(const WCHAR* color)
     const WCHAR* start = color;
     unsigned num = 0;
     int skip = 0;
+    bool any_stripped = false;
     for (const WCHAR* p = color; true; ++p)
     {
         if (!*p || *p == ';')
@@ -1867,7 +1864,9 @@ const WCHAR* StripLineStyles(const WCHAR* color)
                 }
             }
 
-            if (!strip)
+            if (strip)
+                any_stripped = true;
+            else
                 s_tmp.Append(start, unsigned(p - start));
 
             if (!*p)
@@ -1887,6 +1886,6 @@ const WCHAR* StripLineStyles(const WCHAR* color)
             return L"";
     }
 
-    return s_tmp.Text();
+    return any_stripped ? s_tmp.Text() : color;
 }
 

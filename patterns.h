@@ -7,6 +7,7 @@
 
 #include <windows.h>
 #include "str.h"
+#include "git.h"
 #include "wildmatch/wildmatch.h"
 #include <vector>
 #include <memory>
@@ -73,7 +74,8 @@ struct SubDir
 {
     StrW                dir;
     unsigned            depth;
-    std::shared_ptr<GlobPatterns> git_ignore;
+    std::shared_ptr<const GlobPatterns> git_ignore;
+    std::shared_ptr<const RepoStatus> repo;
 };
 
 struct DirPattern
@@ -85,6 +87,7 @@ struct DirPattern
 
     std::vector<StrW>   m_patterns;
     std::vector<GlobPatterns> m_ignore;
+    std::shared_ptr<const RepoStatus> m_repo;
     StrW                m_dir;
     bool                m_isFAT;
     bool                m_implicit;

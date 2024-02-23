@@ -85,8 +85,12 @@ bool RegExpHelper::Match(const WCHAR* s)
  * Scan directories and files.
  */
 
-static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, unsigned depth, const DirPattern* pattern,
-                      const bool top, unsigned limit_depth, const std::shared_ptr<GlobPatterns>& git_ignore, Error& e)
+static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir,
+                      unsigned depth, const DirPattern* pattern,
+                      const bool top, unsigned limit_depth,
+                      const std::shared_ptr<const GlobPatterns>& git_ignore,
+                      const std::shared_ptr<const RepoStatus>& repo,
+                      Error& e)
 {
     if (wcslen(dir) >= MaxPath())
     {
@@ -126,7 +130,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, unsigned de
 
         if (usage && !ii && (implicit || !callbacks.IsRootSubDir()))
         {
-            callbacks.OnDirectoryBegin(dir);
+            callbacks.OnDirectoryBegin(dir, repo);
             displayed_header = true;
             any_headers_displayed = true;
         }
@@ -172,7 +176,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, unsigned de
 
                     if (!displayed_header)
                     {
-                        callbacks.OnDirectoryBegin(dir);
+                        callbacks.OnDirectoryBegin(dir, repo);
                         displayed_header = true;
                         any_headers_displayed = true;
                     }
@@ -252,7 +256,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, unsigned de
                     strip = FindName(s.Text());
                     s.SetEnd(strip);
                     s.Append(fd.cFileName);
-                    callbacks.AddSubDir(s, new_depth, git_ignore);
+                    callbacks.AddSubDir(s, new_depth, git_ignore, repo);
                 }
                 while (FindNextFile(shFind, &fd));
 
@@ -287,9 +291,10 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
     StrW prev_drive_dir; // OnVolumeBegin/OnVolumeEnd take a dir because they need to test for failure when converting the dir to a drive.
     bool in_volume = false;
     bool any_files_found = false;
-    std::shared_ptr<GlobPatterns> git_ignore;
     for (const DirPattern* p = patterns; p; p = p->m_next)
     {
+        std::shared_ptr<const GlobPatterns> git_ignore; // p->IsIgnore() internally handles the DirPattern's own git_ignore.
+        std::shared_ptr<const RepoStatus> repo(p->m_repo);
         const FormatFlags flagsRestore = callbacks.Settings().m_flags;
 
         if (p->m_isFAT && !callbacks.Settings().IsSet(FMT_FORCENONFAT))
@@ -339,7 +344,7 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
             if (!dir.Length())
                 break;
 
-            if (ScanFiles(callbacks, dir.Text(), depth, p, top, limit_depth, git_ignore, e))
+            if (ScanFiles(callbacks, dir.Text(), depth, p, top, limit_depth, git_ignore, repo, e))
             {
                 any_files_found = true;
                 // REVIEW: Does rc=0 match CMD DIR behavior?
@@ -389,7 +394,7 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
             // out if this is the last pattern, because then we'd
             // accidentally skip the summary information.
 
-            if (!callbacks.NextSubDir(dir, depth, git_ignore) && p->m_next)
+            if (!callbacks.NextSubDir(dir, depth, git_ignore, repo) && p->m_next)
                 break;
         }
 
