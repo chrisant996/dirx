@@ -3,7 +3,6 @@
 ### BUGS
 
 ### Next
-- Variable width relative time format with longer unit names.
 - Size unit colors.
 - Short directory header color.
 - An option to use short directory header (without needing to use --nix).
