@@ -1203,7 +1203,34 @@ static const FILETIME& NowAsFileTime()
     return now;
 }
 
-static void FormatRelativeTime(StrW& s, const FILETIME& ft)
+struct UnitDefinition
+{
+    const WCHAR* mini_unit;
+    const WCHAR* normal_unit;
+    const WCHAR* normal_units;
+};
+
+static const UnitDefinition c_defs[] =
+{
+    { L"s ", L"second",  L"seconds" },
+    { L"m ", L"minute",  L"minutes" },
+    { L"hr", L"hour",    L"hours" },
+    { L"dy", L"day",     L"days" },
+    { L"wk", L"week",    L"weeks" },
+    { L"mo", L"month",   L"months" },
+    { L"yr", L"year",    L"years" },
+    { L"C ", L"century", L"centuries" },
+};
+
+inline void PrintfRelative(StrW&s, unsigned unit_index, bool mini, ULONGLONG value)
+{
+    const unsigned n = unsigned(value);
+    const UnitDefinition& def = c_defs[unit_index];
+    const WCHAR* unit = mini ? def.mini_unit : (n == 1) ? def.normal_unit : def.normal_units;
+    s.Printf(mini ? L"%3u %s" : L"%u %s", n, unit);
+}
+
+static void FormatRelativeTime(StrW& s, const FILETIME& ft, bool mini=false)
 {
     const ULONGLONG now = FileTimeToULONGLONG(NowAsFileTime()) / 10000000;  // Seconds.
     const ULONGLONG then = FileTimeToULONGLONG(ft) / 10000000;              // Seconds.
@@ -1211,41 +1238,42 @@ static void FormatRelativeTime(StrW& s, const FILETIME& ft)
 
     if (delta < 1)
     {
-        s.Append(L"   now");
+        s.Append(mini ? L"   now" : L"now");
         return;
     }
 
     if (delta < 60)
     {
-        s.Printf(L"%3llu s ", delta);
+        PrintfRelative(s, 0, delta, mini);
+        return;
     }
 
     delta /= 60;    // Minutes.
 
     if (delta < 60)
-        s.Printf(L"%3llu m ", delta);
+        PrintfRelative(s, 1, mini, delta);
     else if (delta < 24*60)
-        s.Printf(L"%3llu hr", delta / 60);
+        PrintfRelative(s, 2, mini, delta / 60);
     else if (delta < 7*24*60)
-        s.Printf(L"%3llu dy", delta / (24*60));
+        PrintfRelative(s, 3, mini, delta / (24*60));
     else if (delta < 31*24*60)
-        s.Printf(L"%3llu wk", delta / (7*24*60));
+        PrintfRelative(s, 4, mini, delta / (7*24*60));
     else if (delta < 365*24*60)
-        s.Printf(L"%3llu mo", delta / ((365*24*60)/12));
+        PrintfRelative(s, 5, mini, delta / ((365*24*60)/12));
     else if (delta < 100*365*24*60 + 24*24*60)
-        s.Printf(L"%3llu yr", delta / (365*24*60));
+        PrintfRelative(s, 6, mini, delta / (365*24*60));
     else
-        s.Printf(L"%3llu C ", delta / (100*365*24*60 + 24*24*60));
+        PrintfRelative(s, 7, mini, delta / (100*365*24*60 + 24*24*60));
 }
 
-static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& settings, WCHAR chStyle=0, WCHAR chField=0, const WCHAR* fallback_color=nullptr)
+static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& settings, const FieldInfo& field, const WCHAR* fallback_color=nullptr)
 {
     SYSTEMTIME systime;
-    const WhichTimeStamp which = WhichTimeStampByField(settings, chField);
+    const WhichTimeStamp which = WhichTimeStampByField(settings, field.m_chSubField);
 
     SelectFileTime(pfi, which, &systime);
 
-    chStyle = GetEffectiveTimeFieldStyle(settings, chStyle);
+    const WCHAR chStyle = GetEffectiveTimeFieldStyle(settings, field.m_chStyle);
 
 #ifdef DEBUG
     const unsigned orig_len = s.Length();
@@ -1331,7 +1359,11 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
 
     case 'r':
         // Variable width.
-        FormatRelativeTime(s, pfi->GetFileTime(which));
+        {
+            const unsigned len = s.Length();
+            FormatRelativeTime(s, pfi->GetFileTime(which));
+            s.AppendSpaces(field.m_cchWidth - (s.Length() - len));
+        }
         break;
 
     case 'x':
@@ -1634,6 +1666,8 @@ static void SkipPictureOptions(const WCHAR*& format)
 PictureFormatter::PictureFormatter(const DirFormatSettings& settings)
     : m_settings(settings)
 {
+    ZeroMemory(&m_max_relative_width_which, sizeof(m_max_relative_width_which));
+    ZeroMemory(&m_need_relative_width_which, sizeof(m_need_relative_width_which));
 }
 
 void PictureFormatter::ParsePicture(const WCHAR* picture)
@@ -1787,6 +1821,20 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
                 p->m_chSubField = chSubField;
                 p->m_chStyle = chStyle;
                 p->m_cchWidth = GetTimeFieldWidthByStyle(m_settings, chStyle);
+                if (!p->m_cchWidth)
+                {
+                    const WhichTimeStamp which = WhichTimeStampByField(m_settings, chSubField);
+                    if (m_finished_initial_parse)
+                    {
+                        assert(GetEffectiveTimeFieldStyle(m_settings, chStyle) == 'r');
+                        p->m_cchWidth = m_max_relative_width_which[which];
+                    }
+                    else
+                    {
+                        m_need_relative_width = true;
+                        m_need_relative_width_which[which] = true;
+                    }
+                }
                 p->m_ichInsert = m_picture.Length();
                 m_picture.Append('!');
                 m_has_date = true;
@@ -2020,10 +2068,11 @@ void PictureFormatter::SetMaxFileDirWidth(unsigned max_file_width, unsigned max_
 
     if (m_need_relative_width)
     {
-        const unsigned width = std::max<unsigned>(m_max_relative_width, 1);
         for (auto& field : m_fields)
+        {
             if (field.m_field == FLD_DATETIME && field.m_chStyle == 'r')
-                field.m_cchWidth = width;
+                field.m_cchWidth = m_max_relative_width_which[WhichTimeStampByField(m_settings, field.m_chSubField)];
+        }
     }
 
     if (m_settings.IsSet(FMT_GIT|FMT_GITREPOS))
@@ -2136,7 +2185,7 @@ void PictureFormatter::SetDirContext(const WCHAR* dir, const std::shared_ptr<con
     m_dir = dir;
     m_repo = repo;
     m_max_branch_width = 0;
-    m_max_relative_width = 0;
+    ZeroMemory(&m_max_relative_width_which, sizeof(m_max_relative_width_which));
 }
 
 inline void PictureFormatter::OnFile(const FileInfo* pfi)
@@ -2160,8 +2209,19 @@ inline void PictureFormatter::OnFile(const FileInfo* pfi)
         }
     }
 
-    // TODO: m_need_relative_width
-    m_max_relative_width = 6;
+    if (m_need_relative_width)
+    {
+        StrW tmp;
+        for (unsigned ii = 0; ii < TIMESTAMP_ARRAY_SIZE; ++ii)
+        {
+            if (m_need_relative_width_which[ii])
+            {
+                FormatRelativeTime(tmp, pfi->GetFileTime(WhichTimeStamp(ii)));
+                if (m_max_relative_width_which[ii] < tmp.Length())
+                    m_max_relative_width_which[ii] = tmp.Length();
+            }
+        }
+    }
 }
 
 void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STREAM_DATA* pfsd, bool one_per_line) const
@@ -2182,7 +2242,8 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STR
     {
         // Copy the constant picture text before the field.
 
-        const unsigned ichCopyUpTo = m_fields[ii].m_ichInsert;
+        const FieldInfo& field = m_fields[ii];
+        const unsigned ichCopyUpTo = field.m_ichInsert;
         s.Append(m_picture.Text() + ichCopied, ichCopyUpTo - ichCopied);
         ichCopied = ichCopyUpTo + 1;
 
@@ -2190,7 +2251,7 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STR
 
         if (pfsd)
         {
-            switch (m_fields[ii].m_field)
+            switch (field.m_field)
             {
             case FLD_DATETIME:
             case FLD_COMPRESSION:
@@ -2200,13 +2261,13 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STR
             case FLD_GITFILE:
             case FLD_GITREPO:
                 // REVIEW: Color could be considered as mattering here because of background colors and columns.
-                s.AppendSpaces(m_fields[ii].m_cchWidth);
+                s.AppendSpaces(field.m_cchWidth);
                 break;
             case FLD_FILESIZE:
                 {
                     // FUTURE: color scale for stream sizes.
                     const WCHAR* size_color = m_settings.IsSet(FMT_COLORS) ? GetSizeColor(pfsd->StreamSize.QuadPart) : nullptr;
-                    FormatSize(s, pfsd->StreamSize.QuadPart, nullptr, m_settings, GetEffectiveSizeFieldStyle(m_settings, m_fields[ii].m_chStyle), size_color ? size_color : color);
+                    FormatSize(s, pfsd->StreamSize.QuadPart, nullptr, m_settings, GetEffectiveSizeFieldStyle(m_settings, field.m_chStyle), size_color ? size_color : color);
                 }
                 break;
             case FLD_FILENAME:
@@ -2225,8 +2286,8 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STR
                         tmp.ToLower();
 
                     const bool fLast = (ii + 1 == m_fields.size() &&
-                                        m_fields[ii].m_ichInsert + 1 == m_picture.Length());
-                    unsigned width = GetFilenameFieldWidth(m_settings, &m_fields[ii], max_file_width, max_dir_width);
+                                        field.m_ichInsert + 1 == m_picture.Length());
+                    unsigned width = GetFilenameFieldWidth(m_settings, &field, max_file_width, max_dir_width);
 
                     if (fLast && (m_settings.IsSet(FMT_FULLNAME)))
                         width = 0;
@@ -2250,19 +2311,19 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STR
         }
         else
         {
-            switch (m_fields[ii].m_field)
+            switch (field.m_field)
             {
             case FLD_DATETIME:
-                FormatTime(s, pfi, m_settings, m_fields[ii].m_chStyle, m_fields[ii].m_chSubField, color);
+                FormatTime(s, pfi, m_settings, field, color);
                 break;
             case FLD_FILESIZE:
-                FormatFileSize(s, pfi, m_settings, m_fields[ii].m_chStyle, m_fields[ii].m_chSubField, color);
+                FormatFileSize(s, pfi, m_settings, field.m_chStyle, field.m_chSubField, color);
                 break;
             case FLD_COMPRESSION:
-                FormatCompressed(s, pfi, m_settings.m_flags, color, m_fields[ii].m_chSubField);
+                FormatCompressed(s, pfi, m_settings.m_flags, color, field.m_chSubField);
                 break;
             case FLD_ATTRIBUTES:
-                FormatAttributes(s, pfi->GetAttributes(), m_fields[ii].m_masks, m_fields[ii].m_chStyle, m_settings.IsSet(FMT_COLORS));
+                FormatAttributes(s, pfi->GetAttributes(), field.m_masks, field.m_chStyle, m_settings.IsSet(FMT_COLORS));
                 break;
             case FLD_OWNER:
                 FormatOwner(s, pfi, m_settings.m_flags, color);
@@ -2273,16 +2334,16 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STR
             case FLD_FILENAME:
                 {
                     FormatFlags flags = m_settings.m_flags;
-                    if (m_fields[ii].m_chSubField == 'x')
+                    if (field.m_chSubField == 'x')
                         flags |= FMT_SHORTNAMES|FMT_FAT;
                     else
                         flags &= ~FMT_SHORTNAMES;
-                    if (m_fields[ii].m_chStyle == 'f')
+                    if (field.m_chStyle == 'f')
                         flags |= FMT_FAT;
 
                     const bool fLast = (ii + 1 == m_fields.size() &&
-                                        m_fields[ii].m_ichInsert + 1 == m_picture.Length());
-                    unsigned width = GetFilenameFieldWidth(m_settings, &m_fields[ii], max_file_width, max_dir_width);
+                                        field.m_ichInsert + 1 == m_picture.Length());
+                    unsigned width = GetFilenameFieldWidth(m_settings, &field, max_file_width, max_dir_width);
 
                     if (!fLast)
                         flags &= ~FMT_FULLNAME;
@@ -2307,7 +2368,7 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STR
                 FormatGitFile(s, pfi, dir, m_settings.m_flags, m_repo.get());
                 break;
             case FLD_GITREPO:
-                FormatGitRepo(s, pfi, dir, m_settings.m_flags, m_fields[ii].m_cchWidth);
+                FormatGitRepo(s, pfi, dir, m_settings.m_flags, field.m_cchWidth);
                 break;
             default:
                 assert(false);

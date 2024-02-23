@@ -65,12 +65,13 @@ private:
     unsigned            m_max_file_width = 0;
     unsigned            m_max_dir_width = 0;
     unsigned            m_max_branch_width = 0;
-    unsigned            m_max_relative_width = 0;
+    unsigned            m_max_relative_width_which[TIMESTAMP_ARRAY_SIZE];
     bool                m_immediate = true;
     bool                m_finished_initial_parse = false;
     bool                m_need_filename_width = false;
     bool                m_need_branch_width = false;
     bool                m_need_relative_width = false;
+    bool                m_need_relative_width_which[TIMESTAMP_ARRAY_SIZE];
     bool                m_need_compressed_size = false;
     bool                m_need_short_filenames = false;
     bool                m_any_repo_roots = false;
