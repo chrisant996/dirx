@@ -2774,9 +2774,16 @@ void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const std::shar
         StrW s;
         if (Settings().IsSet(FMT_MINIHEADER))
         {
+            const WCHAR* header_color = Settings().IsSet(FMT_COLORS) ? GetColorByKey(L"hM") : nullptr;
+
             if (m_line_break_before_miniheader)
                 s.Append(L"\n");
-            s.Printf(L"%s%s:\n", dir, wcschr(dir, '\\') ? L"" : L"\\");
+            if (header_color)
+                s.Printf(L"\x1b[0;%sm", header_color);
+            s.Printf(L"%s%s:", dir, wcschr(dir, '\\') ? L"" : L"\\");
+            if (header_color)
+                s.Append(c_norm);
+            s.Append(L"\n");
         }
         else if (!Settings().IsSet(FMT_NOHEADER))
         {

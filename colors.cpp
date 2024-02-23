@@ -129,6 +129,7 @@ enum ColorIndex : unsigned short
     ciTemporary,
     ciLinkPath,
     ciPunctuation,
+    ciMiniHeader,
 
     ciCOUNT,
 
@@ -668,6 +669,7 @@ static void InitColorMaps()
         { L"xx", { CFLAG_NOT_A_TYPE, ciPunctuation } },
 
         //---- ADDED BY DIRX -------------------------------------------------
+        { L"hM", { CFLAG_NOT_A_TYPE, ciMiniHeader } }, // the mini header for a directory ("c:\foo:")
         { L"cF", { CFLAG_NOT_A_TYPE, ciCompressionField } }, // the compression ratio field
         { L"oF", { CFLAG_NOT_A_TYPE, ciOwnerField } },  // the owner field
         // { L"cT", { CFLAG_COMPRESSED_ATTRIBUTE, ciCompressedAttribute } },

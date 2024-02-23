@@ -3,9 +3,14 @@
 ### BUGS
 
 ### Next
-- Size unit colors.
-- Short directory header color.
-- An option to use short directory header (without needing to use --nix).
+- Option to autofit all columns to their content (even size).
+  - Rewrite to autofit the field itself, simply based on its width being zero.
+  - Then it can work for relative dates and also any other field.
+  - Caveat: if a field pads with spaces then the spaces count toward the width, so fields that want to crop spaces will need to specially handle formatting differently during the measure phase and the format phase.
+  - I don't like the --compact-columns option name.
+- Scope of color scale: eza applies color scale across the entire recursive search.
+  - dirx currently can't buffer results across directories (and errors would need to get buffered, too).
+  - Make renderers for each `OnBlah()` operation; create a renderer but then either immediately render or add it to a queue for deferred rendering later.
 - Write README.md file as documentation.
 - Document the `--nix` flag once it's more polished (also find a better name?).
 

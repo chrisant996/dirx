@@ -131,6 +131,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_NO_LOWER,
         LOI_MINI_BYTES,
         LOI_NO_MINI_BYTES,
+        LOI_MINI_HEADER,
+        LOI_NO_MINI_HEADER,
         LOI_MORE_COLORS,
         LOI_NERD_FONTS_VER,
         LOI_NIX,
@@ -197,6 +199,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-lower",              nullptr,            LOI_NO_LOWER },
         { L"mini-bytes",            nullptr,            LOI_MINI_BYTES },
         { L"no-mini-bytes",         nullptr,            LOI_NO_MINI_BYTES },
+        { L"mini-header",           nullptr,            LOI_MINI_HEADER },
+        { L"no-mini-header",        nullptr,            LOI_NO_MINI_HEADER },
         { L"more-colors",           nullptr,            LOI_MORE_COLORS,        LOHA_REQUIRED },
         { L"nerd-fonts",            nullptr,            LOI_NERD_FONTS_VER,     LOHA_REQUIRED },
         { L"nix",                   nullptr,            LOI_NIX },
@@ -633,6 +637,8 @@ unrecognized_long_opt_value:
             case LOI_NO_LOWER:              flagsOFF = FMT_LOWERCASE; break;
             case LOI_MINI_BYTES:            SetMiniBytes(true); break;
             case LOI_NO_MINI_BYTES:         SetMiniBytes(false); break;
+            case LOI_MINI_HEADER:           flagsON = FMT_MINIHEADER; break;
+            case LOI_NO_MINI_HEADER:        flagsOFF = FMT_MINIHEADER; break;
             case LOI_MORE_COLORS:           more_colors = opt_value; break;
             case LOI_NERD_FONTS_VER:        SetNerdFontsVersion(wcstoul(opt_value, nullptr, 10)); break;
             case LOI_NO_NORMAL:             flagsOFF = FMT_FORCENONFAT; break;
