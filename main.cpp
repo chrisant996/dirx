@@ -31,7 +31,7 @@
 
 #include <memory>
 
-static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+C+E.f:F+G+h+i+I:j+J+k+l+L:n+o.p+q+Q.r+R+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
+static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+C+E.f:F+g+G+h+i+I:j+J+k+l+L:n+o.p+q+Q.r+R+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
 static const WCHAR c_DIRXCMD[] = L"DIRXCMD";
 
 static const WCHAR* get_env_prio(const WCHAR* a, const WCHAR* b=nullptr, const WCHAR* c=nullptr)
@@ -246,16 +246,11 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         return 1;
     }
 
-    int t_count = 0;
-    unsigned t_index = 0;
-    for (; const WCHAR* opt_value = opts.GetValue('t', t_index); t_index++)
-    {
-        if (*opt_value == '-')
-            t_count = 0;
-        else
-            ++t_count;
-    }
-    show_all_attributes = (t_count >= 2);
+    WCHAR ch;
+    const WCHAR* opt_value;
+    unsigned num_dirxcmd_options = 0;
+    while (opts.GetValue(num_dirxcmd_options, ch, opt_value))
+        ++num_dirxcmd_options;
 
     // Then parse options from the command line.
     if (!opts.Parse(argc, argv, c_opts, usage.Text(), OPT_ANY|OPT_ANYWHERE|OPT_LONGABBR, long_opts))
@@ -263,15 +258,6 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         fputws(opts.ErrorString(), stderr);
         return 1;
     }
-
-    for (; const WCHAR* opt_value = opts.GetValue('t', t_index); t_index++)
-    {
-        if (*opt_value == '-')
-            t_count = 0, show_all_attributes = false;
-        else
-            ++t_count;
-    }
-    show_all_attributes = show_all_attributes || (t_count >= 2);
 
     assert(!argvEnv.Argc());
 
@@ -345,15 +331,29 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     unsigned limit_depth = 0;
     bool fresh_a_flag = true;
     const WCHAR* picture = 0;
-    const WCHAR* opt_value;
     const LongOption<WCHAR>* long_opt;
     StrW ignore_globs;
-    WCHAR ch;
 
+    bool was_g = false;
+    bool was_t = false;
     for (unsigned ii = 0; opts.GetValue(ii, ch, opt_value, &long_opt); ii++)
     {
         FormatFlags flagsON = FMT_NONE;
         FormatFlags flagsOFF = FMT_NONE;
+
+        // Adjacent -g or -t have special meaning.
+        {
+            if (ii == num_dirxcmd_options)
+                was_g = was_t = false;
+
+            if (ch != 'g' || *opt_value != '+') was_g = false;
+            else if (was_g)                     flags |= FMT_GITREPOS;
+            else                                was_g = true;
+
+            if (ch != 't' || *opt_value != '+') was_t = false;
+            else if (was_t)                     show_all_attributes = true;
+            else                                was_t = true;
+        }
 
         switch (ch)
         {
@@ -362,6 +362,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         case 'c':       flagsON = FMT_COLORS; break;
         case 'C':       flagsON = FMT_COMPRESSED; break;
         case 'F':       flagsON = FMT_FULLNAME|FMT_FORCENONFAT|FMT_HIDEPSEUDODIRS; break;
+        case 'g':       flagsON = FMT_GIT; flagsOFF = FMT_GIT|FMT_GITREPOS; break;
         case 'h':       flagsON = FMT_HIDEPSEUDODIRS; break;
         case 'i':       SetUseIcons((*opt_value == '-') ? L"never" : L"auto"); continue;
         case 'j':       flagsON = FMT_JUSTIFY_FAT; break;
