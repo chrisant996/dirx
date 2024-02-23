@@ -2418,7 +2418,15 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags
                         width -= 1 + 17;
                     }
                 }
-                sPic.Printf(L"F%u%s G?", width, tmp.Text());
+                if (m_settings.IsSet(FMT_GIT))
+                {
+                    // Because the /2 format uses a fixed with, there isn't a
+                    // good way to make the git column disappear when not in a
+                    // git repo.  So just let --git always force it.
+                    tmp.Append(L" G");
+                    width -= 3;
+                }
+                sPic.Printf(L"F%u%s", width, tmp.Text());
                 picture = sPic.Text();
             }
             break;
