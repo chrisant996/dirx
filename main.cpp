@@ -579,12 +579,16 @@ unrecognized_long_opt_value:
                 nix_defaults = true;
                 HideDotFiles(true);
                 flags |= FMT_COLORS|FMT_NODIRTAGINSIZE|FMT_FORCENONFAT|FMT_HIDEPSEUDODIRS|FMT_SORTVERTICAL|FMT_SKIPHIDDENDIRS|FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER;
-                flags &= ~(FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT|FMT_FAT|FMT_SHORTNAMES|FMT_ONLYSHORTNAMES|FMT_FULLNAME);
+                flags &= ~(FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT|FMT_FAT|FMT_SHORTNAMES|FMT_ONLYSHORTNAMES|FMT_FULLNAME|FMT_AUTOSEPTHOUSANDS|FMT_SEPARATETHOUSANDS);
+                SetDefaultTimeStyle(L"compact");
                 break;
             case LOI_NO_NIX:
                 nix_defaults = false;
                 HideDotFiles(false);
+                flags |= FMT_AUTOSEPTHOUSANDS;
                 flags &= ~(FMT_NODIRTAGINSIZE|FMT_HIDEPSEUDODIRS|FMT_SORTVERTICAL|FMT_FORCENONFAT|FMT_FAT|FMT_SKIPHIDDENDIRS|FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER);
+                SetDefaultTimeStyle(L"locale");
+                SetDefaultTimeStyle(L"locale");
                 break;
             case LOI_SIZE:
                 flags |= FMT_SIZE;
