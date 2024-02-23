@@ -20,6 +20,7 @@ const WCHAR* GetAttrLetterColor(DWORD attr);
 const WCHAR* GetIconColor(const WCHAR* color);
 const WCHAR* GetColorByKey(const WCHAR* key);
 const WCHAR* GetSizeColor(ULONGLONG ull);
+const WCHAR* GetSizeUnitColor(ULONGLONG ull);
 const WCHAR* ApplyGradient(const WCHAR* color, ULONGLONG value, ULONGLONG min, ULONGLONG max);
 const WCHAR* StripLineStyles(const WCHAR* color);
 

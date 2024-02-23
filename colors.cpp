@@ -76,6 +76,11 @@ enum ColorIndex : unsigned short
     ciSizeM,
     ciSizeG,
     ciSizeT,
+    ciSizeUnitB,
+    ciSizeUnitK,
+    ciSizeUnitM,
+    ciSizeUnitG,
+    ciSizeUnitT,
 
     // Attribute letters.
     ciAttributeLetterReadonly,  // r
@@ -128,6 +133,7 @@ enum ColorIndex : unsigned short
     ciCOUNT,
 
     ciALLSIZES,                 // Pseudo-value to trigger setting ciSizeB, ciSizeK, etc.
+    ciALLUNITS,                 // Pseudo-value to trigger setting ciSizeUnitK, ciSizeUnitM, etc.
 };
 
 enum ColorFlag : DWORD
@@ -617,19 +623,17 @@ static void InitColorMaps()
         { L"nm", { CFLAG_NOT_A_TYPE, ciSizeM } },       // the numbers of a file’s size if it is between 1 MB/MiB and 1 GB/GiB
         { L"ng", { CFLAG_NOT_A_TYPE, ciSizeG } },       // the numbers of a file’s size if it is between 1 GB/GiB and 1 TB/TiB
         { L"nt", { CFLAG_NOT_A_TYPE, ciSizeT } },       // the numbers of a file’s size if it is 1 TB/TiB or higher
-
-        // TODO: size unit colors, when color-scale affects size and color-scale-mode is fixed (but why only when color-scale?).
-        // sb : the units of a file’s size (sets ub, uk, um, ug and ut)
-        // ub : the units of a file’s size if it is lower than 1 KB/Kib
-        // uk : the units of a file’s size if it is between 1 KB/KiB and 1 MB/MiB
-        // um : the units of a file’s size if it is between 1 MB/MiB and 1 GB/GiB
-        // ug : the units of a file’s size if it is between 1 GB/GiB and 1 TB/TiB
-        // ut : the units of a file’s size if it is 1 TB/TiB or higher
+        { L"sb", { CFLAG_NOT_A_TYPE, ciALLUNITS } },    // the units of a file’s size (sets ub, uk, um, ug and ut)
+        { L"ub", { CFLAG_NOT_A_TYPE, ciSizeUnitB } },   // the units of a file’s size if it is lower than 1 KB/Kib
+        { L"uk", { CFLAG_NOT_A_TYPE, ciSizeUnitK } },   // the units of a file’s size if it is between 1 KB/KiB and 1 MB/MiB
+        { L"um", { CFLAG_NOT_A_TYPE, ciSizeUnitM } },   // the units of a file’s size if it is between 1 MB/MiB and 1 GB/GiB
+        { L"ug", { CFLAG_NOT_A_TYPE, ciSizeUnitG } },   // the units of a file’s size if it is between 1 GB/GiB and 1 TB/TiB
+        { L"ut", { CFLAG_NOT_A_TYPE, ciSizeUnitT } },   // the units of a file’s size if it is 1 TB/TiB or higher
+        // NOTE: eza documents "ub", but the library it uses to render size
+        // units never prints any unit name for bytes, so it's impossible for
+        // that color to ever actually get used.
 
         { L"da", { CFLAG_NOT_A_TYPE, ciTime } },        // a file date
-
-        { L"cF", { CFLAG_NOT_A_TYPE, ciCompressionField } }, // the compression ratio field
-        { L"oF", { CFLAG_NOT_A_TYPE, ciOwnerField } },  // the owner field
 
         { L"ga", { CFLAG_NOT_A_TYPE, ciGitNew } },
         { L"gm", { CFLAG_NOT_A_TYPE, ciGitModified } },
@@ -661,12 +665,15 @@ static void InitColorMaps()
         { L"sc", { CFLAG_SOURCE_CODE, ciSourceCode } },
         { L"cr", { CFLAG_CRYPTO, ciCrypto } },
 
+        { L"xx", { CFLAG_NOT_A_TYPE, ciPunctuation } },
+
+        //---- ADDED BY DIRX -------------------------------------------------
+        { L"cF", { CFLAG_NOT_A_TYPE, ciCompressionField } }, // the compression ratio field
+        { L"oF", { CFLAG_NOT_A_TYPE, ciOwnerField } },  // the owner field
         // { L"cT", { CFLAG_COMPRESSED_ATTRIBUTE, ciCompressedAttribute } },
         { L"cR", { CFLAG_COMPRESSED_ARCHIVE, ciCompressedArchive } },
         // { L"tT", { CFLAG_TEMPORARY_ATTRIBUTE, ciTemporaryAttribute } },
         { L"tX", { CFLAG_TEMPORARY_EXTENSION, ciTemporaryExtension } },
-
-        { L"xx", { CFLAG_NOT_A_TYPE, ciPunctuation } },
 
         //---- EZA REPURPOSED THESE TYPES ON WINDOWS AS FOLLOWS --------------
         { L"ur", { CFLAG_NOT_A_TYPE, ciAttributeLetterReadonly } },
@@ -1116,7 +1123,17 @@ static int ParseColorRule(const WCHAR* in, StrW& value, ColorRule& rule, bool ls
                 SetColorString(ciSizeT, CopyStr(color));
                 ci = ciSize;
             }
-            SetColorString(ColorIndex(ci), color);
+            else if (ci == ciALLUNITS)
+            {
+                SetColorString(ciSizeUnitB, CopyStr(color));
+                SetColorString(ciSizeUnitK, CopyStr(color));
+                SetColorString(ciSizeUnitM, CopyStr(color));
+                SetColorString(ciSizeUnitG, CopyStr(color));
+                SetColorString(ciSizeUnitT, CopyStr(color));
+                ci = ciZERO;
+            }
+            if (ci != ciZERO)
+                SetColorString(ColorIndex(ci), color);
         }
         return 0;
     }
@@ -1477,6 +1494,24 @@ const WCHAR* GetSizeColor(ULONGLONG ull)
         ci = ciSizeG;
     else
         ci = ciSizeT;
+    return s_color_strings[ci];
+}
+
+const WCHAR* GetSizeUnitColor(ULONGLONG ull)
+{
+    if (!IsScalingSize())
+        return nullptr;
+    ColorIndex ci;
+    if (ull < 1024ull)
+        ci = ciSizeUnitB;
+    else if (ull < 1024ull * 1024)
+        ci = ciSizeUnitK;
+    else if (ull < 1024ull * 1024 * 1024)
+        ci = ciSizeUnitM;
+    else if (ull < 1024ull * 1024 * 1024 * 1024)
+        ci = ciSizeUnitG;
+    else
+        ci = ciSizeUnitT;
     return s_color_strings[ci];
 }
 

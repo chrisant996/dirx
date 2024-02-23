@@ -965,6 +965,7 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
 #endif
             static_assert(_countof(c_size_chars) == 5, "size mismatch");
 
+            const WCHAR* unit_color = (settings.IsSet(FMT_COLORS) && !s_gradient && s_scale_size && which) ? GetSizeUnitColor(cbSize) : nullptr;
             double dSize = double(cbSize);
             unsigned iChSize = 0;
 
@@ -978,7 +979,7 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
             {
                 dSize += 0.05;
                 cbSize = static_cast<unsigned __int64>(dSize * 10);
-                s.Printf(L"%I64u.%I64u%c", cbSize / 10, cbSize % 10, c_size_chars[iChSize]);
+                s.Printf(L"%I64u.%I64u", cbSize / 10, cbSize % 10);
             }
             else
             {
@@ -1001,8 +1002,13 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
                         iChSize++;
                     }
                 }
-                s.Printf(L"%3I64u%c", cbSize, c_size_chars[iChSize]);
+                s.Printf(L"%3I64u", cbSize);
             }
+
+            if (unit_color)
+                s.Printf(L"\x1b[0;%sm", unit_color);
+
+            s.Append(&c_size_chars[iChSize], 1);
         }
         break;
 
