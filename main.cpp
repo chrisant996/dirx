@@ -141,6 +141,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_NO_SHORT_NAMES,
         LOI_SIZE,
         LOI_NO_SIZE,
+        LOI_SIZE_STYLE,
         LOI_NO_STREAMS,
         LOI_STRING_SORT,
         LOI_TIME,
@@ -213,6 +214,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-short-names",        nullptr,            LOI_NO_SHORT_NAMES },
         { L"size",                  nullptr,            LOI_SIZE,               LOHA_OPTIONAL },
         { L"no-size",               nullptr,            LOI_NO_SIZE },
+        { L"size-style",            nullptr,            LOI_SIZE_STYLE,         LOHA_REQUIRED },
         { L"skip",                  nullptr,            'X',                    LOHA_OPTIONAL },
         { L"streams",               nullptr,            'r' },
         { L"no-streams",            nullptr,            LOI_NO_STREAMS },
@@ -586,6 +588,10 @@ unrecognized_long_opt_value:
             case LOI_NO_SIZE:
                 flags |= FMT_LONGNOSIZE;
                 flags &= ~FMT_SIZE;
+                break;
+            case LOI_SIZE_STYLE:
+                if (!SetDefaultSizeStyle(opt_value))
+                    goto unrecognized_long_opt_value;
                 break;
             case LOI_TIME:
                 flags |= FMT_DATE;

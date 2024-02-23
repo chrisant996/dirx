@@ -162,6 +162,7 @@ void SetMiniBytes(bool mini_bytes);
 bool SetColorScale(const WCHAR* s);
 bool IsScalingSize();
 bool SetColorScaleMode(const WCHAR* s);
+bool SetDefaultSizeStyle(const WCHAR* size_style);
 bool SetDefaultTimeStyle(const WCHAR* time_style);
 void SetTruncationCharacterInHex(const WCHAR* s);
 WCHAR GetTruncationCharacter();

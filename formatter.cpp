@@ -29,6 +29,7 @@ static bool s_mini_bytes = false;
 static bool s_scale_size = false;
 static bool s_scale_time = false;
 static bool s_gradient = true;
+static WCHAR s_size_style = 0;
 static WCHAR s_time_style = 0;
 constexpr unsigned c_max_branch_name = 10;
 
@@ -184,6 +185,28 @@ bool SetColorScaleMode(const WCHAR* s)
     else
         return false;
     return true;
+}
+
+bool SetDefaultSizeStyle(const WCHAR* size_style)
+{
+    if (!size_style)
+        return false;
+
+    static const WCHAR* c_size_styles[] =
+    {
+        L"mmini",
+        L"sshort",
+        L"nnormal",
+    };
+
+    for (auto s : c_size_styles)
+        if ((size_style[0] == s[0] && !size_style[1]) || wcsicmp(s + 1, size_style) == 0)
+        {
+            s_size_style = s[0];
+            return true;
+        }
+
+    return false;
 }
 
 bool SetDefaultTimeStyle(const WCHAR* time_style)
@@ -878,7 +901,9 @@ static WCHAR GetEffectiveSizeFieldStyle(const DirFormatSettings& settings, WCHAR
 {
     if (!chStyle)
     {
-        if (settings.IsSet(FMT_MINISIZE))
+        if (s_size_style)
+            chStyle = s_size_style;
+        else if (settings.IsSet(FMT_MINISIZE))
             chStyle = 'm';
         else if (!settings.IsSet(FMT_FULLSIZE))
             chStyle = 's';
