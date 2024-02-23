@@ -2857,7 +2857,8 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
 
     pfi->Init(dir, m_granularity, pfd, Settings());
 
-    if (Settings().IsSet(FMT_GIT|FMT_GITREPOS))
+    if ((Settings().m_flags & (FMT_GIT|FMT_SUBDIRECTORIES)) == (FMT_GIT|FMT_SUBDIRECTORIES) ||
+        (Settings().IsSet(FMT_GITREPOS)))
     {
         StrW full;
         PathJoin(full, dir, pfd->cFileName);
