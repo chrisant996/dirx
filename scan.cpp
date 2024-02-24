@@ -198,7 +198,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir,
         const bool filter_dirs = (usage &&
                                   !implicit &&
                                   callbacks.IsRootSubDir());
-        if ((subdirs && !ii) || filter_dirs)
+        if (((subdirs && !ii) || filter_dirs) && depth + 1 <= limit_depth)
         {
             const WCHAR* strip;
 
@@ -232,12 +232,11 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir,
             }
             else
             {
-                const unsigned new_depth = limit_depth ? depth + 1 : 0;
+                const unsigned new_depth = depth + 1;
+                assert(new_depth <= limit_depth);
                 do
                 {
                     if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-                        continue;
-                    if (limit_depth && new_depth > limit_depth)
                         continue;
                     if (IsHidden(fd) && callbacks.Settings().IsSet(FMT_SKIPHIDDENDIRS))
                         continue;

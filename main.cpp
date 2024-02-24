@@ -332,7 +332,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     DWORD dwAttrIncludeAny = 0;
     DWORD dwAttrMatch = 0;
     DWORD dwAttrExcludeAny = FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM;
-    unsigned limit_depth = 0;
+    unsigned limit_depth = -1;
     bool fresh_a_flag = true;
     const WCHAR* picture = 0;
     const LongOption<WCHAR>* long_opt;
@@ -449,9 +449,12 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             if (*opt_value)
             {
                 unsigned long n = wcstoul(opt_value, nullptr, 10);
-                if (n > 0xfffffff0)
-                    n = 0xfffffff0;
-                limit_depth = n;
+                if (long(n) <= 0)
+                    limit_depth = 0;
+                else if (n >= 0xffffffff)
+                    limit_depth = -1;
+                else
+                    limit_depth = n - 1;
             }
             break;
         case 'n':
@@ -855,7 +858,7 @@ unrecognized_long_opt_value:
                   FMT_SEPARATETHOUSANDS|FMT_REDIRECTED|FMT_AUTOSEPTHOUSANDS|
                   FMT_USAGE|FMT_USAGEGROUPED|FMT_MINIDATE);
         flags |= FMT_BARE|FMT_SUBDIRECTORIES;
-        limit_depth = 0;
+        limit_depth = -1;
     }
 
     if (cColumns != 1)
