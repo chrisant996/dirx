@@ -13,6 +13,7 @@
 #include <vector>
 
 struct SubDir;
+struct DirContext;
 
 struct AttrChar
 {
@@ -43,7 +44,7 @@ public:
     unsigned GetMinWidth(const FileInfo* pfi) const;
     bool CanAutoFitWidth() const;
 
-    void SetDirContext(const WCHAR* dir, const std::shared_ptr<const RepoStatus>& repo);
+    void SetDirContext(const std::shared_ptr<const DirContext>& dir);
     void OnFile(const FileInfo* pfi);
 
     void Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STREAM_DATA* pfsd=nullptr, bool one_per_line=true) const;
@@ -57,8 +58,8 @@ public:
 
 private:
     const DirFormatSettings& m_settings;
-    const WCHAR*        m_dir = nullptr;    // Borrowed, not owned.
-    std::shared_ptr<const RepoStatus> m_repo;
+    std::shared_ptr<const DirContext> m_dir;
+
     StrW                m_orig_picture;
     StrW                m_picture;
     std::vector<FieldInfo> m_fields;
@@ -79,6 +80,23 @@ private:
     bool                m_has_git = false;
 };
 
+struct DirContext
+{
+                        DirContext(FormatFlags flags, PictureFormatter& picture) : flags(flags), picture(picture) {}
+    StrW                dir;
+    FormatFlags         flags;
+    PictureFormatter&   picture;
+    std::shared_ptr<const RepoStatus> repo;
+};
+
+class OutputOperation
+{
+public:
+                        OutputOperation() = default;
+    virtual             ~OutputOperation() = default;
+    virtual void        Render(HANDLE h, const DirContext* dir) = 0;
+};
+
 class DirEntryFormatter : public DirScanCallbacks
 {
     typedef DirScanCallbacks base;
@@ -93,8 +111,6 @@ public:
                                    DWORD dwAttrIncludeAny=0, DWORD dwAttrMatch=0, DWORD dwAttrExcludeAny=0,
                                    const WCHAR* picture=nullptr);
 
-    void                DisplayOne(const FileInfo* pfi);
-
     DirFormatSettings&  Settings() override { return m_settings; }
 
     bool                OnVolumeBegin(const WCHAR* dir, Error& e) override;
@@ -102,9 +118,10 @@ public:
     void                OnScanFiles(const WCHAR* dir, const WCHAR* pattern, bool implicit, bool root_pass) override;
     void                OnDirectoryBegin(const WCHAR* dir, const std::shared_ptr<const RepoStatus>& repo) override;
     void                OnFile(const WCHAR* dir, const WIN32_FIND_DATA* pfd) override;
-    void                OnFileNotFound() override;
     void                OnDirectoryEnd(bool next_dir_is_different) override;
     void                OnVolumeEnd(const WCHAR* dir) override;
+    void                Finalize() override;
+    void                ReportError(Error& e) override;
     void                AddSubDir(const StrW& dir, unsigned depth, const std::shared_ptr<const GlobPatterns>& git_ignore, const std::shared_ptr<const RepoStatus>& repo) override;
     void                SortSubDirs() override;
     bool                NextSubDir(StrW& dir, unsigned& depth, std::shared_ptr<const GlobPatterns>& git_ignore, std::shared_ptr<const RepoStatus>& repo) override;
@@ -115,6 +132,9 @@ public:
 
     bool                IsNewRootGroup(const WCHAR* dir) const;
     void                UpdateRootGroup(const WCHAR* dir);
+
+private:
+    void                Render(OutputOperation* o);
 
 private:
     HANDLE              m_hout = 0;
@@ -140,7 +160,7 @@ private:
     unsigned __int64    m_cbAllocatedTotal = 0;
     unsigned __int64    m_cbCompressedTotal = 0;
 
-    std::vector<FileInfo> m_files;
+    std::vector<std::unique_ptr<FileInfo>> m_files;
     std::vector<SubDir> m_subdirs;
     StrW                m_root;
     StrW                m_root_group;
@@ -149,7 +169,9 @@ private:
     bool                m_grouped_patterns = false;
     unsigned            m_count_usage_dirs = 0;
 
-    StrW                m_dir;
+    std::shared_ptr<DirContext> m_dir;
+
+    std::vector<std::unique_ptr<OutputOperation>> m_outputs;
 };
 
 void InitLocale();

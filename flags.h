@@ -104,6 +104,7 @@ inline ULONGLONG FileTimeToULONGLONG(const FILETIME& ft)
 
 struct DirFormatSettings
 {
+                        DirFormatSettings() { ClearMinMax(); }
     bool                IsSet(FormatFlags flag) const { return !!(m_flags & flag); }
     void                ClearMinMax();
     void                UpdateMinMaxTime(WhichTimeStamp which, const FILETIME& ft);

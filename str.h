@@ -102,6 +102,9 @@ public:
                         StrA() = default;
                         StrA(const char* p) { Set(p); }
                         StrA(const StrA& s) { Set(s); }
+                        StrA(StrA&& s) { Set(std::move(s)); }
+
+    StrA&               operator=(StrA&& s) { Set(std::move(s)); return *this; }
 
     void                SetA(const char* p, size_t len=-1) { Set(p, len); }
     void                SetW(const WCHAR* p, size_t len=-1);
@@ -116,6 +119,9 @@ public:
                         StrW() = default;
                         StrW(const WCHAR* p) { Set(p); }
                         StrW(const StrW& s) { Set(s); }
+                        StrW(StrW&& s) { Set(std::move(s)); }
+
+    StrW&               operator=(StrW&& s) { Set(std::move(s)); return *this; }
 
     void                SetA(const char* p, size_t len=-1);
     void                SetW(const WCHAR* p, size_t len=-1) { Set(p, len); }

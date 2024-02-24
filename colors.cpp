@@ -23,6 +23,7 @@
 #include <cmath>
 
 extern const WCHAR c_norm[] = L"\x1b[m";
+extern const WCHAR c_error[] = L"1;91";
 
 static double s_min_luminance = 0.4;
 

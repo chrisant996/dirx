@@ -25,4 +25,5 @@ const WCHAR* ApplyGradient(const WCHAR* color, ULONGLONG value, ULONGLONG min, U
 const WCHAR* StripLineStyles(const WCHAR* color);
 
 extern const WCHAR c_norm[];
+extern const WCHAR c_error[];
 

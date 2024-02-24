@@ -922,6 +922,8 @@ unrecognized_long_opt_value:
 
     const int rc = ScanDir(def, patterns, limit_depth, e);
 
+    def.Finalize();
+
     if (e.Test())
         return e.Report();
 

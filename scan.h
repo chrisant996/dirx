@@ -24,9 +24,10 @@ public:
     virtual void        OnScanFiles(const WCHAR* dir, const WCHAR* pattern, bool implicit, bool top) = 0;
     virtual void        OnDirectoryBegin(const WCHAR* dir, const std::shared_ptr<const RepoStatus>& repo) = 0;
     virtual void        OnFile(const WCHAR* dir, const WIN32_FIND_DATA* pfd) = 0;
-    virtual void        OnFileNotFound() = 0;
     virtual void        OnDirectoryEnd(bool next_is_different) = 0;
     virtual void        OnVolumeEnd(const WCHAR* dir) = 0;
+    virtual void        Finalize() = 0;
+    virtual void        ReportError(Error& e) = 0;
     virtual void        AddSubDir(const StrW& dir, unsigned depth, const std::shared_ptr<const GlobPatterns>& git_ignore, const std::shared_ptr<const RepoStatus>& repo) = 0;
     virtual void        SortSubDirs() = 0;
     virtual bool        NextSubDir(StrW& dir, unsigned& depth, std::shared_ptr<const GlobPatterns>& git_ignorem, std::shared_ptr<const RepoStatus>& repo) = 0;

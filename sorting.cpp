@@ -191,12 +191,12 @@ private:
     const WCHAR     m_ch;
 };
 
-bool CmpFileInfo(const FileInfo& fi1, const FileInfo& fi2)
+bool CmpFileInfo(const std::unique_ptr<FileInfo>& fi1, const std::unique_ptr<FileInfo>& fi2)
 {
     assert(g_settings);
 
-    const FileInfo* const pfi1 = &fi1;
-    const FileInfo* const pfi2 = &fi2;
+    const FileInfo* const pfi1 = fi1.get();
+    const FileInfo* const pfi2 = fi2.get();
     const bool is_file1 = !(pfi1->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY);
     const bool is_file2 = !(pfi2->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY);
 

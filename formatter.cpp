@@ -46,6 +46,10 @@ static const WCHAR c_BEL[] = L"\a";
 #define assert_width(expr)  do {} while (0)
 #endif
 
+/*
+ * Configuration functions.
+ */
+
 static bool ParseHexDigit(WCHAR ch, WORD* digit)
 {
     if (ch >= '0' && ch <= '9')
@@ -239,6 +243,10 @@ bool SetDefaultTimeStyle(const WCHAR* time_style)
 
     return false;
 }
+
+/*
+ * Formatter functions.
+ */
 
 static void SelectFileTime(const FileInfo* const pfi, const WhichTimeStamp timestamp, SYSTEMTIME* const psystime)
 {
@@ -1991,7 +1999,7 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
             break;
         case 'G':
             skip = (picture[1] == '?' && (!m_settings.IsSet(FMT_GIT) ||
-                                          (m_finished_initial_parse && (!m_repo || !m_repo->repo))));
+                                          (m_finished_initial_parse && (!m_dir->repo || !m_dir->repo->repo))));
             if (!skip)
             {
                 m_fields.emplace_back();
@@ -2211,10 +2219,9 @@ bool PictureFormatter::CanAutoFitWidth() const
     return false;
 }
 
-void PictureFormatter::SetDirContext(const WCHAR* dir, const std::shared_ptr<const RepoStatus>& repo)
+void PictureFormatter::SetDirContext(const std::shared_ptr<const DirContext>& dir)
 {
     m_dir = dir;
-    m_repo = repo;
     m_max_branch_width = 0;
     ZeroMemory(&m_max_relative_width_which, sizeof(m_max_relative_width_which));
 }
@@ -2224,7 +2231,7 @@ inline void PictureFormatter::OnFile(const FileInfo* pfi)
     if (m_need_branch_width && m_max_branch_width < 10)
     {
         StrW full;
-        PathJoin(full, m_dir, pfi->GetLongName());
+        PathJoin(full, m_dir->dir.Text(), pfi->GetLongName());
 
         const auto repo = s_repo_map.Find(full.Text());
         if (repo && repo->repo)
@@ -2257,12 +2264,10 @@ inline void PictureFormatter::OnFile(const FileInfo* pfi)
 
 void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STREAM_DATA* pfsd, bool one_per_line) const
 {
-    assert(!s.Length() || s.Text()[s.Length() - 1] == '\n');
-
     const unsigned max_file_width = m_max_file_width;
     const unsigned max_dir_width = m_max_dir_width + (m_settings.IsSet(FMT_DIRBRACKETS) ? 2 : 0);
 
-    const WCHAR* dir = m_dir;
+    const WCHAR* dir = m_dir->dir.Text();
     const WCHAR* color = SelectColor(pfi, m_settings.m_flags, dir);
 
     // Format the fields.
@@ -2396,7 +2401,7 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STR
                 }
                 break;
             case FLD_GITFILE:
-                FormatGitFile(s, pfi, dir, m_settings.m_flags, m_repo.get());
+                FormatGitFile(s, pfi, dir, m_settings.m_flags, m_dir->repo.get());
                 break;
             case FLD_GITREPO:
                 FormatGitRepo(s, pfi, dir, m_settings.m_flags, field.m_cchWidth);
@@ -2413,6 +2418,32 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STR
     s.Append(m_picture.Text() + ichCopied, m_picture.Length() - ichCopied);
 }
 
+/*
+ * General purpose OutputOperation subclasses.
+ */
+
+class OutputText : public OutputOperation
+{
+public:
+    OutputText(StrW&& s)
+    {
+        m_s = std::move(s);
+        assert(s.Empty());
+    }
+
+    void Render(HANDLE h, const DirContext* dir) override
+    {
+        OutputConsole(h, m_s.Text(), m_s.Length());
+    }
+
+private:
+    StrW m_s;
+};
+
+/*
+ * DirEntryFormatter.
+ */
+
 DirEntryFormatter::DirEntryFormatter()
     : m_picture(m_settings)
 {
@@ -2421,6 +2452,8 @@ DirEntryFormatter::DirEntryFormatter()
 
 DirEntryFormatter::~DirEntryFormatter()
 {
+    assert(m_outputs.empty());
+    Finalize();
     g_settings = nullptr;
 }
 
@@ -2672,7 +2705,7 @@ bool DirEntryFormatter::OnVolumeBegin(const WCHAR* dir, Error& e)
                  size_field_width, size_field_width, L"Used",
                  size_field_width, size_field_width, L"Allocated",
                  L"Files");
-        OutputConsole(m_hout, s.Text(), s.Length());
+        Render(new OutputText(std::move(s)));
         m_count_usage_dirs = 0;
         return true;
     }
@@ -2709,7 +2742,7 @@ bool DirEntryFormatter::OnVolumeBegin(const WCHAR* dir, Error& e)
         s.Printf(L" Volume in drive %s has no label.\n", root.Text());
     s.Printf(L" Volume Serial Number is %04X-%04X\n",
              HIWORD(dwSerialNumber), LOWORD(dwSerialNumber));
-    OutputConsole(m_hout, s.Text(), s.Length());
+    Render(new OutputText(std::move(s)));
 
     m_line_break_before_miniheader = true;
     return true;
@@ -2735,13 +2768,10 @@ void DirEntryFormatter::OnScanFiles(const WCHAR* dir, const WCHAR* pattern, bool
 void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const std::shared_ptr<const RepoStatus>& repo)
 {
     const bool fReset = (Settings().IsSet(FMT_USAGEGROUPED) ?
-                         IsRootSubDir() || IsNewRootGroup(dir) :
-                         !m_dir.EqualI(dir));
+                         (IsRootSubDir() || IsNewRootGroup(dir)) :
+                         (!m_dir || !m_dir->dir.EqualI(dir)));
     if (fReset)
-    {
         UpdateRootGroup(dir);
-        Settings().ClearMinMax();
-    }
 
     m_files.clear();
     m_longest_file_width = 0;
@@ -2755,19 +2785,39 @@ void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const std::shar
     if (GetDiskFreeSpace(dir, &dwSectorsPerCluster, &dwBytesPerSector, &dwFreeClusters, &dwTotalClusters))
         m_granularity = dwSectorsPerCluster * dwBytesPerSector;
 
-    m_dir.Clear();
-    if (Settings().IsSet(FMT_SHORTNAMES))
     {
-        StrW short_name;
-        short_name.ReserveMaxPath();
-        const DWORD len = GetShortPathName(dir, short_name.Reserve(), short_name.Capacity());
-        if (len && len < short_name.Capacity())
-            m_dir.Set(short_name);
-    }
-    if (!m_dir.Length())
-        m_dir.Set(dir);
+        std::shared_ptr<DirContext> context = std::make_shared<DirContext>(Settings().m_flags, m_picture);
+        context->repo = repo;
+        if (Settings().IsSet(FMT_SHORTNAMES))
+        {
+            StrW short_name;
+            short_name.ReserveMaxPath();
+            const DWORD len = GetShortPathName(dir, short_name.Reserve(), short_name.Capacity());
+            if (len && len < short_name.Capacity())
+                context->dir.Set(short_name);
+        }
+        if (context->dir.Empty())
+            context->dir.Set(dir);
 
-    m_picture.SetDirContext(dir, repo);
+        class OutputDirectoryContext : public OutputOperation
+        {
+        public:
+            OutputDirectoryContext(DirEntryFormatter* def, const std::shared_ptr<DirContext>& context)
+            : m_def(def), m_dir(context) {}
+
+            void Render(HANDLE h, const DirContext* dir) override
+            {
+                m_def->m_dir = m_dir;
+                m_dir->picture.SetDirContext(m_dir);
+            }
+
+        private:
+            DirEntryFormatter* m_def;
+            std::shared_ptr<DirContext> m_dir;
+        };
+
+        Render(new OutputDirectoryContext(this, context));
+    }
 
     if (!Settings().IsSet(FMT_BARE))
     {
@@ -2789,33 +2839,32 @@ void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const std::shar
         {
             s.Printf(L"\n Directory of %s%s\n\n", dir, wcschr(dir, '\\') ? L"" : L"\\");
         }
-        OutputConsole(m_hout, s.Text(), s.Length());
+        Render(new OutputText(std::move(s)));
     }
 }
 
-void DirEntryFormatter::DisplayOne(const FileInfo* const pfi)
+static void DisplayOne(HANDLE h, const FileInfo* const pfi, const DirContext* const dir)
 {
     StrW s;
 
-    if (m_settings.IsSet(FMT_BARE))
+    if (dir->flags & FMT_BARE)
     {
-        if (pfi->IsPseudoDirectory())
-            return;
+        assert(!pfi->IsPseudoDirectory());
 
-        const FormatFlags flags = m_settings.m_flags | (m_settings.IsSet(FMT_SUBDIRECTORIES) ? FMT_FULLNAME : FMT_NONE);
-        FormatFilename(s, pfi, flags, 0, m_dir.Text(), SelectColor(pfi, flags, m_dir.Text()));
+        const FormatFlags flags_adjusted = (dir->flags & FMT_SUBDIRECTORIES) ? dir->flags|FMT_FULLNAME : dir->flags;
+        FormatFilename(s, pfi, dir->flags, 0, dir->dir.Text(), SelectColor(pfi, flags_adjusted, dir->dir.Text()));
     }
     else
     {
-        m_picture.Format(s, pfi);
+        dir->picture.Format(s, pfi);
     }
 
-    if (m_settings.IsSet(FMT_ALTDATASTEAMS|FMT_ONLYALTDATASTREAMS))
+    if (dir->flags & (FMT_ALTDATASTEAMS|FMT_ONLYALTDATASTREAMS))
     {
-        assert(implies(m_settings.IsSet(FMT_ALTDATASTEAMS), !m_settings.IsSet(FMT_FAT|FMT_BARE)));
+        assert(implies((dir->flags & FMT_ALTDATASTEAMS), !(dir->flags & (FMT_FAT|FMT_BARE))));
 
         StrW tmp;
-        PathJoin(tmp, m_dir.Text(), pfi->GetLongName());
+        PathJoin(tmp, dir->dir.Text(), pfi->GetLongName());
 
         StrW full;
         full.Set(tmp);
@@ -2830,45 +2879,41 @@ void DirEntryFormatter::DisplayOne(const FileInfo* const pfi)
                 if (!wcsicmp(fsd.cStreamName, L"::$DATA"))
                     continue;
                 fAnyAltDataStreams = true;
-                if (!m_settings.IsSet(FMT_ALTDATASTEAMS))
+                if (!(dir->flags & FMT_ALTDATASTEAMS))
                     break;
                 s.Append('\n');
-                m_picture.Format(s, pfi, &fsd);
+                dir->picture.Format(s, pfi, &fsd);
             }
             while (__FindNextStreamW(shFind, &fsd));
         }
 
         if (fAnyAltDataStreams)
             pfi->SetAltDataStreams();
-        else if (m_settings.IsSet(FMT_ONLYALTDATASTREAMS))
+        else if (dir->flags & FMT_ONLYALTDATASTREAMS)
             return;
     }
 
     s.Append(L"\n");
-    OutputConsole(m_hout, s.Text(), s.Length());
+    OutputConsole(h, s.Text(), s.Length());
 }
 
 void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* const pfd)
 {
-    FileInfo* pfi;
-    std::unique_ptr<FileInfo> spfi;
+    std::unique_ptr<FileInfo> pfi;
     const bool fUsage = Settings().IsSet(FMT_USAGE);
     const bool fImmediate = (m_fImmediate &&
                              m_picture.IsImmediate() &&
                              !m_grouped_patterns);
 
-    if (fImmediate || fUsage)
-    {
-        spfi = std::make_unique<FileInfo>();
-        pfi = spfi.get();
-    }
-    else
-    {
-        m_files.emplace_back();
-        pfi = &m_files.back();
-    }
-
+    pfi = std::make_unique<FileInfo>();
     pfi->Init(dir, m_granularity, pfd, Settings());
+
+    // Skip the file if filtering out files without alternate data streams.
+
+    if (Settings().IsSet(FMT_ONLYALTDATASTREAMS) && !pfi->HasAltDataStreams())
+        return;
+
+    // Get git status if needed.
 
     if ((Settings().m_flags & (FMT_GIT|FMT_SUBDIRECTORIES)) == (FMT_GIT|FMT_SUBDIRECTORIES) ||
         (Settings().IsSet(FMT_GITREPOS)))
@@ -2879,91 +2924,100 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
         s_repo_map.Add(repo);
     }
 
-    if (fImmediate && !fUsage)
-        DisplayOne(pfi);
-
     // Update statistics.
 
-    if (Settings().IsSet(FMT_ONLYALTDATASTREAMS) && !pfi->HasAltDataStreams())
+    const FormatFlags flags = Settings().m_flags;
+    const unsigned num_columns = Settings().m_num_columns;
+
+    if (pfi->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY)
     {
-        if (!fImmediate)
-            m_files.erase(m_files.begin() + m_files.size() - 1);
+        m_cDirs++;
+        if (!num_columns || m_picture.IsFilenameWidthNeeded())
+        {
+            unsigned name_width = __wcswidth(pfi->GetFileName(flags).Text());
+            if ((flags & (FMT_CLASSIFY|FMT_DIRBRACKETS)) == FMT_CLASSIFY)
+                ++name_width;   // For appending '\' symbol.
+            if (m_longest_dir_width < name_width)
+                m_longest_dir_width = name_width;
+        }
     }
     else
     {
-        const FormatFlags flags = Settings().m_flags;
-        const unsigned num_columns = Settings().m_num_columns;
-
-        if (pfi->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY)
+        m_cFiles++;
+        m_cbTotal += pfi->GetFileSize();
+        m_cbAllocated += pfi->GetFileSize(FILESIZE_ALLOCATION);
+        if (Settings().IsSet(FMT_COMPRESSED))
+            m_cbCompressed += pfi->GetFileSize(FILESIZE_COMPRESSED);
+        if (!num_columns || m_picture.IsFilenameWidthNeeded())
         {
-            m_cDirs++;
-            if (!num_columns || m_picture.IsFilenameWidthNeeded())
+            unsigned name_width = __wcswidth(pfi->GetFileName(flags).Text());
+            if ((flags & (FMT_CLASSIFY|FMT_FAT|FMT_JUSTIFY_NONFAT)) == FMT_CLASSIFY && pfi->IsSymLink())
+                ++name_width;   // For appending '@' symbol.
+            if (m_longest_file_width < name_width)
+                m_longest_file_width = name_width;
+            if (m_picture.IsFilenameWidthNeeded())
             {
-                unsigned name_width = __wcswidth(pfi->GetFileName(flags).Text());
-                if ((flags & (FMT_CLASSIFY|FMT_DIRBRACKETS)) == FMT_CLASSIFY)
-                    ++name_width;   // For appending '\' symbol.
-                if (m_longest_dir_width < name_width)
-                    m_longest_dir_width = name_width;
-            }
-        }
-        else
-        {
-            m_cFiles++;
-            m_cbTotal += pfi->GetFileSize();
-            m_cbAllocated += pfi->GetFileSize(FILESIZE_ALLOCATION);
-            if (Settings().IsSet(FMT_COMPRESSED))
-                m_cbCompressed += pfi->GetFileSize(FILESIZE_COMPRESSED);
-            if (!num_columns || m_picture.IsFilenameWidthNeeded())
-            {
-                unsigned name_width = __wcswidth(pfi->GetFileName(flags).Text());
-                if ((flags & (FMT_CLASSIFY|FMT_FAT|FMT_JUSTIFY_NONFAT)) == FMT_CLASSIFY && pfi->IsSymLink())
-                    ++name_width;   // For appending '@' symbol.
-                if (m_longest_file_width < name_width)
-                    m_longest_file_width = name_width;
-                if (m_picture.IsFilenameWidthNeeded())
+                const bool isFAT = Settings().IsSet(FMT_FAT);
+                if ((Settings().IsSet(FMT_JUSTIFY_FAT) && isFAT) ||
+                    (Settings().IsSet(FMT_JUSTIFY_NONFAT) && !isFAT))
                 {
-                    const bool isFAT = Settings().IsSet(FMT_FAT);
-                    if ((Settings().IsSet(FMT_JUSTIFY_FAT) && isFAT) ||
-                        (Settings().IsSet(FMT_JUSTIFY_NONFAT) && !isFAT))
-                    {
-                        const WCHAR* name = pfi->GetFileName(flags).Text();
-                        const WCHAR* ext = FindExtension(name);
-                        unsigned noext_width = 0;
-                        if (ext)
-                            noext_width = __wcswidth(name, unsigned(ext - name));
-                        if (!noext_width)
-                            noext_width = name_width;
-                        if (m_longest_file_width < noext_width + 4)
-                            m_longest_file_width = noext_width + 4;
-                    }
-                }
-            }
-            if (s_gradient && s_scale_size)
-            {
-                for (WhichFileSize which = FILESIZE_ARRAY_SIZE; which = WhichFileSize(int(which) - 1);)
-                {
-                    if (which != FILESIZE_COMPRESSED || Settings().m_need_compressed_size)
-                        Settings().UpdateMinMaxSize(which, pfi->GetFileSize(which));
+                    const WCHAR* name = pfi->GetFileName(flags).Text();
+                    const WCHAR* ext = FindExtension(name);
+                    unsigned noext_width = 0;
+                    if (ext)
+                        noext_width = __wcswidth(name, unsigned(ext - name));
+                    if (!noext_width)
+                        noext_width = name_width;
+                    if (m_longest_file_width < noext_width + 4)
+                        m_longest_file_width = noext_width + 4;
                 }
             }
         }
-
-        if (s_scale_time)
+        if (s_gradient && s_scale_size)
         {
-            for (WhichTimeStamp which = TIMESTAMP_ARRAY_SIZE; which = WhichTimeStamp(int(which) - 1);)
-                Settings().UpdateMinMaxTime(which, pfi->GetFileTime(which));
+            for (WhichFileSize which = FILESIZE_ARRAY_SIZE; which = WhichFileSize(int(which) - 1);)
+            {
+                if (which != FILESIZE_COMPRESSED || Settings().m_need_compressed_size)
+                    Settings().UpdateMinMaxSize(which, pfi->GetFileSize(which));
+            }
         }
-
-        m_picture.OnFile(pfi);
     }
-}
 
-void DirEntryFormatter::OnFileNotFound()
-{
-    // File Not Found is not a fatal error:  report it and continue.
-    Error e;
-    e.Set(L"File Not Found");
-    e.Report();
+    if (s_scale_time)
+    {
+        for (WhichTimeStamp which = TIMESTAMP_ARRAY_SIZE; which = WhichTimeStamp(int(which) - 1);)
+            Settings().UpdateMinMaxTime(which, pfi->GetFileTime(which));
+    }
+
+    // Update the picture formatter.
+
+    m_picture.OnFile(pfi.get());
+
+    // The file might get displayed now, or might get deferred.
+
+    if (fImmediate && !fUsage)
+    {
+        class OutputDisplayOne : public OutputOperation
+        {
+        public:
+            OutputDisplayOne(std::unique_ptr<FileInfo>&& pfi)
+            : m_pfi(std::move(pfi)) {}
+
+            void Render(HANDLE h, const DirContext* dir) override
+            {
+                DisplayOne(h, m_pfi.get(), dir);
+            }
+
+        private:
+            std::unique_ptr<FileInfo> m_pfi;
+        };
+
+        Render(new OutputDisplayOne(std::move(pfi)));
+    }
+    else
+    {
+        m_files.emplace_back(std::move(pfi));
+    }
 }
 
 static void FormatTotalCount(StrW& s, unsigned c, const DirFormatSettings& settings)
@@ -3038,14 +3092,14 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
             // exponential instead of linear.
 
             // Move the first item, which by definition is unique.
-            std::vector<FileInfo> files;
+            std::vector<std::unique_ptr<FileInfo>> files;
             files.emplace_back(std::move(m_files[0]));
 
             // Loop and move other unique items.
             for (size_t i = 1; i < m_files.size(); ++i)
             {
                 auto& hare = m_files[i];
-                if (!hare.GetLongName().Equal(files.back().GetLongName()))
+                if (!hare->GetLongName().Equal(files.back()->GetLongName()))
                     files.emplace_back(std::move(hare));
             }
 
@@ -3058,115 +3112,138 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
 
         // List files.
 
-        m_picture.SetMaxFileDirWidth(m_longest_file_width, m_longest_dir_width);
-
-        const unsigned num_columns = Settings().m_num_columns;
-        switch (num_columns)
+        class OutputFileList : public OutputOperation
         {
-        case 1:
+        public:
+            OutputFileList(std::vector<std::unique_ptr<FileInfo>>&& files, unsigned num_columns,
+                           unsigned longest_file_width, unsigned longest_dir_width)
+            : m_files(std::move(files)), m_num_columns(num_columns)
+            , m_longest_file_width(longest_file_width), m_longest_dir_width(longest_dir_width) {}
+
+            void Render(HANDLE h, const DirContext* dir) override
             {
-                for (size_t ii = 0; ii < m_files.size(); ii++)
+                const FormatFlags flags = dir->flags;
+                const PictureFormatter& picture = dir->picture;
+
+                dir->picture.SetMaxFileDirWidth(m_longest_file_width, m_longest_dir_width);
+
+                switch (m_num_columns)
                 {
-                    const FileInfo* const pfi = &m_files[ii];
-
-                    DisplayOne(pfi);
-                }
-            }
-            break;
-
-        case 0:
-        case 2:
-        case 4:
-            {
-                assert(!Settings().IsSet(FMT_BARE));
-                assert(!Settings().IsSet(FMT_COMPRESSED));
-                assert(!Settings().IsSet(FMT_ATTRIBUTES));
-
-                const bool isFAT = Settings().IsSet(FMT_FAT);
-                unsigned console_width = LOWORD(GetConsoleColsRows(m_hout));
-                if (!console_width)
-                    console_width = 80;
-
-                if (s_use_icons && isFAT)
-                {
-                    if ((num_columns == 2 && console_width <= (s_icon_width + 38) * 2 + 3) ||
-                        (num_columns == 4 && console_width <= (s_icon_width + 17) * 4 + 3))
+                case 1:
                     {
-                        s_use_icons = false;
-                        s_icon_width = 0;
-                    }
-                }
-
-                StrW s;
-                const bool vertical = Settings().IsSet(FMT_SORTVERTICAL);
-                const unsigned spacing = (num_columns != 0 || isFAT || m_picture.HasDate() ||
-                                          (num_columns == 0 && m_picture.HasGit())) ? 3 : 2;
-
-                ColumnWidths col_widths;
-                std::vector<PictureFormatter> col_pictures;
-                const bool autofit = m_picture.CanAutoFitWidth();
-                if (!autofit)
-                {
-                    const unsigned max_per_file_width = m_picture.GetMaxWidth(console_width - 1, true);
-                    assert(implies(console_width >= 80, num_columns * (max_per_file_width + 3) < console_width + 3));
-                    for (unsigned num = std::max<unsigned>((console_width + spacing - 1) / (max_per_file_width + spacing), unsigned(1)); num--;)
-                    {
-                        col_widths.emplace_back(max_per_file_width);
-                        col_pictures.emplace_back(m_picture);
-                    }
-                }
-                else
-                {
-                    col_widths = CalculateColumns([this](size_t i){
-                        return m_picture.GetMinWidth(&m_files[i]);
-                    }, m_files.size(), vertical, spacing, console_width - 1);
-
-                    for (unsigned i = 0; i < col_widths.size(); ++i)
-                    {
-                        col_pictures.emplace_back(m_picture);
-                        col_pictures.back().GetMaxWidth(col_widths[i], true);
-                    }
-                }
-
-                const unsigned num_per_row = std::max<unsigned>(1, unsigned(col_widths.size()));
-                const unsigned num_rows = unsigned(m_files.size() + num_per_row - 1) / num_per_row;
-                const unsigned num_add = vertical ? num_rows : 1;
-
-                for (unsigned ii = 0; ii < num_rows; ii++)
-                {
-                    auto picture = col_pictures.begin();
-
-                    unsigned iItem = vertical ? ii : ii * num_per_row;
-                    for (unsigned jj = 0; jj < num_per_row && iItem < m_files.size(); jj++, iItem += num_add)
-                    {
-                        const FileInfo* pfi = &m_files[iItem];
-
-                        if (jj)
+                        for (size_t ii = 0; ii < m_files.size(); ii++)
                         {
-                            const unsigned width = cell_count(s.Text());
-                            const unsigned spaces = col_widths[jj - 1] - width + spacing;
-                            s.Clear();
-                            s.AppendSpaces(spaces);
-                            OutputConsole(m_hout, s.Text(), s.Length());
+                            const FileInfo* const pfi = m_files[ii].get();
+
+                            DisplayOne(h, pfi, dir);
+                        }
+                    }
+                    break;
+
+                case 0:
+                case 2:
+                case 4:
+                    {
+                        assert(!(flags & FMT_BARE));
+                        assert(!(flags & FMT_COMPRESSED));
+                        assert(!(flags & FMT_ATTRIBUTES));
+
+                        const bool isFAT = !!(flags & FMT_FAT);
+                        unsigned console_width = LOWORD(GetConsoleColsRows(h));
+                        if (!console_width)
+                            console_width = 80;
+
+                        if (s_use_icons && isFAT)
+                        {
+                            if ((m_num_columns == 2 && console_width <= (s_icon_width + 38) * 2 + 3) ||
+                                (m_num_columns == 4 && console_width <= (s_icon_width + 17) * 4 + 3))
+                            {
+                                s_use_icons = false;
+                                s_icon_width = 0;
+                            }
                         }
 
-                        s.Clear();
-                        picture->Format(s, pfi, nullptr, false/*one_per_line*/);
-                        OutputConsole(m_hout, s.Text(), s.Length());
+                        StrW s;
+                        const bool vertical = !!(flags & FMT_SORTVERTICAL);
+                        const unsigned spacing = (m_num_columns != 0 || isFAT || picture.HasDate() ||
+                                                (m_num_columns == 0 && picture.HasGit())) ? 3 : 2;
 
-                        ++picture;
+                        ColumnWidths col_widths;
+                        std::vector<PictureFormatter> col_pictures;
+                        const bool autofit = picture.CanAutoFitWidth();
+                        if (!autofit)
+                        {
+                            const unsigned max_per_file_width = dir->picture.GetMaxWidth(console_width - 1, true);
+                            assert(implies(console_width >= 80, m_num_columns * (max_per_file_width + 3) < console_width + 3));
+                            for (unsigned num = std::max<unsigned>((console_width + spacing - 1) / (max_per_file_width + spacing), unsigned(1)); num--;)
+                            {
+                                col_widths.emplace_back(max_per_file_width);
+                                col_pictures.emplace_back(picture);
+                            }
+                        }
+                        else
+                        {
+                            col_widths = CalculateColumns([this, &picture](size_t i){
+                                return picture.GetMinWidth(m_files[i].get());
+                            }, m_files.size(), vertical, spacing, console_width - 1);
+
+                            for (unsigned i = 0; i < col_widths.size(); ++i)
+                            {
+                                col_pictures.emplace_back(picture);
+                                col_pictures.back().GetMaxWidth(col_widths[i], true);
+                            }
+                        }
+
+                        const unsigned num_per_row = std::max<unsigned>(1, unsigned(col_widths.size()));
+                        const unsigned num_rows = unsigned(m_files.size() + num_per_row - 1) / num_per_row;
+                        const unsigned num_add = vertical ? num_rows : 1;
+
+                        unsigned prev_len;
+                        for (unsigned ii = 0; ii < num_rows; ii++)
+                        {
+                            auto picture = col_pictures.begin();
+
+                            s.Clear();
+                            prev_len = 0;
+
+                            unsigned iItem = vertical ? ii : ii * num_per_row;
+                            for (unsigned jj = 0; jj < num_per_row && iItem < m_files.size(); jj++, iItem += num_add)
+                            {
+                                const FileInfo* pfi = m_files[iItem].get();
+
+                                if (jj)
+                                {
+                                    const unsigned width = cell_count(s.Text() + prev_len);
+                                    const unsigned spaces = col_widths[jj - 1] - width + spacing;
+                                    s.AppendSpaces(spaces);
+                                }
+
+                                prev_len = s.Length();
+                                picture->Format(s, pfi, nullptr, false/*one_per_line*/);
+
+                                ++picture;
+                            }
+
+                            s.Append(L"\n");
+                            OutputConsole(h, s.Text(), s.Length());
+                        }
                     }
+                    break;
 
-                    s.Set(L"\n");
-                    OutputConsole(m_hout, s.Text(), s.Length());
+                default:
+                    assert(false);
+                    break;
                 }
             }
-            break;
 
-        default:
-            assert(false);
-            break;
-        }
+        private:
+            const std::vector<std::unique_ptr<FileInfo>> m_files;
+            const unsigned m_num_columns;
+            const unsigned m_longest_file_width;
+            const unsigned m_longest_dir_width;
+        };
+
+        Render(new OutputFileList(std::move(m_files), Settings().m_num_columns, m_longest_file_width, m_longest_dir_width));
     }
 
     // Display summary.
@@ -3181,13 +3258,13 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
             s.Append(L"  ");
             FormatSize(s, m_cbAllocated, nullptr, Settings(), 0);
             s.Printf(L"  %7u  ", CountFiles());
-            dir.Set(Settings().IsSet(FMT_USAGEGROUPED) ? m_root_group : m_dir);
+            dir.Set(Settings().IsSet(FMT_USAGEGROUPED) ? m_root_group : m_dir->dir);
             StripTrailingSlashes(dir);
             if (Settings().IsSet(FMT_LOWERCASE))
                 dir.ToLower();
             s.Append(dir);
             s.Append('\n');
-            OutputConsole(m_hout, s.Text(), s.Length());
+            Render(new OutputText(std::move(s)));
             m_count_usage_dirs++;
         }
         else if (!Settings().IsSet(FMT_BARE|FMT_NOSUMMARY))
@@ -3195,7 +3272,7 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
             StrW s;
             FormatFileTotals(s, CountFiles(), m_cbTotal, m_cbAllocated, m_cbCompressed, Settings());
             s.Append('\n');
-            OutputConsole(m_hout, s.Text(), s.Length());
+            Render(new OutputText(std::move(s)));
         }
 
         m_cFiles = 0;
@@ -3244,7 +3321,7 @@ void DirEntryFormatter::OnVolumeEnd(const WCHAR* dir)
                 s.Printf(L"  %.1f%% of disk in use\n", dInUse * 100);
             }
 
-            OutputConsole(m_hout, s.Text(), s.Length());
+            Render(new OutputText(std::move(s)));
         }
         return;
     }
@@ -3264,8 +3341,7 @@ void DirEntryFormatter::OnVolumeEnd(const WCHAR* dir)
         s.Append(L"Total Files Listed:\n");
         FormatFileTotals(s, m_cFilesTotal, m_cbTotalTotal, m_cbAllocatedTotal, m_cbCompressedTotal, Settings());
         s.Append('\n');
-        OutputConsole(m_hout, s.Text(), s.Length());
-        s.Clear();
+        Render(new OutputText(std::move(s)));
     }
 
     // Display count of directories, and bytes free on the volume.  For
@@ -3283,9 +3359,62 @@ void DirEntryFormatter::OnVolumeEnd(const WCHAR* dir)
         FormatSizeForReading(s, *reinterpret_cast<unsigned __int64*>(&ulFreeToCaller), 15, Settings());
         s.Printf(L" bytes free");
     }
-
     s.Append('\n');
-    OutputConsole(m_hout, s.Text(), s.Length());
+    Render(new OutputText(std::move(s)));
+}
+
+void DirEntryFormatter::Finalize()
+{
+    m_dir.reset();
+
+    for (auto& o : m_outputs)
+    {
+        o->Render(m_hout, m_dir.get());
+        o.reset();
+    }
+
+    m_outputs.clear();
+}
+
+void DirEntryFormatter::ReportError(Error& e)
+{
+    class OutputErrorMessage : public OutputOperation
+    {
+    public:
+        OutputErrorMessage(StrW&& s, bool color=true)
+        : m_color(color)
+        {
+            m_s = std::move(s);
+            assert(s.Empty());
+        }
+
+        void Render(HANDLE h, const DirContext* dir) override
+        {
+            h = GetStdHandle(STD_ERROR_HANDLE);
+            const WCHAR* color = (m_color && CanUseEscapeCodes(h)) ? c_error : nullptr;
+            const WCHAR* text = m_s.Text();
+            const WCHAR* trailing = m_s.Text() + m_s.Length();
+            while (trailing > text)
+            {
+                WCHAR ch = *(trailing - 1);
+                if (ch != '\r' && ch != '\n')
+                    break;
+                --trailing;
+            }
+
+            OutputConsole(h, text, unsigned(trailing - text), color);
+            if (*trailing)
+                OutputConsole(h, trailing);
+        }
+
+    private:
+        StrW m_s;
+        const bool m_color;
+    };
+
+    StrW s;
+    e.Format(s);
+    Render(new OutputErrorMessage(std::move(s)));
 }
 
 void DirEntryFormatter::AddSubDir(const StrW& dir, unsigned depth, const std::shared_ptr<const GlobPatterns>& git_ignore, const std::shared_ptr<const RepoStatus>& repo)
@@ -3353,5 +3482,23 @@ bool DirEntryFormatter::NextSubDir(StrW& dir, unsigned& depth, std::shared_ptr<c
     s_repo_map.Remove(dir.Text());
 
     return true;
+}
+
+void DirEntryFormatter::Render(OutputOperation* o)
+{
+    if (s_gradient && (s_scale_size || s_scale_time))
+    {
+        // When gradient color scale is applied, the min and max should cover
+        // the entire collection of output.  So all output operations must be
+        // queued until all sizes and times have been analyzed.
+        assert(Settings().IsSet(FMT_COLORS));
+        m_outputs.emplace_back(std::unique_ptr<OutputOperation>(o));
+    }
+    else
+    {
+        assert(m_outputs.empty());
+        o->Render(m_hout, m_dir.get());
+        delete o;
+    }
 }
 

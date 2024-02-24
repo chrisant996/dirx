@@ -8,6 +8,8 @@
 #include <windows.h>
 #include "fileinfo.h"
 
+#include <memory>
+
 struct SubDir;
 
 extern WCHAR g_sort_order[10];
@@ -21,6 +23,6 @@ inline int CmpStrI(const WCHAR* p1, const WCHAR* p2) { return CmpStrNI(p1, -1, p
 
 extern DWORD g_dwCmpStrFlags;
 
-bool CmpFileInfo(const FileInfo& fi1, const FileInfo& fi2);
+bool CmpFileInfo(const std::unique_ptr<FileInfo>& fi1, const std::unique_ptr<FileInfo>& fi2);
 bool CmpSubDirs(const SubDir& d1, const SubDir& d2);
 

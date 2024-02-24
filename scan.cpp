@@ -323,7 +323,10 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
                     }
                     else if (!callbacks.Settings().IsSet(FMT_BARE) || callbacks.Settings().IsSet(FMT_USAGE))
                     {
-                        callbacks.OnFileNotFound();
+                        // File Not Found is not a fatal error:  report it and continue.
+                        e.Set(L"File Not Found");
+                        callbacks.ReportError(e);
+                        e.Clear();
                     }
                 }
 
@@ -354,14 +357,16 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
                 if (e.Code() == 0)
                 {
                     // No code means it's a custom error message.
-                    e.Report();
+                    callbacks.ReportError(e);
+                    e.Clear();
                     rc = 1;
                 }
                 else if (e.Code() == ERROR_ACCESS_DENIED)
                 {
                     // CMD DIR reports access denied errors during traversal,
                     // so we will as well.
-                    e.Report();
+                    callbacks.ReportError(e);
+                    e.Clear();
                 }
                 else if (!callbacks.CountDirs() && !callbacks.CountFiles())
                 {
