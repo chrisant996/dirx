@@ -34,13 +34,27 @@
 static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+C+f:F+g+G+h+i+I:j+J+k+l+L:n+o.p+q+Q.r+R+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
 static const WCHAR c_DIRXCMD[] = L"DIRXCMD";
 
-static const WCHAR* get_env_prio(const WCHAR* a, const WCHAR* b=nullptr, const WCHAR* c=nullptr)
+static const WCHAR* get_env_prio(const WCHAR* a, const WCHAR* b=nullptr, const WCHAR* c=nullptr, const WCHAR** which=nullptr)
 {
-    const WCHAR* env = _wgetenv(a);
+    const WCHAR* env = nullptr;
+    if (a)
+    {
+        env = _wgetenv(a);
+        if (which)
+            *which = a;
+    }
     if (!env && b)
+    {
         env = _wgetenv(b);
+        if (which)
+            *which = b;
+    }
     if (!env && c)
+    {
         env = _wgetenv(c);
+        if (which)
+            *which = c;
+    }
     return env;
 }
 
@@ -65,11 +79,20 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
 
     {
         const WCHAR* env;
-        SetColorScale(get_env_prio(L"DIRX_COLOR_SCALE", L"EZA_COLOR_SCALE", L"EXA_COLOR_SCALE"));
-        SetColorScaleMode(get_env_prio(L"DIRX_COLOR_SCALE_MODE", L"EZA_COLOR_SCALE_MODE", L"EXA_COLOR_SCALE_MODE"));
+        const WCHAR* which;
+        if (!SetColorScale(env = get_env_prio(L"DIRX_COLOR_SCALE", L"EZA_COLOR_SCALE", L"EXA_COLOR_SCALE", &which)))
+        {
+            e.Set(L"Unrecognized value '%1' in %%%s%%.") << env << which;
+            ReportColorlessError(e);
+        }
+        if (!SetColorScaleMode(env = get_env_prio(L"DIRX_COLOR_SCALE_MODE", L"EZA_COLOR_SCALE_MODE", L"EXA_COLOR_SCALE_MODE", &which)))
+        {
+            e.Set(L"Unrecognized value '%1' in %%%s%%.") << env << which;
+            ReportColorlessError(e);
+        }
         if (env = _wgetenv(L"DIRX_NERD_FONTS_VERSION"))
             SetNerdFontsVersion(wcstoul(env, nullptr, 10));
-        if (env = get_env_prio(L"DIRX_ICON_SPACING", L"EZA_ICON_SPACING", L"EXA_ICON_SPACING"))
+        if (env = get_env_prio(L"DIRX_ICON_SPACING", L"EZA_ICON_SPACING", L"EXA_ICON_SPACING", &which))
             SetPadIcons(wcstoul(env, nullptr, 10));
     }
 

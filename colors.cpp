@@ -1197,7 +1197,7 @@ static bool StartsWithReset(const WCHAR*& p)
     return false;
 }
 
-static void ReportColorlessError(Error& e)
+void ReportColorlessError(Error& e)
 {
     if (e.Test())
     {

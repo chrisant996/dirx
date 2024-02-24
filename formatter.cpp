@@ -72,6 +72,8 @@ void SetTruncationCharacterInHex(const WCHAR* s)
 {
     SkipColonOrEqual(s);
 
+    const WCHAR* orig = s;
+
     if (s[0] == '$')
         ++s;
     else if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
@@ -80,8 +82,10 @@ void SetTruncationCharacterInHex(const WCHAR* s)
     WCHAR ch = 0;
     WORD w;
 
+    bool any_digits = false;
     if (*s && ParseHexDigit(*s, &w))
     {
+        any_digits = true;
         ch <<= 4;
         ch |= w;
         ++s;
@@ -107,8 +111,17 @@ void SetTruncationCharacterInHex(const WCHAR* s)
         }
     }
 
-    if (!*s)
-        s_chTruncated = ch;
+    if (*s == 'h' || *s == 'H')
+        ++s;
+    if (*s)
+    {
+        Error e;
+        e.Set(L"Invalid hexadecimal character code '%1'.") << orig;
+        e.Report();
+        return;
+    }
+
+    s_chTruncated = ch;
 }
 
 WCHAR GetTruncationCharacter()
