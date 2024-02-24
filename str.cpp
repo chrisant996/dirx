@@ -102,9 +102,11 @@ void PathJoin(StrW& out, const WCHAR* dir, const StrW& file)
     out.Append(file);
 }
 
-unsigned TruncateWcwidth(StrW& s, unsigned truncate_width, WCHAR truncation_char)
+unsigned TruncateWcwidth(StrW& s, const unsigned truncate_width, const WCHAR truncation_char)
 {
-    const unsigned truncation_char_width = truncation_char ? __wcwidth(truncation_char) : 0;
+    const unsigned truncation_char_width = ((truncation_char == '.') ? 2 :
+                                            (truncation_char == 0) ? 0 :
+                                            __wcwidth(truncation_char));
 
     if (truncation_char_width > truncate_width)
     {
@@ -140,7 +142,11 @@ unsigned TruncateWcwidth(StrW& s, unsigned truncate_width, WCHAR truncation_char
         {
             s.SetEnd(truncate);
             if (truncation_char)
+            {
                 s.Append(truncation_char);
+                if (truncation_char == '.')
+                    s.Append(truncation_char);
+            }
             return width + truncation_char_width;
         }
 
