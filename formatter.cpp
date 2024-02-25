@@ -483,18 +483,14 @@ static void FormatAttributes(StrW& s, const DWORD dwAttr, const std::vector<Attr
             const WCHAR* color = GetAttrLetterColor(bit);
             if (color != prev_color)
             {
-                if (color)
-                    s.Printf(L"\x1b[0;%sm", color);
-                else
-                    s.Append(c_norm);
+                s.AppendColorElseNormal(color);
                 prev_color = color;
             }
         }
         s.Append(bit ? pAttr->ch : chNotSet);
     }
 
-    if (prev_color)
-        s.Append(c_norm);
+    s.AppendNormalIf(prev_color);
 }
 
 static WCHAR GetEffectiveFilenameFieldStyle(const DirFormatSettings& settings, WCHAR chStyle)
@@ -591,7 +587,6 @@ static void JustifyFilename(StrW& s, const StrW& name, unsigned max_name_width, 
 
 static void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsigned max_width=0, const WCHAR* dir=nullptr, const WCHAR* color=nullptr, bool show_reparse=false)
 {
-    StrW tmp;
     const StrW& name = pfi->GetFileName(flags);
     WCHAR classify = 0;
 
@@ -603,18 +598,15 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsi
         DWORD attr = pfi->GetAttributes();
         const WCHAR* icon = LookupIcon(name.Text(), attr);
         const WCHAR* icon_color = GetIconColor(color);
-        if (icon_color)
-            s.Printf(L"\x1b[0;%sm", icon_color);
+        s.AppendColor(icon_color);
         s.Append(icon ? icon : L" ");
-        if (icon_color)
-            s.Append(c_norm);
+        s.AppendNormalIf(icon_color);
         s.AppendSpaces(s_icon_padding);
         if (max_width)
             max_width -= s_icon_width;
     }
 
-    if (color)
-        s.Printf(L"\x1b[0;%sm", color);
+    s.AppendColor(color);
 
     const bool hyperlinks = ((flags & FMT_HYPERLINKS) && dir);
     if (hyperlinks)
@@ -627,6 +619,7 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsi
         s.Append(c_BEL);
     }
 
+    StrW tmp;
     if (flags & FMT_FAT)
     {
         assert(!(flags & FMT_DIRBRACKETS));
@@ -696,7 +689,7 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsi
         }
         else
         {
-            if (max_width && tmp.Empty())
+            if (max_width && p != tmp.Text())
                 name_width = __wcswidth(p);
         }
 
@@ -761,8 +754,7 @@ static void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsi
         s.AppendSpaces(spaces);
     }
 
-    if (color)
-        s.Append(c_norm);
+    s.AppendNormalIf(color);
 }
 
 static void FormatReparsePoint(StrW& s, const FileInfo* const pfi, const FormatFlags flags, const WCHAR* const dir)
@@ -780,11 +772,9 @@ static void FormatReparsePoint(StrW& s, const FileInfo* const pfi, const FormatF
     if (shFile.Empty())
     {
         s.Append(L" ");
-        if (punct)
-            s.Printf(L"\x1b[0;%sm", punct);
+        s.AppendColor(punct);
         s.Append(L"[..]");
-        if (punct)
-            s.Append(c_norm);
+        s.AppendNormalIf(punct);
     }
     else
     {
@@ -819,9 +809,7 @@ static void FormatReparsePoint(StrW& s, const FileInfo* const pfi, const FormatF
 
         if (tmp.Length())
         {
-            if (punct)
-                s.Printf(L"\x1b[0;%sm", punct);
-
+            s.AppendColor(punct);
             s.Append(L"[");
 
             const WCHAR* name = FindName(tmp.Text());
@@ -831,48 +819,30 @@ static void FormatReparsePoint(StrW& s, const FileInfo* const pfi, const FormatF
             const WCHAR* path_color = colors ? GetColorByKey(L"lp") : nullptr;
             if (!path_color && !color)
             {
-                if (punct)
-                    s.Append(c_norm);
-
+                s.AppendNormalIf(punct);
                 s.Append(tmp);
             }
             else
             {
                 if (!path_color)
                     path_color = color;
-                if (path_color)
-                    s.Printf(L"\x1b[0;%sm", path_color);
-                else if (punct)
-                    s.Append(c_norm);
+                s.AppendColorElseNormalIf(path_color, punct);
 
                 s.Append(tmp.Text(), name - tmp.Text());
 
-                if (color)
-                    s.Printf(L"\x1b[0;%sm", color);
-                else if (path_color)
-                    s.Append(c_norm);
-
+                s.AppendColorElseNormalIf(color, path_color);
                 s.Append(name);
-
             }
 
-            if (punct)
-                s.Printf(L"\x1b[0;%sm", punct);
-
+            s.AppendColor(punct);
             s.Append(L"]");
-
-            if (punct)
-                s.Append(c_norm);
+            s.AppendNormalIf(punct);
         }
         else
         {
-            if (punct)
-                s.Printf(L"\x1b[0;%sm", punct);
-
+            s.AppendColor(punct);
             s.Append(L"[...]");
-
-            if (punct)
-                s.Append(c_norm);
+            s.AppendNormalIf(punct);
         }
     }
 }
@@ -962,8 +932,9 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
                 color = gradient;
         }
     }
-    if (color)
-        s.Printf(L"\x1b[0;%sm", StripLineStyles(color));
+
+    const WCHAR* unit_color = nullptr;
+    s.AppendColorNoLineStyles(color);
 
     switch (chStyle)
     {
@@ -981,7 +952,8 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
 #endif
             static_assert(_countof(c_size_chars) == 5, "size mismatch");
 
-            const WCHAR* unit_color = (!nocolor && !s_gradient && s_scale_size && which) ? GetSizeUnitColor(cbSize) : nullptr;
+            unit_color = (!nocolor && !s_gradient && s_scale_size && which) ? GetSizeUnitColor(cbSize) : nullptr;
+
             double dSize = double(cbSize);
             unsigned iChSize = 0;
 
@@ -1022,9 +994,7 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
                 s.Printf(L"%*I64u", max_width ? max_width - 1 : 3, cbSize);
             }
 
-            if (unit_color)
-                s.Printf(L"\x1b[0;%sm", unit_color);
-
+            s.AppendColor(unit_color);
             s.Append(&c_size_chars[iChSize], 1);
         }
         break;
@@ -1063,8 +1033,7 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
         break;
     }
 
-    if (color)
-        s.Append(c_norm);
+    s.AppendNormalIf(color || unit_color);
 }
 
 static const WCHAR* GetSizeTag(const FileInfo* const pfi, WCHAR chStyle)
@@ -1129,24 +1098,20 @@ static void FormatFileSize(StrW& s, const FileInfo* pfi, const DirFormatSettings
         {
             const unsigned trailing = (chStyle == 's');
             s.AppendSpaces(max_width - 1 - trailing);
-            if (!nocolor && settings.IsSet(FMT_COLORS))
-                s.Printf(L"\x1b[0;%sm-%s", GetColorByKey(L"xx"), c_norm);
-            else
-                s.Append(L"-");
+            const WCHAR* color = (!nocolor && settings.IsSet(FMT_COLORS)) ? GetColorByKey(L"xx") : nullptr;
+            s.AppendColor(color);
+            s.Append(L"-");
+            s.AppendNormalIf(color);
             s.AppendSpaces(trailing);
         }
         else
         {
             if (nocolor)
                 fallback_color = nullptr;
-            if (fallback_color)
-                s.Printf(L"\x1b[0;%sm", StripLineStyles(fallback_color));
-
+            s.AppendColorNoLineStyles(fallback_color);
             s.Append(tag);
             s.AppendSpaces(max_width - unsigned(wcslen(tag)));
-
-            if (fallback_color)
-                s.Append(c_norm);
+            s.AppendNormalIf(fallback_color);
         }
     }
     else
@@ -1334,8 +1299,7 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
             if (gradient)
                 color = gradient;
         }
-        if (color)
-            s.Printf(L"\x1b[0;%sm", StripLineStyles(color));
+        s.AppendColorNoLineStyles(color);
     }
 
     switch (chStyle)
@@ -1472,8 +1436,7 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
         break;
     }
 
-    if (color)
-        s.Append(c_norm);
+    s.AppendNormalIf(color);
 }
 
 static void FormatCompressed(StrW& s, const unsigned __int64 cbCompressed, const unsigned __int64 cbFile, const DWORD dwAttr)
@@ -1505,8 +1468,7 @@ static void FormatCompressed(StrW& s, const unsigned __int64 cbCompressed, const
 static void FormatCompressed(StrW& s, const FileInfo* pfi, const FormatFlags flags, const WCHAR* fallback_color, WCHAR chField=0)
 {
     const WCHAR* color = (flags & FMT_COLORS) ? GetColorByKey(L"cF") : fallback_color;
-    if (color)
-        s.Printf(L"\x1b[0;%sm", StripLineStyles(color));
+    s.AppendColorNoLineStyles(color);
 
     if (pfi->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY)
     {
@@ -1532,8 +1494,7 @@ static void FormatCompressed(StrW& s, const FileInfo* pfi, const FormatFlags fla
         s.Printf(L"%2u%%", pct);
     }
 
-    if (color)
-        s.Append(c_norm);
+    s.AppendNormalIf(color);
 }
 
 static void FormatOwner(StrW& s, const FileInfo* pfi, const FormatFlags flags, unsigned max_width, const WCHAR* fallback_color)
@@ -1542,14 +1503,10 @@ static void FormatOwner(StrW& s, const FileInfo* pfi, const FormatFlags flags, u
     unsigned width = __wcswidth(owner);
 
     const WCHAR* color = (flags & FMT_COLORS) ? GetColorByKey(L"oF") : fallback_color;
-    if (color)
-        s.Printf(L"\x1b[0;%sm", StripLineStyles(color));
-
+    s.AppendColorNoLineStyles(color);
     s.Append(owner);
     s.AppendSpaces(max_width - width);
-
-    if (color)
-        s.Append(c_norm);
+    s.AppendNormalIf(color);
 }
 
 static void FormatGitFile(StrW& s, const FileInfo* pfi, const WCHAR* dir, const FormatFlags flags, const RepoStatus* repo)
@@ -1602,14 +1559,13 @@ static void FormatGitFile(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
         color2 = nullptr;
     }
 
-    if (color1)
-        s.Printf(L"\x1b[0;%sm", color1);
+    s.AppendColor(color1);
     s.Append(&c_symbols[unsigned(staged)].symbol, 1);
     if (color1 != color2)
-        s.Printf(L"\x1b[0;%sm", color2);
+        s.AppendColor(color2);
     s.Append(&c_symbols[unsigned(working)].symbol, 1);
-    if (color1)
-        s.Append(c_norm);
+    assert(!!color1 == !!color2);
+    s.AppendNormalIf(color1);
 }
 
 static void FormatGitRepo(StrW& s, const FileInfo* pfi, const WCHAR* dir, const FormatFlags flags, unsigned max_width)
@@ -1621,8 +1577,8 @@ static void FormatGitRepo(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
     StrW full;
     PathJoin(full, dir, pfi->GetLongName());
 
-    const WCHAR* color1;
-    const WCHAR* color2;
+    const WCHAR* color1 = nullptr;
+    const WCHAR* color2 = nullptr;
     const auto repo = s_repo_map.Find(full.Text());
     if (repo)
     {
@@ -1660,26 +1616,22 @@ static void FormatGitRepo(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
         }
     }
 
-    if (color1)
-        s.Printf(L"\x1b[0;%sm", color1);
+    s.AppendColor(color1);
     s.Append(&status, 1);
-    if (color1)
-        s.Append(c_norm);
+    s.AppendNormalIf(color1);
 
     s.AppendSpaces(1);
 
-    if (color2)
-        s.Printf(L"\x1b[0;%sm", color2);
+    s.AppendColor(color2);
     s.Append(branch);
     if (color2)
     {
         const WCHAR* pad_color = StripLineStyles(color2);
         if (pad_color != color2)
-            s.Printf(L"\x1b[0;%sm", pad_color);
+            s.AppendColor(pad_color);
     }
     s.AppendSpaces(max_width - 2 - branch_width);
-    if (color2)
-        s.Append(c_norm);
+    s.AppendNormalIf(color2);
 }
 
 /*
@@ -2409,6 +2361,8 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const FileInfo* stre
                 break;
             case FLD_FILENAME:
                 {
+                    // WARNING: Keep in sync with PictureFormatter::OnFile and
+                    // its stream case for IsFilenameWidthNeeded.
                     tmp.Clear();
                     tmp.AppendSpaces(s_icon_width);
                     if (m_settings.IsSet(FMT_REDIRECTED))
@@ -2933,11 +2887,9 @@ void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const std::shar
 
             if (m_line_break_before_miniheader)
                 s.Append(L"\n");
-            if (header_color)
-                s.Printf(L"\x1b[0;%sm", header_color);
+            s.AppendColor(header_color);
             s.Printf(L"%s%s:", dir, wcschr(dir, '\\') ? L"" : L"\\");
-            if (header_color)
-                s.Append(c_norm);
+            s.AppendNormalIf(header_color);
             s.Append(L"\n");
         }
         else if (!Settings().IsSet(FMT_NOHEADER))
@@ -3088,6 +3040,8 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
                 }
                 for (auto stream = pfi->GetStreams(); stream && *stream; ++stream)
                 {
+                    // WARNING: Keep in sync with PictureFormatter::Format and
+                    // its stream case for FLD_FILENAME.
                     name_width = s_icon_width;
                     if (Settings().IsSet(FMT_REDIRECTED))
                     {

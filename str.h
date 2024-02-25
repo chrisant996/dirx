@@ -12,6 +12,8 @@ inline int StrCmpI(const char* pa, const char* pb) { return _strcmpi(pa, pb); }
 inline int StrCmpI(const WCHAR* pa, const WCHAR* pb) { return _wcsicmp(pa, pb); }
 inline bool IsPathSeparator(WCHAR ch) { return ch == '/' || ch == '\\'; }
 
+const WCHAR* StripLineStyles(const WCHAR* color);
+
 // This is the extended max path length, including the NUL terminator.
 // An explanation behind why can be found here:
 // https://stackoverflow.com/questions/15262110/what-happens-internally-when-a-file-path-exceeds-approx-32767-characters-in-win
@@ -66,6 +68,14 @@ public:
     void                Append(const T* p, size_t len=-1);
     void                Append(const Str<T>& s) { Append(s.Text(), s.Length()); }
     void                AppendSpaces(int spaces);
+
+    void                AppendColor(const WCHAR* color) { if (color) Printf(L"\x1b[0;%sm", color); };
+    void                AppendColorFallback(const WCHAR* color1, const WCHAR* color2);
+    void                AppendColorNoLineStyles(const WCHAR* color);
+    void                AppendColorElseNormal(const WCHAR* color1);
+    void                AppendColorElseNormalIf(const WCHAR* color1, const WCHAR* color2);
+    void                AppendNormalIf(const WCHAR* color) { if (color) Append(L"\x1b[m"); };
+    void                AppendNormalIf(bool yes) { if (yes) Append(L"\x1b[m"); };
 
     void                PrintfV(const T* format, va_list args);
     void                Printf(const T* format, ...);
@@ -264,6 +274,40 @@ void Str<T>::AppendSpaces(int spaces)
         Append(c_spaces, add);
         spaces -= add;
     }
+}
+
+template <class T>
+void Str<T>::AppendColorFallback(const WCHAR* color1, const WCHAR* color2)
+{
+    if (color1)
+        Printf(L"\x1b[0;%sm", color1);
+    else if (color2)
+        Printf(L"\x1b[0;%sm", color2);
+}
+
+template <class T>
+void Str<T>::AppendColorNoLineStyles(const WCHAR* color)
+{
+    if (color)
+        Printf(L"\x1b[0;%sm", StripLineStyles(color));
+}
+
+template <class T>
+void Str<T>::AppendColorElseNormal(const WCHAR* color1)
+{
+    if (color1)
+        Printf(L"\x1b[0;%sm", color1);
+    else
+        Append(L"\x1b[m");
+}
+
+template <class T>
+void Str<T>::AppendColorElseNormalIf(const WCHAR* color1, const WCHAR* color2)
+{
+    if (color1)
+        Printf(L"\x1b[0;%sm", color1);
+    else if (color2)
+        Append(L"\x1b[m");
 }
 
 template <class T>
