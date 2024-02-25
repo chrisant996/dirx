@@ -959,7 +959,7 @@ void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* which, co
 #endif
             static_assert(_countof(c_size_chars) == 5, "size mismatch");
 
-            unit_color = (!nocolor && !s_gradient && (s_scale_fields & SCALE_SIZE) && which) ? GetSizeUnitColor(cbSize) : nullptr;
+            unit_color = (!nocolor && !(s_gradient && (s_scale_fields & SCALE_SIZE)) && which) ? GetSizeUnitColor(cbSize) : nullptr;
 
             double dSize = double(cbSize);
             unsigned iChSize = 0;

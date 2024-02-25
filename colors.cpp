@@ -93,6 +93,7 @@ enum ColorIndex : unsigned short
 
     // Fields.
     ciSize,
+    ciSizeUnit,
     ciTime,
     ciCompressionField,
     ciOwnerField,
@@ -1133,10 +1134,9 @@ static int ParseColorRule(const WCHAR* in, StrW& value, ColorRule& rule, bool ls
                 SetColorString(ciSizeUnitM, CopyStr(color));
                 SetColorString(ciSizeUnitG, CopyStr(color));
                 SetColorString(ciSizeUnitT, CopyStr(color));
-                ci = ciZERO;
+                ci = ciSizeUnit;
             }
-            if (ci != ciZERO)
-                SetColorString(ColorIndex(ci), color);
+            SetColorString(ColorIndex(ci), color);
         }
         return 0;
     }
@@ -1502,10 +1502,10 @@ const WCHAR* GetSizeColor(ULONGLONG ull)
 
 const WCHAR* GetSizeUnitColor(ULONGLONG ull)
 {
-    if (!(GetColorScaleFields() & SCALE_TIME))
-        return nullptr;
     ColorIndex ci;
-    if (ull < 1024ull)
+    if (!(GetColorScaleFields() & SCALE_SIZE))
+        ci = ciSizeUnit;
+    else if (ull < 1024ull)
         ci = ciSizeUnitB;
     else if (ull < 1024ull * 1024)
         ci = ciSizeUnitK;
