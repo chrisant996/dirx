@@ -29,7 +29,8 @@ struct FieldInfo
     unsigned            m_cchWidth = 0;
     unsigned            m_ichInsert = 0;
     std::vector<AttrChar>* m_masks;
-    bool                m_auto_width = false;
+    bool                m_auto_filename_width = false;
+    bool                m_auto_filesize_width = false;
 };
 
 class PictureFormatter
@@ -37,12 +38,13 @@ class PictureFormatter
 public:
     PictureFormatter(const DirFormatSettings& settings);
 
+    void SetFitColumnsToContents(bool fit);
     void ParsePicture(const WCHAR* picture);
 
     void SetMaxFileDirWidth(unsigned max_file_width, unsigned max_dir_width);
     unsigned GetMaxWidth(unsigned fit_in_width=0, bool recalc_auto_width_fields=false);
     unsigned GetMinWidth(const FileInfo* pfi) const;
-    bool CanAutoFitWidth() const;
+    bool CanAutoFitFilename() const;
 
     void SetDirContext(const std::shared_ptr<const DirContext>& dir);
     void OnFile(const FileInfo* pfi);
@@ -63,14 +65,19 @@ private:
     StrW                m_orig_picture;
     StrW                m_picture;
     std::vector<FieldInfo> m_fields;
-    unsigned            m_max_file_width = 0;
-    unsigned            m_max_dir_width = 0;
+    unsigned            m_max_filepart_width = 0;
+    unsigned            m_max_dirpart_width = 0;
     unsigned            m_max_branch_width = 0;
+    std::vector<unsigned> m_max_filesize_width; // FUTURE: see notes in ParsePicture.
     unsigned            m_max_relative_width_which[TIMESTAMP_ARRAY_SIZE];
+    unsigned            m_max_owner_width = 0;
     bool                m_immediate = true;
+    bool                m_fit_columns_to_contents = false;
     bool                m_finished_initial_parse = false;
     bool                m_need_filename_width = false;
     bool                m_need_branch_width = false;
+    bool                m_need_filesize_width = false;
+    bool                m_need_owner_width = false;
     bool                m_need_relative_width = false;
     bool                m_need_relative_width_which[TIMESTAMP_ARRAY_SIZE];
     bool                m_need_compressed_size = false;
@@ -110,6 +117,7 @@ public:
                                    WhichFileSize whichfilesize=FILESIZE_FILESIZE,
                                    DWORD dwAttrIncludeAny=0, DWORD dwAttrMatch=0, DWORD dwAttrExcludeAny=0,
                                    const WCHAR* picture=nullptr);
+    void                SetFitColumnsToContents(bool fit) { m_picture.SetFitColumnsToContents(fit); }
 
     DirFormatSettings&  Settings() override { return m_settings; }
 

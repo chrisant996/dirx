@@ -38,14 +38,6 @@ static RepoMap s_repo_map;
 static const WCHAR c_hyperlink[] = L"\x1b]8;;";
 static const WCHAR c_BEL[] = L"\a";
 
-// #define ASSERT_WIDTH
-
-#if defined(DEBUG) && defined(ASSERT_WIDTH)
-#define assert_width        assert
-#else
-#define assert_width(expr)  do {} while (0)
-#endif
-
 /*
  * Configuration functions.
  */
@@ -943,7 +935,7 @@ static unsigned GetSizeFieldWidthByStyle(const DirFormatSettings& settings, WCHA
     }
 }
 
-static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* which, const DirFormatSettings& settings, WCHAR chStyle, const WCHAR* color=nullptr, const WCHAR* fallback_color=nullptr)
+static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* which, const DirFormatSettings& settings, WCHAR chStyle, unsigned max_width=0, const WCHAR* color=nullptr, const WCHAR* fallback_color=nullptr, bool nocolor=false)
 {
     // FUTURE: CMD shows size for FILE_ATTRIBUTE_OFFLINE files in parentheses
     // to indicate it could take a while to retrieve them.
@@ -954,7 +946,10 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
     const unsigned orig_len = s.Length();
 #endif
 
-    if (settings.IsSet(FMT_COLORS))
+    nocolor = (nocolor || !settings.IsSet(FMT_COLORS));
+    if (nocolor)
+        color = nullptr;
+    else
     {
         if (!color && which)
             color = GetSizeColor(cbSize);
@@ -986,7 +981,7 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
 #endif
             static_assert(_countof(c_size_chars) == 5, "size mismatch");
 
-            const WCHAR* unit_color = (settings.IsSet(FMT_COLORS) && !s_gradient && s_scale_size && which) ? GetSizeUnitColor(cbSize) : nullptr;
+            const WCHAR* unit_color = (!nocolor && !s_gradient && s_scale_size && which) ? GetSizeUnitColor(cbSize) : nullptr;
             double dSize = double(cbSize);
             unsigned iChSize = 0;
 
@@ -1010,7 +1005,7 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
                 {
                     if (s_mini_bytes && cbSize <= 999)
                     {
-                        s.Printf(L"%4I64u", cbSize);
+                        s.Printf(L"%*I64u", max_width ? max_width : 4, cbSize);
                         // s.Printf(L"%3I64u%c", cbSize, c_size_chars[iChSize]);
                         // s.Printf(L"%I64u.%I64u%c", cbSize / 100, (cbSize / 10) % 10, c_size_chars[iChSize + 1]);
                         break;
@@ -1023,7 +1018,8 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
                         iChSize++;
                     }
                 }
-                s.Printf(L"%3I64u", cbSize);
+                assert(implies(max_width, max_width > 1));
+                s.Printf(L"%*I64u", max_width ? max_width - 1 : 3, cbSize);
             }
 
             if (unit_color)
@@ -1039,7 +1035,7 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
 
             if (cbSize < 100000000)
             {
-                s.Printf(L"%8I64u ", cbSize);
+                s.Printf(L"%*I64u ", max_width ? max_width : 8, cbSize);
                 break;
             }
 
@@ -1057,21 +1053,18 @@ static void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* wh
             dSize += 0.05;
             cbSize = static_cast<unsigned __int64>(dSize * 10);
 
-            s.Printf(L"%6I64u.%1I64u%c", cbSize / 10, cbSize % 10, chSize);
+            assert(implies(max_width, max_width > 3));
+            s.Printf(L"%*I64u.%1I64u%c", max_width ? max_width - 3 : 6, cbSize / 10, cbSize % 10, chSize);
         }
         break;
 
     default:
-        FormatSizeForReading(s, cbSize, GetSizeFieldWidthByStyle(settings, chStyle), settings);
+        FormatSizeForReading(s, cbSize, max_width ? max_width : GetSizeFieldWidthByStyle(settings, chStyle), settings);
         break;
     }
 
     if (color)
         s.Append(c_norm);
-
-#ifdef DEBUG
-    assert_width(cell_count(s.Text() + orig_len) == GetSizeFieldWidthByStyle(settings, chStyle));
-#endif
 }
 
 static const WCHAR* GetSizeTag(const FileInfo* const pfi, WCHAR chStyle)
@@ -1120,7 +1113,7 @@ static WhichFileSize WhichFileSizeByField(const DirFormatSettings& settings, WCH
     }
 }
 
-static void FormatFileSize(StrW& s, const FileInfo* pfi, const DirFormatSettings& settings, WCHAR chStyle=0, WCHAR chField=0, const WCHAR* fallback_color=nullptr)
+static void FormatFileSize(StrW& s, const FileInfo* pfi, const DirFormatSettings& settings, unsigned max_width, WCHAR chStyle=0, WCHAR chField=0, const WCHAR* fallback_color=nullptr, bool nocolor=false)
 {
     chStyle = GetEffectiveSizeFieldStyle(settings, chStyle);
     const WCHAR* const tag = GetSizeTag(pfi, chStyle);
@@ -1135,8 +1128,8 @@ static void FormatFileSize(StrW& s, const FileInfo* pfi, const DirFormatSettings
             (settings.IsSet(FMT_COLORS) && s_scale_size))
         {
             const unsigned trailing = (chStyle == 's');
-            s.AppendSpaces(GetSizeFieldWidthByStyle(settings, chStyle) - 1 - trailing);
-            if (settings.IsSet(FMT_COLORS))
+            s.AppendSpaces(max_width - 1 - trailing);
+            if (!nocolor && settings.IsSet(FMT_COLORS))
                 s.Printf(L"\x1b[0;%sm-%s", GetColorByKey(L"xx"), c_norm);
             else
                 s.Append(L"-");
@@ -1144,11 +1137,13 @@ static void FormatFileSize(StrW& s, const FileInfo* pfi, const DirFormatSettings
         }
         else
         {
+            if (nocolor)
+                fallback_color = nullptr;
             if (fallback_color)
                 s.Printf(L"\x1b[0;%sm", StripLineStyles(fallback_color));
 
-            const unsigned cchField = GetSizeFieldWidthByStyle(settings, chStyle);
-            s.Printf(L"%-*s", cchField, tag);
+            s.Append(tag);
+            s.AppendSpaces(max_width - unsigned(wcslen(tag)));
 
             if (fallback_color)
                 s.Append(c_norm);
@@ -1157,12 +1152,8 @@ static void FormatFileSize(StrW& s, const FileInfo* pfi, const DirFormatSettings
     else
     {
         const WhichFileSize which = WhichFileSizeByField(settings, chField);
-        FormatSize(s, pfi->GetFileSize(which), &which, settings, chStyle, nullptr, fallback_color);
+        FormatSize(s, pfi->GetFileSize(which), &which, settings, chStyle, max_width, nullptr, fallback_color, nocolor);
     }
-
-#ifdef DEBUG
-    assert_width(cell_count(s.Text() + orig_len) == GetSizeFieldWidthByStyle(settings, chStyle));
-#endif
 }
 
 static void FormatLocaleDateTime(StrW& s, const SYSTEMTIME* psystime)
@@ -1483,10 +1474,6 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
 
     if (color)
         s.Append(c_norm);
-
-#ifdef DEBUG
-    assert_width(cell_count(s.Text() + orig_len) == GetTimeFieldWidthByStyle(settings, chStyle));
-#endif
 }
 
 static void FormatCompressed(StrW& s, const unsigned __int64 cbCompressed, const unsigned __int64 cbFile, const DWORD dwAttr)
@@ -1549,7 +1536,7 @@ static void FormatCompressed(StrW& s, const FileInfo* pfi, const FormatFlags fla
         s.Append(c_norm);
 }
 
-static void FormatOwner(StrW& s, const FileInfo* pfi, const FormatFlags flags, const WCHAR* fallback_color)
+static void FormatOwner(StrW& s, const FileInfo* pfi, const FormatFlags flags, unsigned max_width, const WCHAR* fallback_color)
 {
     const WCHAR* owner = pfi->GetOwner().Text();
     unsigned width = __wcswidth(owner);
@@ -1559,7 +1546,7 @@ static void FormatOwner(StrW& s, const FileInfo* pfi, const FormatFlags flags, c
         s.Printf(L"\x1b[0;%sm", StripLineStyles(color));
 
     s.Append(owner);
-    s.AppendSpaces(22 - width);
+    s.AppendSpaces(max_width - width);
 
     if (color)
         s.Append(c_norm);
@@ -1722,6 +1709,12 @@ PictureFormatter::PictureFormatter(const DirFormatSettings& settings)
     ZeroMemory(&m_need_relative_width_which, sizeof(m_need_relative_width_which));
 }
 
+void PictureFormatter::SetFitColumnsToContents(bool fit)
+{
+    assert(!m_finished_initial_parse);
+    m_fit_columns_to_contents = fit;
+}
+
 void PictureFormatter::ParsePicture(const WCHAR* picture)
 {
     assert(picture);
@@ -1739,7 +1732,9 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
     m_has_date = false;
     m_has_git = false;
     m_picture.Clear();
-    m_fields.clear();
+
+    std::vector<FieldInfo> fields;
+    m_fields.swap(fields);
 
     while (*picture)
     {
@@ -1787,7 +1782,7 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
                 p->m_chSubField = chSubField;
                 p->m_chStyle = chStyle;
                 p->m_cchWidth = (chSubField == 'x' || chStyle == 'f') ? 12 : len;
-                p->m_auto_width = !p->m_cchWidth;
+                p->m_auto_filename_width = !p->m_cchWidth;
                 p->m_ichInsert = m_picture.Length();
                 m_picture.Append('!');
             }
@@ -1835,7 +1830,16 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
                 p->m_field = FLD_FILESIZE;
                 p->m_chSubField = chSubField;
                 p->m_chStyle = chStyle;
-                p->m_cchWidth = GetSizeFieldWidthByStyle(m_settings, chStyle);
+                p->m_cchWidth = (m_fit_columns_to_contents && !m_settings.IsSet(FMT_ALTDATASTEAMS)) ? 0 : GetSizeFieldWidthByStyle(m_settings, chStyle);
+                if (!p->m_cchWidth)
+                {
+                    const WhichFileSize which = WhichFileSizeByField(m_settings, chSubField);
+                    assert(implies(m_finished_initial_parse, fields[m_fields.size()].m_cchWidth));
+                    if (m_finished_initial_parse)
+                        p->m_cchWidth = fields[m_fields.size()].m_cchWidth;
+                    else
+                        m_need_filesize_width = true;
+                }
                 p->m_ichInsert = m_picture.Length();
                 m_picture.Append('!');
                 if (chSubField == 'c')
@@ -1930,7 +1934,7 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
                 m_fields.emplace_back();
                 FieldInfo* const p = &m_fields.back();
                 p->m_field = FLD_OWNER;
-                p->m_cchWidth = 22;
+                p->m_cchWidth = m_fit_columns_to_contents ? 0 : 22;
                 p->m_ichInsert = m_picture.Length();
                 m_picture.Append('!');
             }
@@ -2098,6 +2102,20 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
                 m_immediate = false;
             }
             break;
+        case FLD_FILESIZE:
+            if (m_fit_columns_to_contents)
+            {
+                m_need_filesize_width = true;
+                m_immediate = false;
+            }
+            break;
+        case FLD_OWNER:
+            if (m_fit_columns_to_contents)
+            {
+                m_need_owner_width = true;
+                m_immediate = false;
+            }
+            break;
         }
     }
 
@@ -2107,8 +2125,8 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
 
 void PictureFormatter::SetMaxFileDirWidth(unsigned max_file_width, unsigned max_dir_width)
 {
-    m_max_file_width = max_file_width;
-    m_max_dir_width = max_dir_width;
+    m_max_filepart_width = max_file_width;
+    m_max_dirpart_width = max_dir_width;
 
     if (m_need_branch_width)
     {
@@ -2127,6 +2145,26 @@ void PictureFormatter::SetMaxFileDirWidth(unsigned max_file_width, unsigned max_
         }
     }
 
+#ifdef DEBUG
+    if (m_need_filesize_width)
+    {
+        for (auto& field : m_fields)
+        {
+            if (field.m_field == FLD_FILESIZE)
+                assert(field.m_cchWidth);
+        }
+    }
+#endif
+
+    if (m_need_owner_width)
+    {
+        for (auto& field : m_fields)
+        {
+            if (field.m_field == FLD_OWNER)
+                field.m_cchWidth = m_max_owner_width;
+        }
+    }
+
     if (m_settings.IsSet(FMT_GIT|FMT_GITREPOS))
         ParsePicture(m_orig_picture.Text());
 }
@@ -2138,27 +2176,34 @@ unsigned PictureFormatter::GetMaxWidth(unsigned fit_in_width, bool recalc_auto_w
     assert(m_picture.Length() >= m_fields.size());
 
     unsigned width = unsigned(m_picture.Length() - m_fields.size());
-    for (size_t ii = m_fields.size(); ii--;)
+    for (auto& field : m_fields)
     {
-        if (recalc_auto_width_fields && m_fields[ii].m_auto_width)
-            m_fields[ii].m_cchWidth = 0;
-        if (m_fields[ii].m_field == FLD_FILENAME)
+        if (recalc_auto_width_fields && field.m_auto_filename_width)
+            field.m_cchWidth = 0;
+        if (field.m_auto_filename_width)
         {
-            const unsigned filename_width = GetFilenameFieldWidth(m_settings, &m_fields[ii], 0, 0);
+            assert(field.m_field == FLD_FILENAME);
+            const unsigned filename_width = GetFilenameFieldWidth(m_settings, &field, 0, 0);
             width += filename_width;
             if (!filename_width)
+            {
+                // In a fixed-width column, whatever space remains is
+                // distributed among however many filename fields are
+                // present in the picture.
                 distribute++;
+            }
         }
         else
         {
-            assert(!m_fields[ii].m_auto_width);
-            width += m_fields[ii].m_cchWidth;
+            assert(field.m_cchWidth);
+            width += field.m_cchWidth;
         }
     }
+
     if (distribute)
     {
-        const unsigned max_file_width = s_icon_width + m_max_file_width;
-        const unsigned max_dir_width = s_icon_width + m_max_dir_width + (m_settings.IsSet(FMT_DIRBRACKETS) ? 2 : 0);
+        const unsigned max_file_width = s_icon_width + m_max_filepart_width;
+        const unsigned max_dir_width = s_icon_width + m_max_dirpart_width + (m_settings.IsSet(FMT_DIRBRACKETS) ? 2 : 0);
         const unsigned max_entry_width = std::max<unsigned>(std::max<unsigned>(max_file_width, max_dir_width), unsigned(s_icon_width + 1));
         unsigned distribute_width = max_entry_width;
         if (fit_in_width)
@@ -2168,11 +2213,11 @@ unsigned PictureFormatter::GetMaxWidth(unsigned fit_in_width, bool recalc_auto_w
                 distribute_width = std::max<unsigned>((fit_in_width - width) / distribute, unsigned(1));
             distribute_width = std::min<unsigned>(distribute_width, max_entry_width);
         }
-        for (size_t ii = m_fields.size(); ii--;)
+        for (auto& field : m_fields)
         {
-            if (m_fields[ii].m_field == FLD_FILENAME)
+            if (field.m_field == FLD_FILENAME)
             {
-                m_fields[ii].m_cchWidth = distribute_width;
+                field.m_cchWidth = distribute_width;
                 width += distribute_width;
             }
         }
@@ -2190,7 +2235,7 @@ unsigned PictureFormatter::GetMinWidth(const FileInfo* pfi) const
     StrW tmp;
     for (size_t ii = m_fields.size(); ii--;)
     {
-        if (m_fields[ii].m_auto_width)
+        if (m_fields[ii].m_auto_filename_width)
         {
             assert(m_fields[ii].m_field == FLD_FILENAME);
             const WCHAR* name = pfi->GetLongName().Text();
@@ -2218,14 +2263,14 @@ unsigned PictureFormatter::GetMinWidth(const FileInfo* pfi) const
     return width;
 }
 
-bool PictureFormatter::CanAutoFitWidth() const
+bool PictureFormatter::CanAutoFitFilename() const
 {
     if (s_can_autofit &&
         !m_settings.IsSet(FMT_ALTDATASTEAMS|FMT_BARE|FMT_FAT|FMT_FULLNAME))
     {
         for (size_t ii = m_fields.size(); ii--;)
         {
-            if (m_fields[ii].m_auto_width)
+            if (m_fields[ii].m_auto_filename_width)
                 return true;
         }
     }
@@ -2260,6 +2305,24 @@ inline void PictureFormatter::OnFile(const FileInfo* pfi)
         }
     }
 
+    if (m_need_filesize_width)
+    {
+        StrW tmp;
+        for (auto& field : m_fields)
+        {
+            if (field.m_field == FLD_FILESIZE)
+            {
+                FormatFileSize(tmp, pfi, m_settings, 0, field.m_chStyle, field.m_chSubField, nullptr, true);
+                const WCHAR* p = tmp.Text();
+                while (*p == ' ')
+                    ++p;
+                const unsigned width = __wcswidth(p);
+                if (field.m_cchWidth < width)
+                    field.m_cchWidth = width;
+            }
+        }
+    }
+
     if (m_need_relative_width)
     {
         StrW tmp;
@@ -2268,17 +2331,25 @@ inline void PictureFormatter::OnFile(const FileInfo* pfi)
             if (m_need_relative_width_which[ii])
             {
                 FormatRelativeTime(tmp, pfi->GetFileTime(WhichTimeStamp(ii)));
-                if (m_max_relative_width_which[ii] < tmp.Length())
-                    m_max_relative_width_which[ii] = tmp.Length();
+                const unsigned width = __wcswidth(tmp.Text());
+                if (m_max_relative_width_which[ii] < width)
+                    m_max_relative_width_which[ii] = width;
             }
         }
+    }
+
+    if (m_need_owner_width)
+    {
+        const unsigned width = __wcswidth(pfi->GetOwner().Text());
+        if (m_max_owner_width < width)
+            m_max_owner_width = width;
     }
 }
 
 void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STREAM_DATA* pfsd, bool one_per_line) const
 {
-    const unsigned max_file_width = m_max_file_width;
-    const unsigned max_dir_width = m_max_dir_width + (m_settings.IsSet(FMT_DIRBRACKETS) ? 2 : 0);
+    const unsigned max_file_width = m_max_filepart_width;
+    const unsigned max_dir_width = m_max_dirpart_width + (m_settings.IsSet(FMT_DIRBRACKETS) ? 2 : 0);
 
     const WCHAR* dir = m_dir->dir.Text();
     const WCHAR* color = SelectColor(pfi, m_settings.m_flags, dir);
@@ -2316,7 +2387,7 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STR
                 {
                     // FUTURE: color scale for stream sizes.
                     const WCHAR* size_color = m_settings.IsSet(FMT_COLORS) ? GetSizeColor(pfsd->StreamSize.QuadPart) : nullptr;
-                    FormatSize(s, pfsd->StreamSize.QuadPart, nullptr, m_settings, GetEffectiveSizeFieldStyle(m_settings, field.m_chStyle), size_color ? size_color : color);
+                    FormatSize(s, pfsd->StreamSize.QuadPart, nullptr, m_settings, field.m_cchWidth, 0, size_color ? size_color : color);
                 }
                 break;
             case FLD_FILENAME:
@@ -2366,7 +2437,7 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STR
                 FormatTime(s, pfi, m_settings, field, color);
                 break;
             case FLD_FILESIZE:
-                FormatFileSize(s, pfi, m_settings, field.m_chStyle, field.m_chSubField, color);
+                FormatFileSize(s, pfi, m_settings, field.m_cchWidth, field.m_chStyle, field.m_chSubField, color);
                 break;
             case FLD_COMPRESSION:
                 FormatCompressed(s, pfi, m_settings.m_flags, color, field.m_chSubField);
@@ -2375,7 +2446,7 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STR
                 FormatAttributes(s, pfi->GetAttributes(), field.m_masks, field.m_chStyle, m_settings.IsSet(FMT_COLORS));
                 break;
             case FLD_OWNER:
-                FormatOwner(s, pfi, m_settings.m_flags, color);
+                FormatOwner(s, pfi, m_settings.m_flags, field.m_cchWidth, color);
                 break;
             case FLD_SHORTNAME:
                 FormatFilename(s, pfi, m_settings.m_flags|FMT_SHORTNAMES|FMT_FAT|FMT_ONLYSHORTNAMES, 0, dir, color);
@@ -2591,7 +2662,7 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags
                 sPic.Append(m_settings.IsSet(FMT_MINISIZE) ? L" Sm" : L" S");
             if (m_settings.IsSet(FMT_DATE|FMT_MINIDATE))
                 sPic.Append(m_settings.IsSet(FMT_MINIDATE) ? L" Dm" : L" D");
-            sPic.Append(L" G?");
+            sPic.Append(L" T? G?");
             picture = sPic.Text();
             break;
         default:
@@ -3159,7 +3230,7 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
                     {
                         assert(!(flags & FMT_BARE));
                         assert(!(flags & FMT_COMPRESSED));
-                        assert(!(flags & FMT_ATTRIBUTES));
+                        assert(implies(m_num_columns != 0, !(flags & FMT_ATTRIBUTES)));
 
                         const bool isFAT = !!(flags & FMT_FAT);
                         unsigned console_width = LOWORD(GetConsoleColsRows(h));
@@ -3183,7 +3254,7 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
 
                         ColumnWidths col_widths;
                         std::vector<PictureFormatter> col_pictures;
-                        const bool autofit = picture.CanAutoFitWidth();
+                        const bool autofit = picture.CanAutoFitFilename();
                         if (!autofit)
                         {
                             const unsigned max_per_file_width = dir->picture.GetMaxWidth(console_width - 1, true);

@@ -40,19 +40,19 @@ static const WCHAR* get_env_prio(const WCHAR* a, const WCHAR* b=nullptr, const W
     if (a)
     {
         env = _wgetenv(a);
-        if (which)
+        if (env && which)
             *which = a;
     }
     if (!env && b)
     {
         env = _wgetenv(b);
-        if (which)
+        if (env && which)
             *which = b;
     }
     if (!env && c)
     {
         env = _wgetenv(c);
-        if (which)
+        if (env && which)
             *which = c;
     }
     return env;
@@ -82,13 +82,19 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         const WCHAR* which;
         if (!SetColorScale(env = get_env_prio(L"DIRX_COLOR_SCALE", L"EZA_COLOR_SCALE", L"EXA_COLOR_SCALE", &which)))
         {
-            e.Set(L"Unrecognized value '%1' in %%%s%%.") << env << which;
-            ReportColorlessError(e);
+            if (env)
+            {
+                e.Set(L"Unrecognized value '%1' in %%%s%%.") << env << which;
+                ReportColorlessError(e);
+            }
         }
         if (!SetColorScaleMode(env = get_env_prio(L"DIRX_COLOR_SCALE_MODE", L"EZA_COLOR_SCALE_MODE", L"EXA_COLOR_SCALE_MODE", &which)))
         {
-            e.Set(L"Unrecognized value '%1' in %%%s%%.") << env << which;
-            ReportColorlessError(e);
+            if (env)
+            {
+                e.Set(L"Unrecognized value '%1' in %%%s%%.") << env << which;
+                ReportColorlessError(e);
+            }
         }
         if (env = _wgetenv(L"DIRX_NERD_FONTS_VERSION"))
             SetNerdFontsVersion(wcstoul(env, nullptr, 10));
@@ -797,7 +803,11 @@ unrecognized_long_opt_value:
     if (nix_defaults)
         cColumns = 0;
 
-    if (!(flags & (FMT_BARE|FMT_ATTRIBUTES|FMT_FULLNAME|FMT_FULLTIME|FMT_COMPRESSED|FMT_SHOWOWNER|FMT_ONLYALTDATASTREAMS|FMT_ALTDATASTEAMS)))
+    if (flags & (FMT_BARE|FMT_FULLNAME|FMT_FULLTIME|FMT_COMPRESSED|FMT_SHOWOWNER|FMT_ONLYALTDATASTREAMS|FMT_ALTDATASTEAMS))
+    {
+        cColumns = 1;
+    }
+    else
     {
         bool long_attributes = false;
         for (unsigned ii = 0; opts.GetValue(ii, ch, opt_value); ii++)
@@ -855,6 +865,9 @@ unrecognized_long_opt_value:
             flags |= FMT_ATTRIBUTES;
     }
 
+    if (cColumns > 1 && (flags & FMT_ATTRIBUTES))
+        cColumns = 1;
+
     if (flags & FMT_FORCENONFAT)
         flags &= ~FMT_FAT;
     if (cColumns != 1 && !nix_defaults && !(flags & (FMT_FAT|FMT_ATTRIBUTES|FMT_MINISIZE|FMT_CLASSIFY)))
@@ -905,6 +918,7 @@ unrecognized_long_opt_value:
     }
 
     DirEntryFormatter def;
+    def.SetFitColumnsToContents(nix_defaults);
     def.Initialize(cColumns, flags, timestamp, filesize, dwAttrIncludeAny, dwAttrMatch, dwAttrExcludeAny, picture);
 
     if (def.Settings().IsSet(FMT_COLORS))

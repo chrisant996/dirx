@@ -7,6 +7,7 @@
 #include "output.h"
 #include "colors.h"
 #include "wcwidth.h"
+#include "ecma48.h"
 
 #include <VersionHelpers.h>
 
@@ -320,32 +321,41 @@ static unsigned CLinesFromString(const WCHAR* p, unsigned len, unsigned max_widt
     unsigned cx = 0;
     unsigned cLines = 1;
 
-    for (; *p && len; ++p, len--)
+    ecma48_state state;
+    ecma48_iter iter(p, state);
+    while (const ecma48_code& code = iter.next())
     {
-        switch (*p)
-        {
-        case '\b':
-        case '\r':
-        case '\n':
+        if (code.get_type() != ecma48_code::type_chars)
             continue;
-        case '\t':
-            cx += c_cxTab - (cx % c_cxTab);
-            if (cx >= max_width)
+
+        len = code.get_length();
+        for (p = code.get_pointer(); *p && len; ++p, len--)
+        {
+            switch (*p)
             {
-                cx = 0;
-                cLines++;
+            case '\b':
+            case '\r':
+            case '\n':
+                continue;
+            case '\t':
+                cx += c_cxTab - (cx % c_cxTab);
+                if (cx >= max_width)
+                {
+                    cx = 0;
+                    cLines++;
+                }
+                break;
+            default:
+                const char32_t ch = __decode(p, &len);
+                int w = __wcwidth(ch);
+                cx += (w < 0) ? 1 : w;
+                if (cx >= max_width)
+                {
+                    cx = (cx > max_width) ? w : 0;
+                    cLines++;
+                }
+                break;
             }
-            break;
-        default:
-            const char32_t ch = __decode(p, &len);
-            int w = __wcwidth(ch);
-            cx += (w < 0) ? 1 : w;
-            if (cx >= max_width)
-            {
-                cx = (cx > max_width) ? w : 0;
-                cLines++;
-            }
-            break;
         }
     }
 
