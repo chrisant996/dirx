@@ -5,6 +5,7 @@
 
 #pragma once
 
+void SetUtf8Output(bool utf8);
 bool SetUseEscapeCodes(const WCHAR* s);
 bool CanUseEscapeCodes(HANDLE hout);
 

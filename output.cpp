@@ -12,6 +12,12 @@
 #include <VersionHelpers.h>
 
 static int s_escape_codes = -1;   // 0=no, 1=yes, -1=auto (when not redirected).
+static bool s_utf8 = false;
+
+void SetUtf8Output(bool utf8)
+{
+    s_utf8 = utf8;
+}
 
 bool SetUseEscapeCodes(const WCHAR* s)
 {
@@ -569,7 +575,20 @@ static void WriteConsoleInternal(HANDLE h, const WCHAR* p, unsigned len, const W
             }
             else
             {
-                tmp.SetW(p, run);
+                if (s_utf8)
+                {
+                    const size_t needed = WideCharToMultiByte(CP_UTF8, 0, p, int(run), 0, 0, 0, 0);
+                    char* out = tmp.Reserve(needed + 1);
+                    int used = WideCharToMultiByte(CP_UTF8, 0, p, int(run), out, int(needed), 0, 0);
+
+                    assert(unsigned(used) < tmp.Capacity());
+                    out[used] = '\0';
+                    tmp.ResyncLength();
+                }
+                else
+                {
+                    tmp.SetW(p, run);
+                }
                 if (!WriteFile(h, tmp.Text(), tmp.Length(), &written, nullptr))
                     break;
             }

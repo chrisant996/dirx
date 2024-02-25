@@ -179,6 +179,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_NO_TIME,
         LOI_TIME_STYLE,
         LOI_TRUNCATE_CHAR,
+        LOI_UTF8,
+        LOI_NO_UTF8,
         LOI_WORD_SORT,
     };
 
@@ -257,6 +259,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"time-style",            nullptr,            LOI_TIME_STYLE,         LOHA_REQUIRED },
         { L"truncate-char",         nullptr,            LOI_TRUNCATE_CHAR,      LOHA_REQUIRED },
         { L"usage",                 nullptr,            'u' },
+        { L"utf8",                  nullptr,            LOI_UTF8 },
+        { L"no-utf8",               nullptr,            LOI_NO_UTF8 },
         { L"version",               nullptr,            'V' },
         { L"vertical",              nullptr,            'v' },
         { L"wide",                  nullptr,            'w' },
@@ -683,6 +687,8 @@ unrecognized_long_opt_value:
             case LOI_NO_SHORT_NAMES:        flagsOFF = FMT_SHORTNAMES; break;
             case LOI_NO_STREAMS:            flagsOFF = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;
             case LOI_STRING_SORT:           g_dwCmpStrFlags |= SORT_STRINGSORT; break;
+            case LOI_UTF8:                  SetUtf8Output(true); break;
+            case LOI_NO_UTF8:               SetUtf8Output(false); break;
             case LOI_WORD_SORT:             g_dwCmpStrFlags &= ~SORT_STRINGSORT; break;
             }
             break;

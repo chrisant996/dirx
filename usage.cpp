@@ -186,6 +186,8 @@ const char c_long_usage[] =
 "			value in hexadecimal (e.g. 2192 is a right-pointing\n"
 "			arrow and 25b8 is a right-pointing triangle).  Or\n"
 "			specify 002e to use .. (two periods).\n"
+"  --utf8		When output is redirected, produce UTF8 output instead\n"
+"			of using the system codepage.\n"
 "\n"
 "Long options that can be used without an argument also accept a 'no-' prefix\n"
 "to disable them.  For example, the --compact-columns option is enabled by\n"
