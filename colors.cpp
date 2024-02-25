@@ -973,28 +973,28 @@ struct AttributeName
 {
     const DWORD attr;
     const ColorIndex ci;
-    bool LS;                // Supported by LS_COLORS.
+    int level;              // Support level: 0=ls+eza+dirx, 1=eza+dirx, 2=dirx.
     const WCHAR* key;       // The color lookup key.
 };
 
 static const AttributeName c_attributes[] =
 {
-    { FILE_ATTRIBUTE_ARCHIVE,               ciArchiveAttribute,     0,  L"ar" },
-    { FILE_ATTRIBUTE_COMPRESSED,            ciCompressedAttribute,  0,  L"cT" },
-    { FILE_ATTRIBUTE_DIRECTORY,             ciDirectory,            1,  L"di" },
-    { FILE_ATTRIBUTE_ENCRYPTED,             ciEncrypted,            0,  L"en" },
-    { FILE_ATTRIBUTE_NORMAL,                ciFile,                 1,  L"fi" },
-    { FILE_ATTRIBUTE_HIDDEN,                ciHidden,               0,  L"hi" },
-    { FILE_ATTRIBUTE_REPARSE_POINT,         ciLink,                 1,  L"ln" },
-    { FILE_ATTRIBUTE_NOT_CONTENT_INDEXED,   ciNotContentIndexed,    0,  L"NI" },
-    { FILE_ATTRIBUTE_OFFLINE,               ciOffline,              0,  L"of" },
-    { FILE_ATTRIBUTE_READONLY,              ciReadonly,             0,  L"ro" },
-    { FILE_ATTRIBUTE_SPARSE_FILE,           ciSparse,               0,  L"SP" },
-    { FILE_ATTRIBUTE_SYSTEM,                ciSystem,               0,  L"sy" },
-    { FILE_ATTRIBUTE_TEMPORARY,             ciTemporaryAttribute,   0,  L"tT" },
+    { FILE_ATTRIBUTE_ARCHIVE,               ciArchiveAttribute,     2,  L"ar" },
+    { FILE_ATTRIBUTE_COMPRESSED,            ciCompressedAttribute,  2,  L"cT" },
+    { FILE_ATTRIBUTE_DIRECTORY,             ciDirectory,            0,  L"di" },
+    { FILE_ATTRIBUTE_ENCRYPTED,             ciEncrypted,            2,  L"en" },
+    { FILE_ATTRIBUTE_NORMAL,                ciFile,                 0,  L"fi" },
+    { FILE_ATTRIBUTE_HIDDEN,                ciHidden,               2,  L"hi" },
+    { FILE_ATTRIBUTE_REPARSE_POINT,         ciLink,                 0,  L"ln" },
+    { FILE_ATTRIBUTE_NOT_CONTENT_INDEXED,   ciNotContentIndexed,    2,  L"NI" },
+    { FILE_ATTRIBUTE_OFFLINE,               ciOffline,              2,  L"of" },
+    { FILE_ATTRIBUTE_READONLY,              ciReadonly,             2,  L"ro" },
+    { FILE_ATTRIBUTE_SPARSE_FILE,           ciSparse,               2,  L"SP" },
+    { FILE_ATTRIBUTE_SYSTEM,                ciSystem,               2,  L"sy" },
+    { FILE_ATTRIBUTE_TEMPORARY,             ciTemporaryAttribute,   2,  L"tT" },
 };
 
-static int ParseColorRule(const WCHAR* in, StrW& value, ColorRule& rule, bool ls_colors, Error& e)
+static int ParseColorRule(const WCHAR* in, StrW& value, ColorRule& rule, int level, Error& e)
 {
     unsigned num_attr = 0;
     int ci = -1;
@@ -1005,8 +1005,12 @@ static int ParseColorRule(const WCHAR* in, StrW& value, ColorRule& rule, bool ls
     bool not = false;
     while (*in)
     {
-        bool quoted;
-        if (!GetSpacedToken(in, token, quoted))
+        bool quoted = false;
+        if (level >= 2)
+            GetSpacedToken(in, token, quoted);
+        else
+            token = in, in += wcslen(in);
+        if (token.Empty())
             continue;
 
         if (!pseudo_type.Empty())
@@ -1015,7 +1019,7 @@ static int ParseColorRule(const WCHAR* in, StrW& value, ColorRule& rule, bool ls
             return -1;
         }
 
-        if (!ls_colors && (token.EqualI(L"not") || token.Equal(L"!")))
+        if (level >= 2 && (token.EqualI(L"not") || token.Equal(L"!")))
         {
             not = true;
             continue;
@@ -1026,7 +1030,7 @@ static int ParseColorRule(const WCHAR* in, StrW& value, ColorRule& rule, bool ls
         {
             for (const auto& a : c_attributes)
             {
-                if (token.Equal(a.key))
+                if (level >= a.level && token.Equal(a.key))
                 {
                     ++num_attr;
                     ci = a.ci;
@@ -1053,7 +1057,7 @@ static int ParseColorRule(const WCHAR* in, StrW& value, ColorRule& rule, bool ls
             }
 #endif
 
-            if (!found)
+            if (!found && level >= 2)
             {
                 const auto& info = s_key_to_info.find(token.Text());
                 if (info != s_key_to_info.end())
@@ -1154,7 +1158,7 @@ static int ParseColorRule(const WCHAR* in, StrW& value, ColorRule& rule, bool ls
     return 0;
 }
 
-static void ParseColors(const WCHAR* colors, const WCHAR* error_context, bool ls_colors, Error& e)
+static void ParseColors(const WCHAR* colors, const WCHAR* error_context, int level, Error& e)
 {
     if (!colors || !*colors)
         return;
@@ -1175,7 +1179,7 @@ static void ParseColors(const WCHAR* colors, const WCHAR* error_context, bool ls
         if (ok > 0)
         {
             ColorRule rule;
-            int result = ParseColorRule(token.Text(), value, rule, ls_colors, e);
+            int result = ParseColorRule(token.Text(), value, rule, level, e);
             if (result < 0)
                 return;
             if (result > 0)
@@ -1225,17 +1229,17 @@ void InitColors(const WCHAR* custom)
         const WCHAR* dirx_colors = _wgetenv(c_DIRX_COLORS);
         if (!StartsWithReset(dirx_colors))
         {
-            ParseColors(L"*", L"Default Colors", false, e);
+            ParseColors(L"*", L"Default Colors", 2, e);
             ReportColorlessError(e);
-            ParseColors(_wgetenv(L"LS_COLORS"), L"LS_COLORS", true, e);
+            ParseColors(_wgetenv(L"LS_COLORS"), L"LS_COLORS", 0, e);
             ReportColorlessError(e);
         }
 
-        ParseColors(dirx_colors, c_DIRX_COLORS, false, e);
+        ParseColors(dirx_colors, c_DIRX_COLORS, 2, e);
         ReportColorlessError(e);
     }
 
-    ParseColors(custom, L"--more-colors", false, e);
+    ParseColors(custom, L"--more-colors", 2, e);
     ReportColorlessError(e);
 
     const WCHAR* env = _wgetenv(L"DIRX_MIN_LUMINANCE");
