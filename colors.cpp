@@ -14,7 +14,7 @@
 #include "filesys.h"
 #include "patterns.h"
 #include "sorting.h"
-#include "formatter.h"
+#include "fields.h"
 #include "output.h"
 #include "wildmatch/wildmatch.h"
 
@@ -1485,7 +1485,7 @@ const WCHAR* GetColorByKey(const WCHAR* key)
 const WCHAR* GetSizeColor(ULONGLONG ull)
 {
     ColorIndex ci;
-    if (!IsScalingSize())
+    if (!(GetColorScaleFields() & SCALE_SIZE))
         ci = ciSize;
     else if (ull < 1024ull)
         ci = ciSizeB;
@@ -1502,7 +1502,7 @@ const WCHAR* GetSizeColor(ULONGLONG ull)
 
 const WCHAR* GetSizeUnitColor(ULONGLONG ull)
 {
-    if (!IsScalingSize())
+    if (!(GetColorScaleFields() & SCALE_TIME))
         return nullptr;
     ColorIndex ci;
     if (ull < 1024ull)

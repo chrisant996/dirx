@@ -23,6 +23,7 @@
 #include "sorting.h"
 #include "patterns.h"
 #include "formatter.h"
+#include "fields.h"
 #include "scan.h"
 #include "colors.h"
 #include "samples.h"
