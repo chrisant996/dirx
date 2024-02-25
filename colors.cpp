@@ -291,7 +291,6 @@ static void InitColorMaps()
         { L"mkv",       { CFLAG_VIDEO } },
         { L"mov",       { CFLAG_VIDEO } },
         { L"mp4",       { CFLAG_VIDEO } },
-        { L"mpe",       { CFLAG_VIDEO } },
         { L"mpeg",      { CFLAG_VIDEO } },
         { L"mpg",       { CFLAG_VIDEO } },
         { L"ogm",       { CFLAG_VIDEO } },
@@ -358,13 +357,11 @@ static void InitColorMaps()
         { L"vmdk",      { CFLAG_COMPRESSED_ARCHIVE } },
         { L"z",         { CFLAG_COMPRESSED_ARCHIVE } },
         { L"zip",       { CFLAG_COMPRESSED_ARCHIVE } },
-        { L"zoo",       { CFLAG_COMPRESSED_ARCHIVE } },
         { L"zst",       { CFLAG_COMPRESSED_ARCHIVE } }, // Zstandard
 
         { L"ninja",         { CFLAG_BUILD } },
         { L"mak",           { CFLAG_BUILD } },
         { L"sln",           { CFLAG_BUILD } },
-        { L"vcxproj",       { CFLAG_BUILD } },
 
         { L"applescript",   { CFLAG_SOURCE_CODE } }, // Apple script
         { L"as",            { CFLAG_SOURCE_CODE } }, // Action script
@@ -408,7 +405,6 @@ static void InitColorMaps()
         { L"hs",            { CFLAG_SOURCE_CODE } }, // Haskell
         { L"htc",           { CFLAG_SOURCE_CODE } }, // JavaScript
         { L"hxx",           { CFLAG_SOURCE_CODE } }, // C/C++ header
-        { L"idl",           { CFLAG_SOURCE_CODE } }, // MSVC interface definition language
         { L"inc",           { CFLAG_SOURCE_CODE } },
         { L"inl",           { CFLAG_SOURCE_CODE } }, // C/C++ Microsoft
         { L"ipynb",         { CFLAG_SOURCE_CODE } }, // Jupyter Notebook
@@ -431,7 +427,6 @@ static void InitColorMaps()
         { L"mli",           { CFLAG_SOURCE_CODE } }, // OCaml
         { L"mn",            { CFLAG_SOURCE_CODE } }, // Matlab
         { L"nb",            { CFLAG_SOURCE_CODE } }, // Mathematica
-        { L"odl",           { CFLAG_SOURCE_CODE } }, // MSVC object definition language
         { L"p",             { CFLAG_SOURCE_CODE } }, // Pascal
         { L"pas",           { CFLAG_SOURCE_CODE } }, // Pascal
         { L"php",           { CFLAG_SOURCE_CODE } }, // PHP
@@ -476,8 +471,6 @@ static void InitColorMaps()
         { L"lib",           { CFLAG_COMPILED } }, // Windows static library
         { L"o",             { CFLAG_COMPILED } }, // Compiled object file
         { L"obj",           { CFLAG_COMPILED } }, // Compiled object file
-        { L"pch",           { CFLAG_COMPILED } }, // MSVC precompiled header
-        { L"pdb",           { CFLAG_COMPILED } }, // MSVC symbol file
         { L"pyc",           { CFLAG_COMPILED } }, // Python compiled code
         { L"pyd",           { CFLAG_COMPILED } }, // Python dynamic module
         { L"pyo",           { CFLAG_COMPILED } }, // Python optimized code
@@ -516,6 +509,17 @@ static void InitColorMaps()
         { L"swo",           { CFLAG_TEMPORARY_EXTENSION } },
         { L"swp",           { CFLAG_TEMPORARY_EXTENSION } },
         { L"tmp",           { CFLAG_TEMPORARY_EXTENSION } },
+
+        // More.
+        { L"dlg",           { CFLAG_SOURCE_CODE } }, // MSVC dialog template file
+        { L"idl",           { CFLAG_SOURCE_CODE } }, // MSVC interface definition language
+        { L"mpe",           { CFLAG_VIDEO } },
+        { L"odl",           { CFLAG_SOURCE_CODE } }, // MSVC object definition language
+        { L"pch",           { CFLAG_COMPILED } }, // MSVC precompiled header
+        { L"pdb",           { CFLAG_COMPILED } }, // MSVC symbol file
+        { L"rc",            { CFLAG_SOURCE_CODE } }, // MSVC resource compiler file
+        { L"vcxproj",       { CFLAG_BUILD } },
+        { L"zoo",           { CFLAG_COMPRESSED_ARCHIVE } },
     };
 
     std::unordered_map<const WCHAR*, ExtensionInfo, HashCaseless, EqualCaseless> extensions;
