@@ -372,11 +372,11 @@ const char c_help_colors[] =
 "and EXA_COLOR_SCALE_MODE are also checked.\n"
 "\n"
 "Set DIRX_MIN_LUMINANCE to a value from -100 to 100 to control the range of\n"
-"intensity decay in the gradient color scale mode.\n"
+"intensity decay in the gradient color scale mode.  If it's not set, then\n"
+"EZA_MIN_LUMINANCE and EXA_MIN_LUMINANCE are also checked.\n"
 "\n"
-"If the DIRX_COLORS environment variable is not set, then EZA_COLORS and\n"
-"EXA_COLORS are also checked.  (DIRX enhancements are ignored when parsing the\n"
-"EZA and EXA variables.)\n"
+"If the DIRX_COLORS environment variable is not set, then LS_COLORS is also\n"
+"checked.  DIRX enhancements are ignored when parsing LS_COLORS.)\n"
 ;
 
 const char c_help_icons[] =

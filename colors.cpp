@@ -1239,6 +1239,12 @@ void InitColors(const WCHAR* custom)
     ReportColorlessError(e);
 
     const WCHAR* env = _wgetenv(L"DIRX_MIN_LUMINANCE");
+    if (!env)
+    {
+        env = _wgetenv(L"EZA_MIN_LUMINANCE");
+        if (!env)
+            env = _wgetenv(L"EXA_MIN_LUMINANCE");
+    }
     if (env)
     {
         const int x = clamp(_wtoi(env), -100, 100);
