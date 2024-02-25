@@ -9,15 +9,20 @@
 #include "flags.h"
 #include "str.h"
 
+#include <memory>
+#include <vector>
+
 struct DirFormatSettings;
 
 class FileInfo
 {
 public:
                         FileInfo() {}
-                        ~FileInfo() {}
+                        ~FileInfo() { delete [] m_streams; }
 
     void                Init(const WCHAR* dir, DWORD granularity, const WIN32_FIND_DATA* pfd, const DirFormatSettings& settings);
+    void                InitStream(const WIN32_FIND_STREAM_DATA& fsd);
+    void                InitStreams(std::vector<std::unique_ptr<FileInfo>>& streams);
 
     DWORD               GetAttributes() const { return m_dwAttr; }
     const FILETIME&     GetAccessTime() const { return m_ftAccess; }
@@ -29,6 +34,7 @@ public:
     const StrW&         GetFileName(FormatFlags flags) const;
     const StrW&         GetLongName() const { return m_long; }
     const StrW&         GetOwner() const { return m_owner; }
+    const std::unique_ptr<FileInfo>* GetStreams() const { return m_streams; }
 
     bool                IsPseudoDirectory() const;
     bool                IsReparseTag() const;
@@ -36,6 +42,7 @@ public:
 
     void                SetAltDataStreams() const { m_has_alt_data_streams = true; }
     bool                HasAltDataStreams() const { return m_has_alt_data_streams; }
+    bool                IsAltDataStream() const { return m_is_alt_data_stream; }
 
 private:
     DWORD               m_dwAttr;
@@ -49,7 +56,9 @@ private:
     StrW                m_long;
     StrW                m_short;
     StrW                m_owner;
-    mutable bool        m_has_alt_data_streams;
+    mutable bool        m_has_alt_data_streams = false;
+    bool                m_is_alt_data_stream = false;
+    std::unique_ptr<FileInfo>* m_streams = nullptr; // nullptr terminated, free with delete[].
 
 #ifdef DEBUG
     bool                m_fGotCompressedSize;

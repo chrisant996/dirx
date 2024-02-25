@@ -23,8 +23,6 @@ void FileInfo::Init(const WCHAR* dir, DWORD granularity, const WIN32_FIND_DATA* 
     m_ulFile.LowPart = pfd->nFileSizeLow;
     m_ulFile.HighPart = pfd->nFileSizeHigh;
 
-    m_has_alt_data_streams = false;
-
     const bool get_compressed_size = ((GetAttributes() & FILE_ATTRIBUTE_COMPRESSED) &&
                                       settings.m_need_compressed_size);
 
@@ -84,6 +82,26 @@ void FileInfo::Init(const WCHAR* dir, DWORD granularity, const WIN32_FIND_DATA* 
         m_dwReserved0 = pfd->dwReserved0;
     else
         m_dwReserved0 = 0;
+}
+
+void FileInfo::InitStream(const WIN32_FIND_STREAM_DATA& fsd)
+{
+    m_long.Set(fsd.cStreamName);
+    m_ulFile.QuadPart = fsd.StreamSize.QuadPart;
+    m_is_alt_data_stream = true;
+}
+
+void FileInfo::InitStreams(std::vector<std::unique_ptr<FileInfo>>& streams)
+{
+    assert(!m_streams);
+    assert(!streams.empty());
+    m_streams = new std::unique_ptr<FileInfo>[streams.size() + 1];
+    for (size_t ii = 0; ii < streams.size(); ++ii)
+    {
+        assert(!m_streams[ii]);
+        m_streams[ii] = std::move(streams[ii]);
+    }
+    assert(!m_streams[streams.size()]);
 }
 
 const FILETIME& FileInfo::GetFileTime(const WhichTimeStamp timestamp) const

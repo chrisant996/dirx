@@ -49,7 +49,7 @@ public:
     void SetDirContext(const std::shared_ptr<const DirContext>& dir);
     void OnFile(const FileInfo* pfi);
 
-    void Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STREAM_DATA* pfsd=nullptr, bool one_per_line=true) const;
+    void Format(StrW& s, const FileInfo* pfi, const FileInfo* stream=nullptr, bool one_per_line=true) const;
 
     bool IsImmediate() const { return m_immediate; }
     bool IsFilenameWidthNeeded() const { return m_need_filename_width; }

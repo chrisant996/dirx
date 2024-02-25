@@ -2312,6 +2312,7 @@ inline void PictureFormatter::OnFile(const FileInfo* pfi)
         {
             if (field.m_field == FLD_FILESIZE)
             {
+                tmp.Clear();
                 FormatFileSize(tmp, pfi, m_settings, 0, field.m_chStyle, field.m_chSubField, nullptr, true);
                 const WCHAR* p = tmp.Text();
                 while (*p == ' ')
@@ -2319,6 +2320,18 @@ inline void PictureFormatter::OnFile(const FileInfo* pfi)
                 const unsigned width = __wcswidth(p);
                 if (field.m_cchWidth < width)
                     field.m_cchWidth = width;
+
+                for (auto stream = pfi->GetStreams(); stream && *stream; ++stream)
+                {
+                    tmp.Clear();
+                    FormatFileSize(tmp, stream[0].get(), m_settings, 0, field.m_chStyle, field.m_chSubField, nullptr, true);
+                    const WCHAR* p = tmp.Text();
+                    while (*p == ' ')
+                        ++p;
+                    const unsigned width = __wcswidth(p);
+                    if (field.m_cchWidth < width)
+                        field.m_cchWidth = width;
+                }
             }
         }
     }
@@ -2346,7 +2359,7 @@ inline void PictureFormatter::OnFile(const FileInfo* pfi)
     }
 }
 
-void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STREAM_DATA* pfsd, bool one_per_line) const
+void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const FileInfo* stream, bool one_per_line) const
 {
     const unsigned max_file_width = m_max_filepart_width;
     const unsigned max_dir_width = m_max_dirpart_width + (m_settings.IsSet(FMT_DIRBRACKETS) ? 2 : 0);
@@ -2355,6 +2368,9 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STR
     const WCHAR* color = SelectColor(pfi, m_settings.m_flags, dir);
 
     // Format the fields.
+
+    assert(!pfi->IsAltDataStream());
+    assert(implies(stream, stream->IsAltDataStream()));
 
     StrW tmp;
     unsigned ichCopied = 0;
@@ -2369,7 +2385,7 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STR
 
         // Insert field value.
 
-        if (pfsd)
+        if (stream)
         {
             switch (field.m_field)
             {
@@ -2386,22 +2402,27 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const WIN32_FIND_STR
             case FLD_FILESIZE:
                 {
                     // FUTURE: color scale for stream sizes.
-                    const WCHAR* size_color = m_settings.IsSet(FMT_COLORS) ? GetSizeColor(pfsd->StreamSize.QuadPart) : nullptr;
-                    FormatSize(s, pfsd->StreamSize.QuadPart, nullptr, m_settings, field.m_cchWidth, 0, size_color ? size_color : color);
+                    WhichFileSize which = FILESIZE_FILESIZE;
+                    const WCHAR* size_color = m_settings.IsSet(FMT_COLORS) ? GetSizeColor(stream->GetFileSize()) : nullptr;
+                    FormatSize(s, stream->GetFileSize(), &which, m_settings, field.m_chStyle, field.m_cchWidth, size_color ? size_color : color);
                 }
                 break;
             case FLD_FILENAME:
                 {
+                    tmp.Clear();
+                    tmp.AppendSpaces(s_icon_width);
                     if (m_settings.IsSet(FMT_REDIRECTED))
                     {
-                        tmp.Clear();
                         if (m_settings.IsSet(FMT_FULLNAME))
+                        {
                             tmp.Append(dir);
+                            tmp.Append(L"\\");
+                        }
                         tmp.Append(pfi->GetLongName());
                     }
                     else
-                        tmp.Set(L"  ");
-                    tmp.Append(pfsd->cStreamName);
+                        tmp.AppendSpaces(2);
+                    tmp.Append(stream->GetLongName());
                     if (m_settings.IsSet(FMT_LOWERCASE))
                         tmp.ToLower();
 
@@ -2927,7 +2948,7 @@ void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const std::shar
     }
 }
 
-static void DisplayOne(HANDLE h, const FileInfo* const pfi, const DirContext* const dir)
+static void DisplayOne(HANDLE h, const FileInfo* const pfi, const FileInfo* const stream, const DirContext* const dir)
 {
     StrW s;
 
@@ -2940,45 +2961,17 @@ static void DisplayOne(HANDLE h, const FileInfo* const pfi, const DirContext* co
     }
     else
     {
-        dir->picture.Format(s, pfi);
-    }
-
-    if (dir->flags & (FMT_ALTDATASTEAMS|FMT_ONLYALTDATASTREAMS))
-    {
-        assert(implies((dir->flags & FMT_ALTDATASTEAMS), !(dir->flags & (FMT_FAT|FMT_BARE))));
-
-        StrW tmp;
-        PathJoin(tmp, dir->dir.Text(), pfi->GetLongName());
-
-        StrW full;
-        full.Set(tmp);
-
-        bool fAnyAltDataStreams = false;
-        WIN32_FIND_STREAM_DATA fsd;
-        SHFind shFind = __FindFirstStreamW(full.Text(), FindStreamInfoStandard, &fsd, 0);
-        if (!shFind.Empty())
-        {
-            do
-            {
-                if (!wcsicmp(fsd.cStreamName, L"::$DATA"))
-                    continue;
-                fAnyAltDataStreams = true;
-                if (!(dir->flags & FMT_ALTDATASTEAMS))
-                    break;
-                s.Append('\n');
-                dir->picture.Format(s, pfi, &fsd);
-            }
-            while (__FindNextStreamW(shFind, &fsd));
-        }
-
-        if (fAnyAltDataStreams)
-            pfi->SetAltDataStreams();
-        else if (dir->flags & FMT_ONLYALTDATASTREAMS)
-            return;
+        dir->picture.Format(s, pfi, stream);
     }
 
     s.Append(L"\n");
     OutputConsole(h, s.Text(), s.Length());
+
+    if (!stream)
+    {
+        for (auto pp = pfi->GetStreams(); pp && *pp; ++pp)
+            DisplayOne(h, pfi, pp[0].get(), dir);
+    }
 }
 
 void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* const pfd)
@@ -2994,8 +2987,46 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
 
     // Skip the file if filtering out files without alternate data streams.
 
-    if (Settings().IsSet(FMT_ONLYALTDATASTREAMS) && !pfi->HasAltDataStreams())
-        return;
+    if (Settings().IsSet(FMT_ALTDATASTEAMS|FMT_ONLYALTDATASTREAMS))
+    {
+        assert(implies(Settings().IsSet(FMT_ALTDATASTEAMS), !(Settings().IsSet(FMT_FAT|FMT_BARE))));
+
+        StrW tmp;
+        PathJoin(tmp, dir, pfi->GetLongName());
+
+        StrW full;
+        full.Set(tmp);
+
+        bool fAnyAltDataStreams = false;
+        WIN32_FIND_STREAM_DATA fsd;
+        SHFind shFind = __FindFirstStreamW(full.Text(), FindStreamInfoStandard, &fsd, 0);
+        if (!shFind.Empty())
+        {
+            std::unique_ptr<std::vector<std::unique_ptr<FileInfo>>> streams;
+
+            do
+            {
+                if (!wcsicmp(fsd.cStreamName, L"::$DATA"))
+                    continue;
+                fAnyAltDataStreams = true;
+                if (!Settings().IsSet(FMT_ALTDATASTEAMS))
+                    break;
+                if (!streams)
+                    streams = std::make_unique<std::vector<std::unique_ptr<FileInfo>>>();
+                streams->emplace_back(std::make_unique<FileInfo>());
+                streams->back()->InitStream(fsd);
+            }
+            while (__FindNextStreamW(shFind, &fsd));
+
+            if (streams && streams->size())
+                pfi->InitStreams(*streams);
+        }
+
+        if (fAnyAltDataStreams)
+            pfi->SetAltDataStreams();
+        else if (Settings().IsSet(FMT_ONLYALTDATASTREAMS))
+            return;
+    }
 
     // Get git status if needed.
 
@@ -3055,6 +3086,21 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
                     if (m_longest_file_width < noext_width + 4)
                         m_longest_file_width = noext_width + 4;
                 }
+                for (auto stream = pfi->GetStreams(); stream && *stream; ++stream)
+                {
+                    name_width = s_icon_width;
+                    if (Settings().IsSet(FMT_REDIRECTED))
+                    {
+                        if (Settings().IsSet(FMT_FULLNAME))
+                            name_width += __wcswidth(dir) + 1;
+                        name_width += __wcswidth(pfi->GetLongName().Text());
+                    }
+                    else
+                        name_width += 2;
+                    name_width += __wcswidth(stream[0]->GetLongName().Text());
+                    if (m_longest_file_width < name_width)
+                        m_longest_file_width = name_width;
+                }
             }
         }
         if (s_gradient && s_scale_size)
@@ -3064,6 +3110,8 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
                 if (which != FILESIZE_COMPRESSED || Settings().m_need_compressed_size)
                     Settings().UpdateMinMaxSize(which, pfi->GetFileSize(which));
             }
+            for (auto stream = pfi->GetStreams(); stream && *stream; ++stream)
+                Settings().UpdateMinMaxSize(FILESIZE_FILESIZE, stream[0]->GetFileSize());
         }
     }
 
@@ -3089,7 +3137,7 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
 
             void Render(HANDLE h, const DirContext* dir) override
             {
-                DisplayOne(h, m_pfi.get(), dir);
+                DisplayOne(h, m_pfi.get(), nullptr, dir);
             }
 
         private:
@@ -3219,7 +3267,7 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
                         {
                             const FileInfo* const pfi = m_files[ii].get();
 
-                            DisplayOne(h, pfi, dir);
+                            DisplayOne(h, pfi, nullptr, dir);
                         }
                     }
                     break;
@@ -3294,6 +3342,7 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
                             for (unsigned jj = 0; jj < num_per_row && iItem < m_files.size(); jj++, iItem += num_add)
                             {
                                 const FileInfo* pfi = m_files[iItem].get();
+                                assert(!pfi->GetStreams());
 
                                 if (jj)
                                 {

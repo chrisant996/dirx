@@ -3,9 +3,6 @@
 ### BUGS
 
 ### Next
-- FileSize field for alternate data streams:
-  - Gradient color scale should affect it.
-  - Field width should affect column width.
 - I don't like the --compact-columns option name.
 - Write README.md file as documentation.
 - Document the `--nix` flag once it's more polished (also find a better name?).
