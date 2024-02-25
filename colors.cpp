@@ -193,7 +193,6 @@ static void InitColorMaps()
     s_color_fallback[ciAttributeLetterHidden] = ciHidden;
     s_color_fallback[ciAttributeLetterSystem] = ciSystem;
     s_color_fallback[ciAttributeLetterLink] = ciLink;
-    s_color_fallback[ciLossless] = ciMusic;
     // NOTE, there is intentionally no fallback for these fields:
     //  - ciCompressionField
     //  - ciOwnerField
@@ -697,6 +696,8 @@ static void InitColorMaps()
     };
 }
 
+static WCHAR* s_color_strings[ciCOUNT];
+
 static ColorIndex ColorIndexFromColorFlag(ColorFlag flags)
 {
     static const struct
@@ -724,14 +725,13 @@ static ColorIndex ColorIndexFromColorFlag(ColorFlag flags)
     if (flags)
         for (const auto& element : c_priority_order)
         {
-            if ((element.flag & flags) == flags)
+            if ((element.flag & flags) == flags && s_color_strings[element.ci])
                 return element.ci;
         }
 
     return ciFile;
 }
 
-static WCHAR* s_color_strings[ciCOUNT];
 static bool s_link_target_color = false;
 
 bool UseLinkTargetColor()
