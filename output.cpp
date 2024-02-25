@@ -328,7 +328,7 @@ static unsigned CLinesFromString(const WCHAR* p, unsigned len, unsigned max_widt
     unsigned cLines = 1;
 
     ecma48_state state;
-    ecma48_iter iter(p, state);
+    ecma48_iter iter(p, state, len);
     while (const ecma48_code& code = iter.next())
     {
         if (code.get_type() != ecma48_code::type_chars)
