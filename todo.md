@@ -4,7 +4,6 @@
 
 ### Next
 - Write README.md file as documentation.
-- Document the `--nix` flag once it's more polished (also find a better name?).
 
 ### Back burner
 - Debugging output.
