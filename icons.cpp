@@ -241,7 +241,7 @@ static const NerdFontIcon c_common_icons[] =
     { L"",      },     // CONFIG
     { L"",      },     // CSS3
     { L"",      },     // DATABASE
-    { L"",      },     // DIFF
+    { L"", L"" },     // DIFF
     { L"",      },     // DISK_IMAGE
     { L"", L"" },     // DOCKER
     { L"",      },     // DOCUMENT
