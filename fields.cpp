@@ -23,6 +23,7 @@
 static WCHAR s_chTruncated = L'\x2026'; // Horizontal Ellipsis character.
 static bool s_can_autofit = true;
 static bool s_use_icons = false;
+static bool s_forced_icons_always = false;
 static BYTE s_icon_padding = 1;
 static unsigned s_icon_width = 0;
 static bool s_mini_bytes = false;
@@ -123,19 +124,28 @@ void SetCanAutoFit(bool can_autofit)
     s_can_autofit = can_autofit;
 }
 
-bool SetUseIcons(const WCHAR* s)
+bool SetUseIcons(const WCHAR* s, bool unless_always)
 {
     if (!s)
+        return false;
+    if (unless_always && s_forced_icons_always)
         return false;
     if (!_wcsicmp(s, L"") || !_wcsicmp(s, L"auto"))
     {
         DWORD dwMode;
         s_use_icons = !!GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &dwMode);
+        s_forced_icons_always = false;
     }
     else if (!_wcsicmp(s, L"always"))
+    {
         s_use_icons = true;
+        s_forced_icons_always = true;
+    }
     else if (!_wcsicmp(s, L"never") || !_wcsicmp(s, L"-"))
+    {
         s_use_icons = false;
+        s_forced_icons_always = false;
+    }
     else
         return false;
     s_icon_width = s_use_icons ? 1 + s_icon_padding : 0;

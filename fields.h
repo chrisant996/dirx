@@ -98,7 +98,7 @@ bool SetDefaultTimeStyle(const WCHAR* time_style);
 void ClearDefaultTimeStyleIf(const WCHAR* time_style);
 DWORD ParseAttribute(const WCHAR ch);
 
-bool SetUseIcons(const WCHAR* s);
+bool SetUseIcons(const WCHAR* s, bool unless_always=false);
 void SetPadIcons(unsigned spaces);
 unsigned GetPadIcons();
 unsigned GetIconWidth();

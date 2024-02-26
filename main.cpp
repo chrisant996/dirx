@@ -941,7 +941,7 @@ unrecognized_long_opt_value:
     if (!CanUseEscapeCodes(GetStdHandle(STD_OUTPUT_HANDLE)))
     {
         flags &= ~FMT_COLORS;
-        SetUseIcons(L"never");
+        SetUseIcons(L"never", true/*unless_always*/);
         SetColorScale(L"none");
     }
 
