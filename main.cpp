@@ -171,6 +171,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_NO_NIX,
         LOI_NO_NORMAL,
         LOI_NO_OWNER,
+        LOI_PAD_ICONS,
         LOI_NO_RATIO,
         LOI_RELATIVE,
         LOI_NO_RELATIVE,
@@ -249,6 +250,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-normal",             nullptr,            LOI_NO_NORMAL },
         { L"owner",                 nullptr,            'q' },
         { L"no-owner",              nullptr,            LOI_NO_OWNER },
+        { L"pad-icons",             nullptr,            LOI_PAD_ICONS,          LOHA_REQUIRED },
         { L"paginate",              nullptr,            'p' },
         { L"quash",                 nullptr,            'Q',                    LOHA_OPTIONAL },
         { L"ratio",                 nullptr,            'C' },
@@ -698,6 +700,7 @@ unrecognized_long_opt_value:
             case LOI_NERD_FONTS_VER:        SetNerdFontsVersion(wcstoul(opt_value, nullptr, 10)); break;
             case LOI_NO_NORMAL:             flagsOFF = FMT_FORCENONFAT; break;
             case LOI_NO_OWNER:              flagsOFF = FMT_SHOWOWNER; break;
+            case LOI_PAD_ICONS:             SetPadIcons(wcstoul(opt_value, nullptr, 10)); break;
             case LOI_NO_RATIO:              flagsOFF = FMT_COMPRESSED; break;
             case LOI_RELATIVE:              SetDefaultTimeStyle(L"relative"); break;
             case LOI_NO_RELATIVE:           ClearDefaultTimeStyleIf(L"relative"); break;
