@@ -137,6 +137,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_COLOR_SCALE,
         LOI_NO_COLOR_SCALE,
         LOI_COLOR_SCALE_MODE,
+        LOI_COMPACT_TIME,
+        LOI_NO_COMPACT_TIME,
         LOI_ESCAPE_CODES,
         LOI_NO_FAT,
         LOI_FIT_COLUMNS,
@@ -170,6 +172,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_NO_NORMAL,
         LOI_NO_OWNER,
         LOI_NO_RATIO,
+        LOI_RELATIVE,
+        LOI_NO_RELATIVE,
         LOI_REVERSE,
         LOI_NO_REVERSE,
         LOI_NO_SHORT_NAMES,
@@ -201,6 +205,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"color-scale",           nullptr,            LOI_COLOR_SCALE,        LOHA_OPTIONAL },
         { L"no-color-scale",        nullptr,            LOI_NO_COLOR_SCALE },
         { L"color-scale-mode",      nullptr,            LOI_COLOR_SCALE_MODE,   LOHA_REQUIRED },
+        { L"compact",               nullptr,            LOI_COMPACT_TIME },
+        { L"no-compact",            nullptr,            LOI_NO_COMPACT_TIME },
         { L"escape-codes",          nullptr,            LOI_ESCAPE_CODES,       LOHA_OPTIONAL },
         { L"fat",                   nullptr,            'z' },
         { L"no-fat",                nullptr,            LOI_NO_FAT },
@@ -248,6 +254,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"ratio",                 nullptr,            'C' },
         { L"no-ratio",              nullptr,            LOI_NO_RATIO },
         { L"recurse",               nullptr,            's' },
+        { L"relative",              nullptr,            LOI_RELATIVE },
+        { L"no-relative",           nullptr,            LOI_NO_RELATIVE },
         { L"reverse",               nullptr,            LOI_REVERSE },
         { L"no-reverse",            nullptr,            LOI_NO_REVERSE },
         { L"short-names",           nullptr,            'x' },
@@ -664,6 +672,8 @@ unrecognized_long_opt_value:
             case LOI_NO_CLASSIFY:           flagsOFF = FMT_CLASSIFY; break;
             case LOI_NO_COLOR:              flagsOFF = FMT_COLORS; break;
             case LOI_NO_COLOR_SCALE:        SetColorScale(L"none"); break;
+            case LOI_COMPACT_TIME:          SetDefaultTimeStyle(L"compact"); break;
+            case LOI_NO_COMPACT_TIME:       ClearDefaultTimeStyleIf(L"compact"); break;
             case LOI_NO_FAT:                flagsOFF = FMT_FAT; break;
             case LOI_FIT_COLUMNS:           SetCanAutoFit(true); break;
             case LOI_NO_FIT_COLUMNS:        SetCanAutoFit(false); break;
@@ -689,6 +699,8 @@ unrecognized_long_opt_value:
             case LOI_NO_NORMAL:             flagsOFF = FMT_FORCENONFAT; break;
             case LOI_NO_OWNER:              flagsOFF = FMT_SHOWOWNER; break;
             case LOI_NO_RATIO:              flagsOFF = FMT_COMPRESSED; break;
+            case LOI_RELATIVE:              SetDefaultTimeStyle(L"relative"); break;
+            case LOI_NO_RELATIVE:           ClearDefaultTimeStyleIf(L"relative"); break;
             case LOI_REVERSE:               SetReverseSort(true); break;
             case LOI_NO_REVERSE:            SetReverseSort(false); break;
             case LOI_NO_SHORT_NAMES:        flagsOFF = FMT_SHORTNAMES; break;

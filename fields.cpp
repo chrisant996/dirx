@@ -256,6 +256,18 @@ bool SetDefaultTimeStyle(const WCHAR* time_style)
     return false;
 }
 
+void ClearDefaultTimeStyleIf(const WCHAR* time_style)
+{
+    const auto old_time_style = s_time_style;
+    if (SetDefaultTimeStyle(time_style))
+    {
+        if (s_time_style == old_time_style)
+            s_time_style = 0;
+        else
+            s_time_style = old_time_style;
+    }
+}
+
 /*
  * Formatter functions.
  */

@@ -95,6 +95,7 @@ void SetTruncationCharacterInHex(const WCHAR* s);
 WCHAR GetTruncationCharacter();
 bool SetDefaultSizeStyle(const WCHAR* size_style);
 bool SetDefaultTimeStyle(const WCHAR* time_style);
+void ClearDefaultTimeStyleIf(const WCHAR* time_style);
 DWORD ParseAttribute(const WCHAR ch);
 
 bool SetUseIcons(const WCHAR* s);

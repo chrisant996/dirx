@@ -1,4 +1,4 @@
-// Copyright (c) 2024 by Christopher Antos
+﻿// Copyright (c) 2024 by Christopher Antos
 // License: http://opensource.org/licenses/MIT
 
 // vim: set noet ts=8 sw=4 cino={0s:
@@ -161,6 +161,8 @@ const char c_long_usage[] =
 "  -Y			Abbreviate dates and times (implies -T).\n"
 "  -Z			Abbreviate file sizes as 1K, 15M, etc (implies -S).\n"
 "  --classify		Print '\\' by dir names and '@' by symlink names.\n"
+"  --compact		Use compact time format (short for\n"
+"			--time-style=compact).\n"
 "  --escape-codes[=WHEN]\n"
 "			For colors and hyperlinks in modern terminals.\n"
 "			  always, auto (default), never\n"
@@ -183,6 +185,8 @@ const char c_long_usage[] =
 "			lists, quashes volume/header/summary output, disables\n"
 "			filename justify, shows long file names, shows '-' as\n"
 "			size for dirs, and suppresses thousands separators.\n"
+"  --relative		Use relative time format (short for\n"
+"			--time-style=relative).\n"
 "  --size-style=STYLE	Which size format to use for display by default when\n"
 "			not overridden by other format options:\n"
 "			  mini, short, normal (default)\n"
