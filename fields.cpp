@@ -1024,7 +1024,8 @@ void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* which, co
 
             if (cbSize < 100000000)
             {
-                s.Printf(L"%*I64u ", max_width ? max_width : 8, cbSize);
+                assert(implies(max_width, max_width > 1));
+                s.Printf(L"%*I64u ", max_width ? max_width - 1 : 8, cbSize);
                 break;
             }
 
