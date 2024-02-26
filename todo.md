@@ -2,9 +2,6 @@
 
 ### BUGS
 
-### Next
-- Write README.md file as documentation.
-
 ### Back burner
 - Debugging output.
 - Default colors.  Maybe a few different preset options; basic, attributes, file types?
