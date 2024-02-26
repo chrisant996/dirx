@@ -1788,7 +1788,7 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
                 FieldInfo* const p = &m_fields.back();
                 p->m_field = FLD_FILESIZE;
                 p->m_chSubField = chSubField;
-                p->m_chStyle = chStyle;
+                p->m_chStyle = chStyle ? chStyle : s_size_style;
                 p->m_cchWidth = (m_fit_columns_to_contents && !m_settings.IsSet(FMT_ALTDATASTEAMS)) ? 0 : GetSizeFieldWidthByStyle(m_settings, chStyle);
                 if (!p->m_cchWidth)
                 {
@@ -1834,7 +1834,7 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
                 FieldInfo* const p = &m_fields.back();
                 p->m_field = FLD_DATETIME;
                 p->m_chSubField = chSubField;
-                p->m_chStyle = chStyle;
+                p->m_chStyle = chStyle ? chStyle : s_time_style;
                 p->m_cchWidth = GetTimeFieldWidthByStyle(m_settings, chStyle);
                 if (!p->m_cchWidth)
                 {
@@ -1914,13 +1914,6 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
                     {
                         // Ignore.
                     }
-                    else if (picture[1] == ':')
-                    {
-                        picture++;
-                        if (!picture[1])
-                            break;
-                        chStyle = picture[1];
-                    }
                     else
                     {
                         mask.Append(picture[1]);
@@ -1932,7 +1925,6 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
                     m_fields.emplace_back();
                 FieldInfo* const p = &m_fields.back();
                 p->m_field = FLD_ATTRIBUTES;
-                p->m_chStyle = chStyle;
                 p->m_cchWidth = mask.Length();
                 p->m_ichInsert = m_picture.Length();
                 p->m_masks = new std::vector<AttrChar>;
