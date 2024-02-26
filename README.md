@@ -45,7 +45,9 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 <tr><td><code>-c</code>, <code>--color</code></td><td>Display with colors (see <a href="#colors">Colors</a> for more info).</td></tr>
 <tr><td><code>-g</code>, <code>--git</code></td><td>List each file's git status.</td></tr>
 <tr><td><code>-gg</code>, <code>--git-repos</code></td><td>List status of git repo roots and each file's git status (or <code>--git-repos-no-status</code> to omit file status).</td></tr>
+<tr><td><code>-G</code>, <code>--grid</code></td><td>Synonym for <code>--wide</code>.</td></tr>
 <tr><td><code>-i</code>, <code>--icons[=WHEN]</code></td><td>Display file icons (use <a href="#icons">Icons</a> for more info).<br/><em>WHEN</em> can be <code>always</code>, <code>auto</code>, <code>never</code> (default).</td></tr>
+<tr><td><code>-k</code>, <code>--color-scale[=FIELD]</code></td><td>Highlight levels of certain fields distinctly.<br/><em>FIELD</em> can be <code>all</code>, <code>age</code>, <code>size</code>, <code>none</code> (default).</td></tr>
 <tr><td><code>-l</code>, <code>--long</code></td><td>Long mode; display one file per line, plus attributes.</td></tr>
 <tr><td><code>-n</code>, <code>--normal</code></td><td>Force normal list format even on FAT volumes.</td></tr>
 <tr><td><code>-Q</code>, <code>--quash[=TYPES]</code></td><td>Quash types of output.  Use <code>-Q</code> by itself as a synonym for <code>-Q+v+h+s</code>.<br/><em>TYPES</em> can be:
@@ -65,7 +67,6 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 <tr><td><code>--horizontal</code></td><td>Sort columns horizontally (the default).</td></tr>
 <tr><td><code>-w</code>, <code>--wide</code></td><td>Wide mode; show as many columns as fit.</td></tr>
 <tr><td><code>-z</code>, <code>--fat</code></td><td>Force FAT list format even on non-FAT volumes.</td></tr>
-<tr><td><code>-k</code>, <code>--color-scale[=FIELD]</code></td><td>Highlight levels of certain fields distinctly.<br/><em>FIELD</em> can be <code>all</code>, <code>age</code>, <code>size</code>, <code>none</code> (default).</td></tr>
 <tr><td><code>--color-scale-mode=MODE</code></td><td>Mode for <code>--color-scale</code> (see <a href="#colors">Colors</a> for more info).<br/><em>MODE</em> can be <code>fixed</code>, <code>gradient</code> (default).</td></tr>
 <tr><td><code>--hyperlinks</code></td><td>Display entries as hyperlinks.</td></tr>
 </table>
@@ -140,10 +141,6 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
     <tr><td><code>w</code></td><td>Write time (default).</td></tr>
     </table></td></tr>
 <tr><td><code>-x</code>, <code>--short-names</code></td><td>Show 8.3 short file names.</td></tr>
-<tr><td><code>--size-style=STYLE</code></td><td>Which size format to use for display by default when not overridden by other format options.<br/><em>STYLE</em> can be
-    <code>mini</code>, <code>short</code>, <code>normal</code> (default).</td></tr>
-<tr><td><code>--time-style=STYLE</code></td><td>Which time format to use for display by default when not overridden by other format options.<br/><em>STYLE</em> can be
-    <code>locale</code> (default), <code>mini</code>, <code>compact</code>, <code>short</code>, <code>normal</code>, <code>full</code>, <code>iso</code>, <code>long-iso</code>, <code>relative</code>.</td></tr>
 </table>
 
 #### Formatting Options
@@ -169,6 +166,10 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 <tr><td><code>--more-colors=LIST</td><td>Add color rules in the same format as the <code>DIRX_COLORS</code> environment variable (see <a href="#colors">Colors</a> for more info).</td></tr>
 <tr><td><code>--nerd-fonts=VER</td><td>Select which Nerd Fonts version to use (see <a href="#colors">Colors</a> for more info).</td></tr>
 <tr><td><code>--nix</td><td>Selects default options that are similar to Unix and Linux systems.  Hides files starting with <code>.</code>, skips recursing into hidden directories, sorts vertically, displays the file list in wide mode, selects <code>compact</code> time style, shows a mini directory header above file lists, quashes volume/header/summary output, disables filename justify, shows long file names, shows <code>-</code> as size for dirs, and suppresses thousands separators.</td></tr>
+<tr><td><code>--size-style=STYLE</code></td><td>Which size format to use for display by default when not overridden by other format options.<br/><em>STYLE</em> can be
+    <code>mini</code>, <code>short</code>, <code>normal</code> (default).</td></tr>
+<tr><td><code>--time-style=STYLE</code></td><td>Which time format to use for display by default when not overridden by other format options.<br/><em>STYLE</em> can be
+    <code>locale</code> (default), <code>mini</code>, <code>compact</code>, <code>short</code>, <code>normal</code>, <code>full</code>, <code>iso</code>, <code>long-iso</code>, <code>relative</code>.</td></tr>
 <tr><td><code>--truncate-char=HEX</td><td>Set the truncation character for file names that don't fit in the allotted space.  Specify a Unicode character value in hexadecimal (e.g. 2192 is a right-pointing arrow <code>&#x2192;</code>, 25b8 is a right-pointing triangle <code>&#x25b8;</code>).  Or specify 002e to use <code>..</code> (two periods).</td></tr>
 <tr><td><code>--utf8</td><td>When output is redirected, produce UTF8 output instead of using the system codepage.</td></tr>
 </table>
