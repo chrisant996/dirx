@@ -1259,7 +1259,7 @@ static void FormatRelativeTime(StrW& s, const FILETIME& ft, bool mini=false)
 
     if (delta < 60)
     {
-        PrintfRelative(s, 0, delta, mini);
+        PrintfRelative(s, 0, mini, delta);
         return;
     }
 
