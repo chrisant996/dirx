@@ -755,7 +755,8 @@ void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsigned ma
             s.AppendSpaces(max_width - name_width);
     }
 
-    if (classify || hyperlinks)
+    const WCHAR* nolines = StripLineStyles(color);
+    if (classify || hyperlinks || nolines != color)
     {
         unsigned spaces = 0;
         unsigned len = s.Length();
@@ -780,6 +781,8 @@ void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsigned ma
             }
             s.Append(&classify, 1);
         }
+        if (nolines != color)
+            s.AppendColor(nolines);
         s.AppendSpaces(spaces);
     }
 
