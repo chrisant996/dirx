@@ -30,45 +30,43 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 <tr><td><code>-? pictures</code></td><td>Display help text on format pictures.</td></tr>
 <tr><td><code>-? regex</code></td><td>Display help text on regular expression syntax.</td></tr>
 <tr><td><code>-V</code>, <code>--version</code></td><td>Display version information.</td></tr>
-<tr><td><code>-TEST</code></td><td><table><tr><td>one</td><td>two</td></tr><tr><td>one</td><td>two</td></tr></table></td></tr>
 </table>
 
 #### Display Options
 
-Flag | Description
--|-
-`-1` | Display one column per line.
-`-2` | Display two columns per line (more in wide consoles).
-`-4` | Display four columns per line (more in wide consoles).
-`-a`, `--all` | Display all files (include hidden and system files).
-`-b`, `--bare` | Bare mode; only display names, no header/detail/etc.
-`-c`, `--color` | Display with colors (use '-? colors' for more info).
-`-g`, `--git` | List each file's git status.
-`-gg`, `--git-repos` | List status of git repo roots and each file's git status (or --git-repos-no-status to omit file status).
-`-i`, `--icons[=WHEN]` | Display file icons (use '-? icons' for more info).<br/>`always`, `auto`, `never` (default)
-`-l`, `--long` | Long mode; display one file per line, plus attributes.
-`-n`, `--normal` | Force normal list format even on FAT volumes.
-`-Q`, `--quash[=TYPES]` | Quash types of output.  Use `-Q` by itself as a synonym for `-Q+v+h+s`.
-
-"			  v  Suppress the volume information\n"
-"			  h  Suppress the header\n"
-"			  s  Suppress the summary\n"
-"			  -  Prefix to suppress next type (the default)\n"
-"			  +  Prefix to un-suppress next type\n"
-
-Flag | Description
--|-
-`-p`, `--paginate` | Pause after each screen full of information.
-`-R` | Synonym for `--recurse`.
-`-s`, `--recurse` | Subdirectories; recursively display files in specified directory and all subdirectories.
-`-u`, `--usage` | Display directory size usage data.
-`-v`, `--vertical` | Sort columns vertically.
-`--horizontal` | Sort columns horizontally (the default).
-`-w`, `--wide` | Wide mode; show as many columns as fit.
-`-z`, `--fat` | Force FAT list format even on non-FAT volumes.
-`-k`, `--color-scale[=FIELD]` | Highlight levels of certain fields distinctly.<br/>`all`, `age`, `size`, `none` (default)
-`--color-scale-mode=MODE` | Mode for `--color-scale` (use `-? colors` for more info).<br/>`fixed`, `gradient` (default)
-`--hyperlinks` | Display entries as hyperlinks.
+<table>
+<tr><td><code>-1</code></td><td>Display one column per line.</td></tr>
+<tr><td><code>-2</code></td><td>Display two columns per line (more in wide consoles).</td></tr>
+<tr><td><code>-4</code></td><td>Display four columns per line (more in wide consoles).</td></tr>
+<tr><td><code>-a</code>, <code>--all</code></td><td>Display all files (include hidden and system files).</td></tr>
+<tr><td><code>-b</code>, <code>--bare</code></td><td>Bare mode; only display names, no header/detail/etc.</td></tr>
+<tr><td><code>-c</code>, <code>--color</code></td><td>Display with colors (use <code>-? colors</code> for more info).</td></tr>
+<tr><td><code>-g</code>, <code>--git</code></td><td>List each file's git status.</td></tr>
+<tr><td><code>-gg</code>, <code>--git-repos</code></td><td>List status of git repo roots and each file's git status (or <code>--git-repos-no-status</code> to omit file status).</td></tr>
+<tr><td><code>-i</code>, <code>--icons[=WHEN]</code></td><td>Display file icons (use <code>-? icons</code> for more info).<br/><em>WHEN</em> can be <code>always</code>, <code>auto</code>, <code>never</code> (default).</td></tr>
+<tr><td><code>-l</code>, <code>--long</code></td><td>Long mode; display one file per line, plus attributes.</td></tr>
+<tr><td><code>-n</code>, <code>--normal</code></td><td>Force normal list format even on FAT volumes.</td></tr>
+<tr><td><code>-Q</code>, <code>--quash[=TYPES]</code></td><td>Quash types of output.  Use <code>-Q</code> by itself as a synonym for <code>-Q+v+h+s</code>.<br/><em>TYPES</em> can be:
+    <table>
+    <tr><td><code>v</code></td><td>Suppress the volume information.</td></tr>
+    <tr><td><code>h</code></td><td>Suppress the header.</td></tr>
+    <tr><td><code>s</code></td><td>Suppress the summary.</td></tr>
+    <tr><td><code>-</code></td><td>Prefix to suppress next type (the default).</td></tr>
+    <tr><td><code>+</code></td><td>Prefix to un-suppress next type.</td></tr>
+    </table>
+    </td></tr>
+<tr><td><code>-p</code>, <code>--paginate</code></td><td>Pause after each screen full of information.</td></tr>
+<tr><td><code>-R</code></td><td>Synonym for <code>--recurse</code>.</td></tr>
+<tr><td><code>-s</code>, <code>--recurse</code></td><td>Subdirectories; recursively display files in specified directory and all subdirectories.</td></tr>
+<tr><td><code>-u</code>, <code>--usage</code></td><td>Display directory size usage data.</td></tr>
+<tr><td><code>-v</code>, <code>--vertical</code></td><td>Sort columns vertically.</td></tr>
+<tr><td><code>--horizontal</code></td><td>Sort columns horizontally (the default).</td></tr>
+<tr><td><code>-w</code>, <code>--wide</code></td><td>Wide mode; show as many columns as fit.</td></tr>
+<tr><td><code>-z</code>, <code>--fat</code></td><td>Force FAT list format even on non-FAT volumes.</td></tr>
+<tr><td><code>-k</code>, <code>--color-scale[=FIELD]</code></td><td>Highlight levels of certain fields distinctly.<br/><code>all</code>, <code>age</code>, <code>size</code>, <code>none</code> (default).</td></tr>
+<tr><td><code>--color-scale-mode=MODE</code></td><td>Mode for <code>--color-scale</code> (use <code>-? colors</code> for more info).<br/><code>fixed</code>, <code>gradient</code> (default).</td></tr>
+<tr><td><code>--hyperlinks</code></td><td>Display entries as hyperlinks.</td></tr>
+</table>
 
 #### Filtering and Sorting Options
 
