@@ -1,4 +1,4 @@
-# DirX - the `dir` command, extended
+﻿# DirX - the `dir` command, extended
 
 Displays a list of file and subdirectories in a directory.
 
