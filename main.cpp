@@ -905,7 +905,7 @@ unrecognized_long_opt_value:
     if (flags & FMT_BARE)
     {
         flags &= ~(FMT_ALTDATASTEAMS|FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
-        SetUseIcons(L"never");
+        SetUseIcons(L"never", true/*unless_always*/);
     }
 
     if (flags & FMT_SEPARATETHOUSANDS)
