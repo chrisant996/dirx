@@ -45,7 +45,7 @@ const char c_long_usage[] =
 "  -l, --long		Long mode; display one file per line, plus attributes.\n"
 "  -n, --normal		Force normal list format even on FAT volumes.\n"
 "  -Q, --quash[=TYPES]	Quash types of output.  Use -Q by itself as a synonym\n"
-"			for -Q+v+h+s."
+"			for -Q+v+h+s.\n"
 "			  v  Suppress the volume information\n"
 "			  h  Suppress the header\n"
 "			  s  Suppress the summary\n"
