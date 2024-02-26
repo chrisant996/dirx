@@ -1435,7 +1435,7 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
             }
             else
             {
-                s.Printf(L"%2u/%02u %2u:%02u",
+                s.Printf(L"%2u/%02u %02u:%02u",
                          systime.wMonth,
                          systime.wDay,
                          systime.wHour,
