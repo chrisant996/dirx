@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 by Christopher Antos
+// Copyright (c) 2024 by Christopher Antos
 // License: http://opensource.org/licenses/MIT
 
 // vim: set noet ts=8 sw=4 cino={0s:
@@ -168,12 +168,12 @@ const char c_long_usage[] =
 "  -Y			Abbreviate dates and times (implies -T).\n"
 "  -Z			Abbreviate file sizes as 1K, 15M, etc (implies -S).\n"
 "  --classify		Print '\\' by dir names and '@' by symlink names.\n"
-"  --compact-columns	Fit more columns in -w mode by compacting column widths\n"
-"			to fit their content (this is the default; use\n"
-"			--no-compact-columns to disable it).\n"
 "  --escape-codes[=WHEN]\n"
 "			For colors and hyperlinks in modern terminals.\n"
 "			  always, auto (default), never\n"
+"  --fit-columns		Fit more columns in -w mode by compacting column widths\n"
+"			to fit their content (this is the default; use\n"
+"			--no-fit-columns to disable it).\n"
 "  --lower		Show file names using lower case.\n"
 "  --mini-bytes		Show bytes in the mini size format when less than 1000.\n"
 "  --mini-header		Show a mini header of just the directory name above\n"
@@ -199,8 +199,8 @@ const char c_long_usage[] =
 "			of using the system codepage.\n"
 "\n"
 "Long options that can be used without an argument also accept a 'no-' prefix\n"
-"to disable them.  For example, the --compact-columns option is enabled by\n"
-"default, and using --no-compact-columns disables it.\n"
+"to disable them.  For example, the --fit-columns option is enabled by default,\n"
+"and using --no-fit-columns disables it.\n"
 "\n"
 "Environment variables:\n"
 "\n"

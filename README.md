@@ -1,4 +1,4 @@
-﻿# DirX - the `dir` command, extended
+# DirX - the `dir` command, extended
 
 Displays a list of file and subdirectories in a directory.
 
@@ -161,8 +161,8 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 <tr><td><code>-Y</td><td>Abbreviate dates and times (implies <code>-T</code>).</td></tr>
 <tr><td><code>-Z</td><td>Abbreviate file sizes as 1K, 15M, etc (implies <code>-S</code>).</td></tr>
 <tr><td><code>--classify</td><td>Print <code>\</code> by dir names and <code>@</code> by symlink names.</td></tr>
-<tr><td><code>--compact-columns</td><td>Fit more columns in <code>-w</code> mode by compacting column widths to fit their content (this is the default; use <code>--no-compact-columns</code> to disable it).</td></tr>
 <tr><td><code>--escape-codes[=WHEN]</td><td>For colors and hyperlinks in modern terminals.<br/><em>WHEN</em> can be <code>always</code>, <code>auto</code> (default), <code>never</code>.</td></tr>
+<tr><td><code>--fit-columns</td><td>Fit more columns in <code>-w</code> mode by compacting column widths to fit their content (this is the default; use <code>--no-fit-columns</code> to disable it).</td></tr>
 <tr><td><code>--lower</td><td>Show file names using lower case.</td></tr>
 <tr><td><code>--mini-bytes</td><td>Show bytes in the mini size format when less than 1000.</td></tr>
 <tr><td><code>--mini-header</td><td>Show a mini header of just the directory name above each directory listing (if more than one directory).</td></tr>
@@ -173,7 +173,7 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 <tr><td><code>--utf8</td><td>When output is redirected, produce UTF8 output instead of using the system codepage.</td></tr>
 </table>
 
-Long options that can be used without an argument also accept a `no-` prefix to disable them.  For example, the `--compact-columns` option is enabled by default, and using `--no-compact-columns` disables it.
+Long options that can be used without an argument also accept a `no-` prefix to disable them.  For example, the `--fit-columns` option is enabled by default, and using `--no-fit-columns` disables it.
 
 #### Environment Variables
 

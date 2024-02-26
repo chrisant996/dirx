@@ -137,10 +137,10 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_COLOR_SCALE,
         LOI_NO_COLOR_SCALE,
         LOI_COLOR_SCALE_MODE,
-        LOI_COMPACT_COLUMNS,
-        LOI_NO_COMPACT_COLUMNS,
         LOI_ESCAPE_CODES,
         LOI_NO_FAT,
+        LOI_FIT_COLUMNS,
+        LOI_NO_FIT_COLUMNS,
         LOI_NO_FULL_PATHS,
         LOI_GIT,
         LOI_NO_GIT,
@@ -201,11 +201,11 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"color-scale",           nullptr,            LOI_COLOR_SCALE,        LOHA_OPTIONAL },
         { L"no-color-scale",        nullptr,            LOI_NO_COLOR_SCALE },
         { L"color-scale-mode",      nullptr,            LOI_COLOR_SCALE_MODE,   LOHA_REQUIRED },
-        { L"compact-columns",       nullptr,            LOI_COMPACT_COLUMNS },
-        { L"no-compact-columns",    nullptr,            LOI_NO_COMPACT_COLUMNS },
         { L"escape-codes",          nullptr,            LOI_ESCAPE_CODES,       LOHA_OPTIONAL },
         { L"fat",                   nullptr,            'z' },
         { L"no-fat",                nullptr,            LOI_NO_FAT },
+        { L"fit-columns",           nullptr,            LOI_FIT_COLUMNS },
+        { L"no-fit-columns",        nullptr,            LOI_NO_FIT_COLUMNS },
         { L"full-paths",            nullptr,            'F' },
         { L"no-full-paths",         nullptr,            LOI_NO_FULL_PATHS },
         { L"git",                   nullptr,            LOI_GIT },
@@ -664,9 +664,9 @@ unrecognized_long_opt_value:
             case LOI_NO_CLASSIFY:           flagsOFF = FMT_CLASSIFY; break;
             case LOI_NO_COLOR:              flagsOFF = FMT_COLORS; break;
             case LOI_NO_COLOR_SCALE:        SetColorScale(L"none"); break;
-            case LOI_COMPACT_COLUMNS:       SetCanAutoFit(true); break;
-            case LOI_NO_COMPACT_COLUMNS:    SetCanAutoFit(false); break;
             case LOI_NO_FAT:                flagsOFF = FMT_FAT; break;
+            case LOI_FIT_COLUMNS:           SetCanAutoFit(true); break;
+            case LOI_NO_FIT_COLUMNS:        SetCanAutoFit(false); break;
             case LOI_NO_FULL_PATHS:         flagsOFF = FMT_FULLNAME|FMT_FORCENONFAT|FMT_HIDEPSEUDODIRS; break;
             case LOI_GIT:                   flagsON = FMT_GIT; break;
             case LOI_NO_GIT:                flagsOFF = FMT_GIT|FMT_GITREPOS; break;
