@@ -170,6 +170,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_NO_NORMAL,
         LOI_NO_OWNER,
         LOI_NO_RATIO,
+        LOI_REVERSE,
+        LOI_NO_REVERSE,
         LOI_NO_SHORT_NAMES,
         LOI_SIZE,
         LOI_NO_SIZE,
@@ -246,6 +248,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"ratio",                 nullptr,            'C' },
         { L"no-ratio",              nullptr,            LOI_NO_RATIO },
         { L"recurse",               nullptr,            's' },
+        { L"reverse",               nullptr,            LOI_REVERSE },
+        { L"no-reverse",            nullptr,            LOI_NO_REVERSE },
         { L"short-names",           nullptr,            'x' },
         { L"no-short-names",        nullptr,            LOI_NO_SHORT_NAMES },
         { L"size",                  nullptr,            LOI_SIZE,               LOHA_OPTIONAL },
@@ -685,6 +689,8 @@ unrecognized_long_opt_value:
             case LOI_NO_NORMAL:             flagsOFF = FMT_FORCENONFAT; break;
             case LOI_NO_OWNER:              flagsOFF = FMT_SHOWOWNER; break;
             case LOI_NO_RATIO:              flagsOFF = FMT_COMPRESSED; break;
+            case LOI_REVERSE:               SetReverseSort(true); break;
+            case LOI_NO_REVERSE:            SetReverseSort(false); break;
             case LOI_NO_SHORT_NAMES:        flagsOFF = FMT_SHORTNAMES; break;
             case LOI_NO_STREAMS:            flagsOFF = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;
             case LOI_STRING_SORT:           g_dwCmpStrFlags |= SORT_STRINGSORT; break;

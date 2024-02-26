@@ -120,6 +120,7 @@ const char c_long_usage[] =
 "  --git-ignore		Ignore files mentioned in .gitignore files.\n"
 "  --hide-dot-files	Hide file and directory names starting with '.' or '_'.\n"
 "			Using -a overrides this and shows them anyway.\n"
+"  --reverse		Reverse the selected sort order.\n"
 "  --string-sort		Sort punctuation as symbols.\n"
 "  --word-sort		Sort punctuation as part of the word (default).\n"
 "\n"

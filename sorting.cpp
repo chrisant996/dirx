@@ -12,6 +12,9 @@ static bool s_ascii_sort = false;
 static bool s_reverse_all = false;
 static bool s_explicit_extension = false;
 
+// Reverses the combination of g_sort_order and s_reverse_all.
+static bool s_reverse_sort_order = false;
+
 WCHAR g_sort_order[10] = L"";
 
 void SetSortOrder(const WCHAR* order, Error& e)
@@ -72,6 +75,11 @@ void SetSortOrder(const WCHAR* order, Error& e)
     }
 
     assert(!*set);
+}
+
+void SetReverseSort(bool reverse)
+{
+    s_reverse_sort_order = reverse;
 }
 
 inline bool IsBeginNumeric(const WCHAR* p)
@@ -212,7 +220,7 @@ bool CmpFileInfo(const std::unique_ptr<FileInfo>& fi1, const std::unique_ptr<Fil
     int n = 0;
     for (const WCHAR* order = g_sort_order; !n && *order; order++)
     {
-        const bool reverse = (*order == '-') ^ s_reverse_all;
+        bool reverse = (*order == '-');
 
         if (reverse)
         {
@@ -220,6 +228,8 @@ bool CmpFileInfo(const std::unique_ptr<FileInfo>& fi1, const std::unique_ptr<Fil
             if (!*order)
                 break;
         }
+
+        reverse = (reverse ^ s_reverse_all ^ s_reverse_sort_order);
 
         switch (*order)
         {

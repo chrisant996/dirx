@@ -15,6 +15,7 @@ struct SubDir;
 extern WCHAR g_sort_order[10];
 
 void SetSortOrder(const WCHAR* order, Error& e);
+void SetReverseSort(bool reverse);
 
 int CmpStrN(const WCHAR* p1, int len1, const WCHAR* p2, int len2);
 int CmpStrNI(const WCHAR* p1, int len1, const WCHAR* p2, int len2);

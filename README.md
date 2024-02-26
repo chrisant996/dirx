@@ -113,6 +113,7 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 <tr><td><code>--git-ignore</code></td><td>Ignore files mentioned in .gitignore files.</td></tr>
 <tr><td><code>--hide-dot-files</code></td><td>Hide file and directory names starting with <code>.</code> or <code>_</code>.<br/>
     Using <code>-a</code> overrides this and shows them anyway.</td></tr>
+<tr><td><code>--reverse</code></td><td>Reverse the selected sort order.</td></tr>
 <tr><td><code>--string-sort</code></td><td>Sort punctuation as symbols.</td></tr>
 <tr><td><code>--word-sort</code></td><td>Sort punctuation as part of the word (default).</td></tr>
 </table>
