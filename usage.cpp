@@ -223,8 +223,8 @@ const char c_help_colors[] =
 "separate them and build a list of many coloring rules.\n"
 "\n"
 "The list can start with the special keyword \"reset\" to clear all default\n"
-"color rules and any rules that may have been provided in the EZA_COLORS,\n"
-"EXA_COLORS, and LS_COLORS environment variables.\n"
+"color rules and any rules that may have been provided in the LS_COLORS\n"
+"environment variable.\n"
 "\n"
 "Examples:\n"
 "  sc=93:bu=93;4:cm=38;5;172:\n"
@@ -260,7 +260,7 @@ const char c_help_colors[] =
 "  ex  executable          mu  music               cm  compiled\n"
 "  do  document            lo  lossless music      bu  build\n"
 "  im  image               cR  compressed type     sc  source code\n"
-"  vi  video               tm  temporary type      cr  crypto\n"
+"  vi  video               tX  temporary type      cr  crypto\n"
 "\n"
 "Special groups:\n"
 "  co  compressed (includes both cR and cT)\n"
@@ -325,8 +325,7 @@ const char c_help_colors[] =
 "named \"ro\" instead of read-only files.\n"
 "\n"
 "A pattern by itself with no types applies only to files, not directories.\n"
-"To specify a pattern that matches anything, use  directories, combine di and the pattern.\n"
-"To specify a pattern that matches "
+"To specify a pattern that matches anything, combine di and the pattern.\n"
 "\n"
 "COLOR syntax:\n"
 "\n"
@@ -410,12 +409,12 @@ const char c_help_icons[] =
 ;
 
 const WCHAR c_help_icons_examples[] =
-L"   archive.zip        LICENSE\n"
-L"   clink.lua          main.cpp\n"
-L"   image.png          music.mp3\n"
-L"   diffs.patch        README.md\n"
-L"   document.doc       script.cmd\n"
-L"   Folder             todo.md\n"
+L"   archive.zip        main.cpp\n"
+L"   clink.lua          music.mp3\n"
+L"   image.png          python.py\n"
+L"   document.doc       README.md\n"
+L"   Folder             script.cmd\n"
+L"   LICENSE            todo.md\n"
 ;
 
 const char c_help_pictures[] =
@@ -560,7 +559,7 @@ static const char c_help_regex[] =
 "		' abc ' but not abcx or xabc or xabcx).\n"
 "  \\B		Matches the null string not at a word boundary (\\Babc matches\n"
 "		xabc but not ' abc').\n"
-"  \\x		Some x characters have special meaning (refer to the the full\n"
+"  \\x		Some x characters have special meaning (refer to the full\n"
 "		documentation).  For other characters, \\x literally matches the\n"
 "		character x.  Some characters require \\x to match them,\n"
 "		including ^, $, ., [, (, ), |, !, ?, +, *, and \\.\n"
