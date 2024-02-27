@@ -73,6 +73,7 @@ private:
 struct SubDir
 {
     StrW                dir;
+    StrW                dir_rel;
     unsigned            depth;
     std::shared_ptr<const GlobPatterns> git_ignore;
     std::shared_ptr<const RepoStatus> repo;
@@ -89,6 +90,7 @@ struct DirPattern
     std::vector<GlobPatterns> m_ignore;
     std::shared_ptr<const RepoStatus> m_repo;
     StrW                m_dir;
+    StrW                m_dir_rel;
     bool                m_isFAT;
     bool                m_implicit;
     unsigned            m_depth = 0;

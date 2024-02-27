@@ -371,7 +371,7 @@ void DirEntryFormatter::OnScanFiles(const WCHAR* dir, const WCHAR* pattern, bool
     }
 }
 
-void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const std::shared_ptr<const RepoStatus>& repo)
+void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const WCHAR* const dir_rel, const std::shared_ptr<const RepoStatus>& repo)
 {
     const bool fReset = (Settings().IsSet(FMT_USAGEGROUPED) ?
                          (IsRootSubDir() || IsNewRootGroup(dir)) :
@@ -404,7 +404,10 @@ void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const std::shar
                 context->dir.Set(short_name);
         }
         if (context->dir.Empty())
+        {
             context->dir.Set(dir);
+            context->dir_rel.Set(dir_rel);
+        }
 
         class OutputDirectoryContext : public OutputOperation
         {
@@ -458,13 +461,16 @@ void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const std::shar
 static void DisplayOne(HANDLE h, const FileInfo* const pfi, const FileInfo* const stream, const DirContext* const dir)
 {
     StrW s;
+    FormatFlags flags = dir->flags;
 
-    if (dir->flags & FMT_BARE)
+    if (flags & FMT_BARE)
     {
         assert(!pfi->IsPseudoDirectory());
 
-        const FormatFlags flags_adjusted = (dir->flags & FMT_SUBDIRECTORIES) ? dir->flags|FMT_FULLNAME : dir->flags;
-        FormatFilename(s, pfi, flags_adjusted, 0, dir->dir.Text(), SelectColor(pfi, flags_adjusted, dir->dir.Text()));
+        if (flags & FMT_SUBDIRECTORIES)
+            flags |= FMT_FULLNAME;
+        const WCHAR* dir_str = (flags & FMT_BARERELATIVE) ? dir->dir_rel.Text() : dir->dir.Text();
+        FormatFilename(s, pfi, flags, 0, dir_str, SelectColor(pfi, flags, dir->dir.Text()));
     }
     else
     {
@@ -1061,13 +1067,14 @@ void DirEntryFormatter::ReportError(Error& e)
     Render(new OutputErrorMessage(std::move(s)));
 }
 
-void DirEntryFormatter::AddSubDir(const StrW& dir, unsigned depth, const std::shared_ptr<const GlobPatterns>& git_ignore, const std::shared_ptr<const RepoStatus>& repo)
+void DirEntryFormatter::AddSubDir(const StrW& dir, const StrW& dir_rel, unsigned depth, const std::shared_ptr<const GlobPatterns>& git_ignore, const std::shared_ptr<const RepoStatus>& repo)
 {
     assert(Settings().IsSet(FMT_SUBDIRECTORIES));
     assert(!IsPseudoDirectory(dir.Text()));
 
     SubDir subdir;
     subdir.dir.Set(dir);
+    subdir.dir_rel.Set(dir_rel);
     subdir.depth = depth;
     subdir.git_ignore = git_ignore;
     m_subdirs.emplace_back(std::move(subdir));
@@ -1100,11 +1107,12 @@ void DirEntryFormatter::SortSubDirs()
         std::sort(m_subdirs.begin(), m_subdirs.end(), CmpSubDirs);
 }
 
-bool DirEntryFormatter::NextSubDir(StrW& dir, unsigned& depth, std::shared_ptr<const GlobPatterns>& git_ignore, std::shared_ptr<const RepoStatus>& repo)
+bool DirEntryFormatter::NextSubDir(StrW& dir, StrW& dir_rel, unsigned& depth, std::shared_ptr<const GlobPatterns>& git_ignore, std::shared_ptr<const RepoStatus>& repo)
 {
     if (m_subdirs.empty())
     {
         dir.Clear();
+        dir_rel.Clear();
         depth = 0;
         git_ignore.reset();
         repo.reset();
@@ -1112,6 +1120,7 @@ bool DirEntryFormatter::NextSubDir(StrW& dir, unsigned& depth, std::shared_ptr<c
     }
 
     dir = std::move(m_subdirs[0].dir);
+    dir_rel = std::move(m_subdirs[0].dir_rel);
     depth = m_subdirs[0].depth;
     git_ignore = std::move(m_subdirs[0].git_ignore);
     repo = std::move(m_subdirs[0].repo);

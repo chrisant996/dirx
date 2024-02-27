@@ -19,6 +19,7 @@ struct DirContext
 {
                         DirContext(FormatFlags flags, const std::shared_ptr<PictureFormatter>& picture) : flags(flags), picture(picture) {}
     StrW                dir;
+    StrW                dir_rel;                // dir, but relative to the original pattern.
     FormatFlags         flags;
     std::shared_ptr<PictureFormatter> picture;
     std::shared_ptr<const RepoStatus> repo;
@@ -52,15 +53,15 @@ public:
     bool                OnVolumeBegin(const WCHAR* dir, Error& e) override;
     void                OnPatterns(bool grouped) override;
     void                OnScanFiles(const WCHAR* dir, const WCHAR* pattern, bool implicit, bool root_pass) override;
-    void                OnDirectoryBegin(const WCHAR* dir, const std::shared_ptr<const RepoStatus>& repo) override;
+    void                OnDirectoryBegin(const WCHAR* dir, const WCHAR* dir_rel, const std::shared_ptr<const RepoStatus>& repo) override;
     void                OnFile(const WCHAR* dir, const WIN32_FIND_DATA* pfd) override;
     void                OnDirectoryEnd(bool next_dir_is_different) override;
     void                OnVolumeEnd(const WCHAR* dir) override;
     void                Finalize() override;
     void                ReportError(Error& e) override;
-    void                AddSubDir(const StrW& dir, unsigned depth, const std::shared_ptr<const GlobPatterns>& git_ignore, const std::shared_ptr<const RepoStatus>& repo) override;
+    void                AddSubDir(const StrW& dir, const StrW& dir_rel, unsigned depth, const std::shared_ptr<const GlobPatterns>& git_ignore, const std::shared_ptr<const RepoStatus>& repo) override;
     void                SortSubDirs() override;
-    bool                NextSubDir(StrW& dir, unsigned& depth, std::shared_ptr<const GlobPatterns>& git_ignore, std::shared_ptr<const RepoStatus>& repo) override;
+    bool                NextSubDir(StrW& dir, StrW& dir_rel, unsigned& depth, std::shared_ptr<const GlobPatterns>& git_ignore, std::shared_ptr<const RepoStatus>& repo) override;
     unsigned            CountFiles() const override { return m_cFiles; }
     unsigned            CountDirs() const override { return m_cDirs; }
     bool                IsOnlyRootSubDir() const override;

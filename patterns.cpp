@@ -97,10 +97,16 @@ static void AdjustSlashes(StrW& s, const WCHAR*& regex)
     }
 }
 
-static void AdjustPattern(StrW& pattern, const WCHAR* regex, bool isFAT, StrW& dir, bool& implicit, Error& e)
+static void AdjustPattern(DirPattern* p, const WCHAR* regex, Error& e)
 {
+    StrW& pattern = p->m_patterns[0];
+    StrW& dir = p->m_dir;
+    bool& implicit = p->m_implicit;
+
     assert(pattern.Length());
     assert(!dir.Length());
+
+    bool dir_rel_finished = false;
 
     // If the pattern is a directory, append * as the wildcard.
 
@@ -118,8 +124,16 @@ static void AdjustPattern(StrW& pattern, const WCHAR* regex, bool isFAT, StrW& d
         if (is_dir)
         {
             if (IsDriveOnly(pattern.Text()))
+            {
                 GetCwd(pattern, *pattern.Text());
+                dir_rel_finished = true;
+            }
             EnsureTrailingSlash(pattern);
+            if (!dir_rel_finished)
+            {
+                EnsureTrailingSlash(p->m_dir_rel);
+                dir_rel_finished = true;
+            }
             pattern.Append('*');
             implicit = true;
         }
@@ -169,12 +183,18 @@ static void AdjustPattern(StrW& pattern, const WCHAR* regex, bool isFAT, StrW& d
     if (strip != pattern.Text())
         pattern.Set(strip);
 
+    if (!dir_rel_finished)
+    {
+        strip = FindName(p->m_dir_rel.Text());
+        p->m_dir_rel.SetLength(strip - p->m_dir_rel.Text());
+    }
+
     // If the file system is FAT then we have to be explicit about where "*"
     // is specified in a name.
     //      - ".foo"  -->  prepend "*"  -->  "*.foo"
     //      - "*"     -->  append ".*"  -->  "*.*"
 
-    if (isFAT)
+    if (p->m_isFAT)
     {
         if (*pattern.Text() == '.')
         {
@@ -211,7 +231,7 @@ static void AdjustPattern(StrW& pattern, const WCHAR* regex, bool isFAT, StrW& d
         DWORD len = GetFullPathName(dir.Text(), full.Capacity(), full.Reserve(), &file_part);
 
         if (len)
-            len += isFAT ? 4 : 2; // Backslash and star (dot star).
+            len += p->m_isFAT ? 4 : 2; // Backslash and star (dot star).
 
         if (!len)
         {
@@ -292,6 +312,7 @@ DirPattern* MakePatterns(int argc, const WCHAR** argv, const DirFormatSettings& 
         DirPattern* const p = new DirPattern;
         p->m_patterns.emplace_back();
         p->m_patterns.back().Set(argv[0]);
+        p->m_dir_rel.Set(argv[0]);
         AppendToTail(patterns, tail, p);
         argc--;
         argv++;
@@ -302,6 +323,7 @@ DirPattern* MakePatterns(int argc, const WCHAR** argv, const DirFormatSettings& 
         DirPattern* const p = new DirPattern;
         p->m_patterns.emplace_back();
         GetCwd(p->m_patterns.back());
+        assert(p->m_dir_rel.Empty());
         AppendToTail(patterns, tail, p);
     }
 
@@ -322,7 +344,8 @@ DirPattern* MakePatterns(int argc, const WCHAR** argv, const DirFormatSettings& 
         if (e.Test())
             return nullptr;
 
-        AdjustPattern(p->m_patterns[0], regex, p->m_isFAT, p->m_dir, p->m_implicit, e);
+        assert(p->m_patterns.size() == 1);
+        AdjustPattern(p, regex, e);
         if (e.Test())
             return nullptr;
 

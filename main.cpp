@@ -927,6 +927,7 @@ unrecognized_long_opt_value:
         flags |= FMT_FULLSIZE;
     if (flags & FMT_BARE)
     {
+        flags |= FMT_HIDEPSEUDODIRS;
         flags &= ~(FMT_ALTDATASTEAMS|FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
         SetUseIcons(L"never", true/*unless_always*/);
     }
@@ -944,7 +945,7 @@ unrecognized_long_opt_value:
         flags &= (FMT_MINISIZE|FMT_LOWERCASE|FMT_FULLSIZE|FMT_COMPRESSED|
                   FMT_SEPARATETHOUSANDS|FMT_REDIRECTED|FMT_AUTOSEPTHOUSANDS|
                   FMT_USAGE|FMT_USAGEGROUPED|FMT_MINIDATE);
-        flags |= FMT_BARE|FMT_SUBDIRECTORIES;
+        flags |= FMT_BARE|FMT_SUBDIRECTORIES|FMT_HIDEPSEUDODIRS;
         limit_depth = -1;
     }
 

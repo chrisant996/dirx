@@ -85,7 +85,7 @@ bool RegExpHelper::Match(const WCHAR* s)
  * Scan directories and files.
  */
 
-static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir,
+static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const WCHAR* dir_rel,
                       unsigned depth, const DirPattern* pattern,
                       const bool top, unsigned limit_depth,
                       const std::shared_ptr<const GlobPatterns>& git_ignore,
@@ -103,6 +103,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir,
 
     callbacks.OnPatterns(pattern->m_patterns.size() > 1);
 
+    StrW s2;
     bool any_files_found = false;
     bool any_headers_displayed = false;
     bool call_OnDirectoryEnd = false;
@@ -115,8 +116,12 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir,
             return false;
 
         StrW s;
+        StrW rel_parent;
         s.Set(dir);
+        rel_parent.Set(dir_rel);
         EnsureTrailingSlash(s);
+        if (rel_parent.Length() && rel_parent.Text()[rel_parent.Length() - 1] != ':')
+            EnsureTrailingSlash(rel_parent);
         if (usage || reh.IsRegex())
             s.Append(callbacks.Settings().IsSet(FMT_FAT) ? L"*.*" : L"*");
         else
@@ -130,7 +135,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir,
 
         if (usage && !ii && (implicit || !callbacks.IsRootSubDir()))
         {
-            callbacks.OnDirectoryBegin(dir, repo);
+            callbacks.OnDirectoryBegin(dir, dir_rel, repo);
             displayed_header = true;
             any_headers_displayed = true;
         }
@@ -176,7 +181,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir,
 
                     if (!displayed_header)
                     {
-                        callbacks.OnDirectoryBegin(dir, repo);
+                        callbacks.OnDirectoryBegin(dir, dir_rel, repo);
                         displayed_header = true;
                         any_headers_displayed = true;
                     }
@@ -255,7 +260,11 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir,
                     strip = FindName(s.Text());
                     s.SetEnd(strip);
                     s.Append(fd.cFileName);
-                    callbacks.AddSubDir(s, new_depth, git_ignore, repo);
+                    s2.Set(rel_parent);
+                    if (s2.Length() && s2.Text()[s2.Length() - 1] != ':')
+                        EnsureTrailingSlash(s2);
+                    s2.Append(fd.cFileName);
+                    callbacks.AddSubDir(s, s2, new_depth, git_ignore, repo);
                 }
                 while (FindNextFile(shFind, &fd));
 
@@ -285,6 +294,7 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
     // Find matching files, recursing into subdirectories as needed.
 
     StrW dir;
+    StrW dir_rel;
     StrW drive;
     StrW prev_drive;
     StrW prev_drive_dir; // OnVolumeBegin/OnVolumeEnd take a dir because they need to test for failure when converting the dir to a drive.
@@ -303,6 +313,7 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
         }
 
         dir.Set(p->m_dir);
+        dir_rel.Set(p->m_dir_rel);
         unsigned depth = p->m_depth;
 
         bool top = true;
@@ -346,7 +357,7 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
             if (!dir.Length())
                 break;
 
-            if (ScanFiles(callbacks, dir.Text(), depth, p, top, limit_depth, git_ignore, repo, e))
+            if (ScanFiles(callbacks, dir.Text(), dir_rel.Text(), depth, p, top, limit_depth, git_ignore, repo, e))
             {
                 any_files_found = true;
                 // REVIEW: Does rc=0 match CMD DIR behavior?
@@ -398,7 +409,7 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
             // out if this is the last pattern, because then we'd
             // accidentally skip the summary information.
 
-            if (!callbacks.NextSubDir(dir, depth, git_ignore, repo) && p->m_next)
+            if (!callbacks.NextSubDir(dir, dir_rel, depth, git_ignore, repo) && p->m_next)
                 break;
         }
 
