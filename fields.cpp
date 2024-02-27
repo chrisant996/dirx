@@ -1819,11 +1819,13 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
                 if (!p->m_cchWidth)
                 {
                     const WhichFileSize which = WhichFileSizeByField(m_settings, chSubField);
-                    assert(implies(m_finished_initial_parse, fields[m_fields.size()].m_cchWidth));
                     if (m_finished_initial_parse)
-                        p->m_cchWidth = fields[m_fields.size()].m_cchWidth;
-                    else
-                        m_need_filesize_width = true;
+                    {
+                        const FieldInfo& old_field = fields[m_fields.size() - 1];
+                        assert(implies(m_finished_initial_parse, old_field.m_cchWidth));
+                        p->m_cchWidth = old_field.m_cchWidth;
+                    }
+                    m_need_filesize_width = true;
                 }
                 p->m_ichInsert = m_picture.Length();
                 m_picture.Append('!');
