@@ -1,4 +1,4 @@
-// Copyright (c) 2024 by Christopher Antos
+﻿// Copyright (c) 2024 by Christopher Antos
 // License: http://opensource.org/licenses/MIT
 
 // vim: set noet ts=8 sw=4 cino={0s:
@@ -163,7 +163,7 @@ const char c_long_usage[] =
 "  -Z			Abbreviate file sizes as 1K, 15M, etc (implies -S).\n"
 "  --bare-relative	When listing subdirectories recursively, print paths\n"
 "			relative to the specified patterns instead of expanding\n"
-"			them to fully qualified paths.\n"
+"			them to fully qualified paths (implies --bare).\n"
 "  --classify		Print '\\' by dir names and '@' by symlink names.\n"
 "  --compact		Use compact time format (short for --time and\n"
 "			--time-style=compact).\n"

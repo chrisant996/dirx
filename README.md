@@ -87,6 +87,7 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
     <tr><td><code>+</code> Prefix meaning any</td></tr>
     <tr><td><code>-</code> Prefix meaning not</td></tr>
     </table></td></tr>
+<tr><td><code>-A</code>, <code>--almost-all</code></td><td>Display all files, except hide . and .. directories.</td></tr>
 <tr><td><code>-h</code></td><td>Hide . and .. directories.</td></tr>
 <tr><td><code>-I</code>, <code>--ignore-glob=GLOB</code></td><td>Glob patterns of files to ignore; the syntax is the same as in <code>.gitignore</code>.  The <code>/</code> is used as the directory separator.  An optional <code>!</code> prefix negates a pattern; any matching file excluded by a previous pattern will be included again.  Multiple patterns may be specified separated by a <code>;</code> or <code>|</code> character.</td></tr>
 <tr><td><code>-L</code>, <code>--levels=DEPTH</code></td><td>Limit the depth of recursion with <code>-s</code>.</td></tr>
@@ -157,8 +158,9 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 <tr><td><code>-W, --width=COLS</td><td>Override the screen width.</td></tr>
 <tr><td><code>-Y</td><td>Abbreviate dates and times (implies <code>-T</code>).</td></tr>
 <tr><td><code>-Z</td><td>Abbreviate file sizes as 1K, 15M, etc (implies <code>-S</code>).</td></tr>
+<tr><td><code>--bare-relative</code></td><td>When listing subdirectories recursively, print paths relative to the specified patterns instead of expanding them to fully qualified paths (implies <code>--bare</code>).</td></tr>
 <tr><td><code>--classify</td><td>Print <code>\</code> by dir names and <code>@</code> by symlink names.</td></tr>
-<tr><td><code>--compact</code></td><td>Use compact time style (same as <code>--time-style=compact</code>).</td></tr>
+<tr><td><code>--compact</code></td><td>Use compact time style (short for <code>--time</code> and <code>--time-style=compact</code>).</td></tr>
 <tr><td><code>--escape-codes[=WHEN]</td><td>For colors and hyperlinks in modern terminals.<br/><em>WHEN</em> can be <code>always</code>, <code>auto</code> (default), <code>never</code>.</td></tr>
 <tr><td><code>--fit-columns</td><td>Fit more columns in <code>-w</code> mode by compacting column widths to fit their content (this is the default; use <code>--no-fit-columns</code> to disable it).</td></tr>
 <tr><td><code>--lower</td><td>Show file names using lower case.</td></tr>
@@ -168,7 +170,7 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 <tr><td><code>--nerd-fonts=VER</td><td>Select which Nerd Fonts version to use (see <a href="#colors">Colors</a> for more info).</td></tr>
 <tr><td><code>--nix</td><td>Selects default options that are similar to Unix and Linux systems.  Hides files starting with <code>.</code>, skips recursing into hidden directories, sorts vertically, displays the file list in wide mode, selects <code>compact</code> time style, shows a mini directory header above file lists, quashes volume/header/summary output, disables filename justify, shows long file names, shows <code>-</code> as size for dirs, and suppresses thousands separators.</td></tr>
 <tr><td><code>--pad-icons=SPACES</code></td><td>Number of spaces to print after an icon.</td></tr>
-<tr><td><code>--relative</code></td><td>Use relative time style (same as <code>--time-style=relative</code>).</td></tr>
+<tr><td><code>--relative</code></td><td>Use relative time style (short for <code>--time</code> and <code>--time-style=relative</code>).</td></tr>
 <tr><td><code>--size-style=STYLE</code></td><td>Which size format to use for display by default when not overridden by other format options.<br/><em>STYLE</em> can be
     <code>mini</code>, <code>short</code>, <code>normal</code> (default).</td></tr>
 <tr><td><code>--time-style=STYLE</code></td><td>Which time format to use for display by default when not overridden by other format options.<br/><em>STYLE</em> can be
