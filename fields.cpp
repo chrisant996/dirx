@@ -1974,8 +1974,8 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
             SkipPictureOptions(picture);
             break;
         case 'R':
-            skip = (picture[1] == '?' && (!m_settings.IsSet(FMT_GITREPOS) ||
-                                          (m_finished_initial_parse && !m_any_repo_roots)));
+            skip = (//picture[1] == '?' &&
+                    (!m_settings.IsSet(FMT_GITREPOS) || (m_finished_initial_parse && !m_any_repo_roots)));
             if (!skip)
             {
                 m_fields.emplace_back();
@@ -1992,8 +1992,8 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
             SkipPictureOptions(picture);
             break;
         case 'G':
-            skip = (picture[1] == '?' && (!m_settings.IsSet(FMT_GIT) ||
-                                          (m_finished_initial_parse && (!m_dir->repo || !m_dir->repo->repo))));
+            skip = (//picture[1] == '?' &&
+                    (!m_settings.IsSet(FMT_GIT) || (m_finished_initial_parse && (!m_dir->repo || !m_dir->repo->repo))));
             if (!skip)
             {
                 m_fields.emplace_back();
