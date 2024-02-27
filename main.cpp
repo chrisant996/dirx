@@ -557,16 +557,16 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             }
             else
             {
-                bool enable = false;
+                bool enable = true;
                 for (const WCHAR* walk = opt_value; *walk; ++walk)
                 {
                     switch (*walk)
                     {
                     case '-':   enable = false; break;
                     case '+':   enable = true; break;
-                    case 'd':   FlipFlag(flags, FMT_SKIPHIDDENDIRS, enable, false); break;
-                    case 'j':   FlipFlag(flags, FMT_SKIPJUNCTIONS, enable, false); break;
-                    case 'r':   FlipFlag(flags, FMT_ONLYALTDATASTREAMS, enable, false); break;
+                    case 'd':   FlipFlag(flags, FMT_SKIPHIDDENDIRS, enable, true); break;
+                    case 'j':   FlipFlag(flags, FMT_SKIPJUNCTIONS, enable, true); break;
+                    case 'r':   FlipFlag(flags, FMT_ONLYALTDATASTREAMS, enable, true); break;
                     default:    FailFlag(*walk, opt_value, ch, long_opt, e); return e.Report();
                     }
                 }
