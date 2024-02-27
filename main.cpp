@@ -32,7 +32,7 @@
 
 #include <memory>
 
-static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.b+c+C+f:F+g+G+h+i+I:j+J+k+l+L:n+o.p+q+Q.r+R+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
+static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.Ab+c+C+f:F+g+G+h+i+I:j+J+k+l+L:n+o.p+q+Q.r+R+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
 static const WCHAR c_DIRXCMD[] = L"DIRXCMD";
 
 static const WCHAR* get_env_prio(const WCHAR* a, const WCHAR* b=nullptr, const WCHAR* c=nullptr, const WCHAR** which=nullptr)
@@ -197,6 +197,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     static LongOption<WCHAR> long_opts[] =
     {
         { L"all",                   nullptr,            'a' },
+        { L"almost-all",            nullptr,            'A' },
         { L"attributes",            nullptr,            LOI_ATTRIBUTES },
         { L"no-attributes",         nullptr,            LOI_NO_ATTRIBUTES },
         { L"bare",                  nullptr,            'b' },
@@ -386,6 +387,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     DWORD dwAttrExcludeAny = FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM;
     unsigned limit_depth = -1;
     bool fresh_a_flag = true;
+    bool used_A_flag = false;
     const WCHAR* picture = 0;
     const LongOption<WCHAR>* long_opt;
     StrW ignore_globs;
@@ -419,7 +421,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         case 'C':       flagsON = FMT_COMPRESSED; break;
         case 'F':       flagsON = FMT_FULLNAME|FMT_FORCENONFAT|FMT_HIDEPSEUDODIRS; break;
         case 'g':       flagsON = FMT_GIT; flagsOFF = FMT_GIT|FMT_GITREPOS; break;
-        case 'h':       flagsON = FMT_HIDEPSEUDODIRS; break;
+        case 'h':       flagsON = FMT_HIDEPSEUDODIRS; used_A_flag = false; break;
         case 'i':       SetUseIcons((*opt_value == '-') ? L"never" : L"auto"); continue;
         case 'j':       flagsON = FMT_JUSTIFY_FAT; break;
         case 'J':       flagsON = FMT_JUSTIFY_NONFAT; break;
@@ -441,7 +443,10 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                 dwAttrIncludeAny = 0;
                 dwAttrMatch = 0;
                 dwAttrExcludeAny = 0;
+                if (nix_defaults || used_A_flag)
+                    flags &= ~FMT_HIDEPSEUDODIRS;
             }
+            used_A_flag = false;
             SkipColonOrEqual(opt_value);
             if (wcscmp(opt_value, L"-") == 0)
             {
@@ -484,6 +489,15 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                 *pdwAttr |= dwAttr;
                 opt_value++;
             }
+            break;
+        case 'A':
+            fresh_a_flag = true;
+            HideDotFiles(false);
+            dwAttrIncludeAny = 0;
+            dwAttrMatch = 0;
+            dwAttrExcludeAny = 0;
+            flags |= FMT_HIDEPSEUDODIRS;
+            used_A_flag = true;
             break;
         case 'I':
             SkipColonOrEqual(opt_value);

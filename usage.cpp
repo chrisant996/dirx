@@ -90,6 +90,7 @@ const char c_long_usage[] =
 "			  l  Reparse points (mnemonic for link)\n"
 "			  +  Prefix meaning any\n"
 "			  -  Prefix meaning not\n"
+"  -A, --almost-all	Display all files, except hide . and .. directories.\n"
 "  -h			Hide . and .. directories.\n"
 "  -I, --ignore-glob=GLOB\n"
 "			Glob patterns of files to ignore; the syntax is the\n"
