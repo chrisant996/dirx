@@ -659,6 +659,18 @@ unrecognized_long_opt_value:
                 SetDefaultTimeStyle(L"locale");
                 SetDefaultTimeStyle(L"locale");
                 break;
+            case LOI_RELATIVE:
+                flags |= FMT_DATE;
+                flags &= ~FMT_LONGNODATE;
+                SetDefaultTimeStyle(L"relative");
+                break;
+            case LOI_NO_RELATIVE:
+                if (ClearDefaultTimeStyleIf(L"relative"))
+                {
+                    flags |= FMT_LONGNODATE;
+                    flags &= ~FMT_DATE;
+                }
+                break;
             case LOI_SIZE:
                 flags |= FMT_SIZE;
                 flags &= ~FMT_LONGNOSIZE;
@@ -722,8 +734,6 @@ unrecognized_long_opt_value:
             case LOI_NO_OWNER:              flagsOFF = FMT_SHOWOWNER; break;
             case LOI_PAD_ICONS:             SetPadIcons(wcstoul(opt_value, nullptr, 10)); break;
             case LOI_NO_RATIO:              flagsOFF = FMT_COMPRESSED; break;
-            case LOI_RELATIVE:              SetDefaultTimeStyle(L"relative"); break;
-            case LOI_NO_RELATIVE:           ClearDefaultTimeStyleIf(L"relative"); break;
             case LOI_REVERSE:               SetReverseSort(true); break;
             case LOI_NO_REVERSE:            SetReverseSort(false); break;
             case LOI_NO_SHORT_NAMES:        flagsOFF = FMT_SHORTNAMES; break;

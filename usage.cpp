@@ -190,7 +190,7 @@ const char c_long_usage[] =
 "			filename justify, shows long file names, shows '-' as\n"
 "			size for dirs, and suppresses thousands separators.\n"
 "  --pad-icons=SPACES	Number of spaces to print after an icon.\n"
-"  --relative		Use relative time format (short for\n"
+"  --relative		Use relative time format (short for --time and\n"
 "			--time-style=relative).\n"
 "  --size-style=STYLE	Which size format to use for display by default when\n"
 "			not overridden by other format options:\n"
