@@ -732,11 +732,29 @@ void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsigned ma
         {
             if ((flags & FMT_FULLNAME) && dir)
             {
-                const unsigned orig_len = s.Length();
-                s.Append(dir);
-                EnsureTrailingSlash(s);
-                if (max_width)
-                    name_width += __wcswidth(s.Text() + orig_len);
+                if (flags & FMT_BARERELATIVE)
+                {
+                    static StrW s_cwd;
+                    if (s_cwd.Empty())
+                        GetCwd(s_cwd);
+
+                    const WCHAR* prefix = dir;
+                    if (!s_cwd.Empty() && wcsnicmp(s_cwd.Text(), prefix, s_cwd.Length()) == 0)
+                    {
+                        prefix += s_cwd.Length();
+                        while (IsPathSeparator(*prefix))
+                            ++prefix;
+                    }
+
+                    const unsigned orig_len = s.Length();
+                    if (*prefix)
+                    {
+                        s.Append(prefix);
+                        EnsureTrailingSlash(s);
+                    }
+                    if (max_width)
+                        name_width += __wcswidth(s.Text() + orig_len);
+                }
             }
             s.Append(p);
 

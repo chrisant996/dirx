@@ -160,6 +160,8 @@ const char c_long_usage[] =
 "  -W, --width=COLS	Override the screen width.\n"
 "  -Y			Abbreviate dates and times (implies -T).\n"
 "  -Z			Abbreviate file sizes as 1K, 15M, etc (implies -S).\n"
+"  --bare-relative	When listing subdirectories recursively, try to print\n"
+"			paths relative to the current directory (implies -b).\n"
 "  --classify		Print '\\' by dir names and '@' by symlink names.\n"
 "  --compact		Use compact time format (short for\n"
 "			--time-style=compact).\n"

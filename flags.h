@@ -42,7 +42,7 @@ enum FormatFlags : ULONGLONG
     FMT_SEPARATETHOUSANDS       = 0x0000000010000000,
     FMT_AUTOSEPTHOUSANDS        = 0x0000000020000000,   // If -, and -,- are not used then FMT_FULLSIZE|FMT_SEPARATETHOUSANDS are used iff the 1 column format is used.
     FMT_NODIRTAGINSIZE          = 0x0000000040000000,   // Show - instead of <D> or <J> in size column.
-    //                          = 0x0000000080000000,
+    FMT_BARERELATIVE            = 0x0000000080000000,   // Makes bare mode omit the root part of the directory if there's only one directory pattern.
     FMT_SORTVERTICAL            = 0x0000000100000000,
     //                          = 0x0000000200000000,
     FMT_USAGE                   = 0x0000000400000000,

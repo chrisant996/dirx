@@ -130,6 +130,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_UNIQUE_IDS              = 0x7FFF,
         LOI_ATTRIBUTES,
         LOI_NO_ATTRIBUTES,
+        LOI_BARE_RELATIVE,
+        LOI_NO_BARE_RELATIVE,
         LOI_NO_BARE,
         LOI_CLASSIFY,
         LOI_NO_CLASSIFY,
@@ -199,6 +201,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-attributes",         nullptr,            LOI_NO_ATTRIBUTES },
         { L"bare",                  nullptr,            'b' },
         { L"no-bare",               nullptr,            LOI_NO_BARE },
+        { L"bare-relative",         nullptr,            LOI_BARE_RELATIVE },
+        { L"no-bare-relative",      nullptr,            LOI_NO_BARE_RELATIVE },
         { L"classify",              nullptr,            LOI_CLASSIFY },
         { L"no-classify",           nullptr,            LOI_NO_CLASSIFY },
         { L"color",                 nullptr,            'c' },
@@ -670,6 +674,8 @@ unrecognized_long_opt_value:
                 break;
 
             case LOI_NO_BARE:               flagsOFF = FMT_BARE; break;
+            case LOI_BARE_RELATIVE:         flagsON = FMT_BARERELATIVE; break;
+            case LOI_NO_BARE_RELATIVE:      flagsOFF = FMT_BARERELATIVE; break;
             case LOI_CLASSIFY:              flagsON = FMT_CLASSIFY; break;
             case LOI_NO_CLASSIFY:           flagsOFF = FMT_CLASSIFY; break;
             case LOI_NO_COLOR:              flagsOFF = FMT_COLORS; break;
@@ -827,6 +833,9 @@ unrecognized_long_opt_value:
             return e.Report();
     }
 
+    if (flags & FMT_BARERELATIVE)
+        flags |= FMT_BARE;
+
     unsigned cColumns = 1;
     if (nix_defaults)
         cColumns = 0;
@@ -983,7 +992,27 @@ unrecognized_long_opt_value:
     if (def.Settings().IsSet(FMT_MINIHEADER) &&
         !def.Settings().IsSet(FMT_SUBDIRECTORIES) &&
         (!patterns || !patterns->m_next))
+    {
+        // Suppress the miniheader if there's only 0 or 1 directory patterns.
         def.Settings().m_flags &= ~FMT_MINIHEADER;
+    }
+
+    if (def.Settings().IsSet(FMT_BARERELATIVE))
+    {
+        // Eventually it would be nice to show the original input pattern.
+        // But that's a little complicated, so for now use a simplified
+        // approach:  Only show relative paths in bare mode if there were 0 or
+        // 1 directory patterns and the current directory is a prefix.
+        bool no = (patterns && patterns->m_next);
+        if (!no)
+        {
+            StrW cwd;
+            GetCwd(cwd);
+            no = (wcsnicmp(cwd.Text(), patterns[0].m_dir.Text(), cwd.Length()) != 0);
+        }
+        if (no)
+            def.Settings().m_flags &= ~FMT_BARERELATIVE;
+    }
 
     const int rc = ScanDir(def, patterns, limit_depth, e);
 
