@@ -172,7 +172,7 @@ int ValidateColor(const WCHAR* p, const WCHAR* end)
  * Restore console mode and attributes on exit or ^C or ^Break.
  */
 
-static HANDLE s_hConsoleMutex = CreateMutex(0, true, 0);
+static HANDLE s_hConsoleMutex = CreateMutex(0, false, 0);
 
 static void AcquireConsoleMutex()
 {
