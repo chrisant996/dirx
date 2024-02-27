@@ -186,6 +186,13 @@ static void ReleaseConsoleMutex()
         ReleaseMutex(s_hConsoleMutex);
 }
 
+class AutoConsoleMutex
+{
+public:
+    AutoConsoleMutex() { AcquireConsoleMutex(); }
+    ~AutoConsoleMutex() { ReleaseConsoleMutex(); }
+};
+
 class CRestoreConsole
 {
 public:
@@ -407,11 +414,21 @@ LPrompt:
     *details = 0;
 
     SetConsoleCursorPosition(hout, csbi.dwCursorPosition);
-    WriteConsoleW(hout, prompt, DWORD(wcslen(prompt)), &dw, nullptr);
+    if (!WriteConsoleW(hout, prompt, DWORD(wcslen(prompt)), &dw, nullptr))
+    {
+        action = pageAbort;
+        goto exit;
+    }
 
     SetConsoleMode(hin, ENABLE_PROCESSED_INPUT);
-    while (ReadConsoleInput(hin, &record, 1, &dw) && dw)
+    while (true)
     {
+        if (!ReadConsoleInput(hin, &record, 1, &dw) || !dw)
+        {
+            action = pageAbort;
+            goto exit;
+        }
+
         if (record.EventType != KEY_EVENT)
             continue;
         if (!record.Event.KeyEvent.bKeyDown)
@@ -447,6 +464,7 @@ LPrompt:
         break;
     }
 
+exit:
     ErasePrompt(hout, &csbi, prompt);
     SetConsoleMode(hin, 0);
     return action;
@@ -515,7 +533,7 @@ DWORD GetConsoleColsRows(HANDLE hout)
     return (s_num_rows << 16) | s_num_cols;
 }
 
-static void WriteConsoleInternal(HANDLE h, const WCHAR* p, unsigned len, const WCHAR* color=nullptr)
+static bool WriteConsoleInternal(HANDLE h, const WCHAR* p, unsigned len, const WCHAR* color=nullptr)
 {
     static HANDLE s_h = 0;
     static bool s_console = false;
@@ -528,7 +546,7 @@ static void WriteConsoleInternal(HANDLE h, const WCHAR* p, unsigned len, const W
         s_h = h;
     }
 
-    AcquireConsoleMutex();
+    AutoConsoleMutex acm;
 
     if (color)
     {
@@ -542,13 +560,15 @@ static void WriteConsoleInternal(HANDLE h, const WCHAR* p, unsigned len, const W
         tmp.Printf(L"\x1b[0;%sm", color);
         if (s_console)
         {
-            WriteConsoleW(h, tmp.Text(), tmp.Length(), &written, nullptr);
+            if (!WriteConsoleW(h, tmp.Text(), tmp.Length(), &written, nullptr))
+                return false;
         }
         else
         {
             StrA tmp2;
             tmp2.SetW(tmp);
-            WriteFile(h, tmp2.Text(), tmp2.Length(), &written, nullptr);
+            if (!WriteFile(h, tmp2.Text(), tmp2.Length(), &written, nullptr))
+                return false;
         }
     }
 
@@ -557,7 +577,8 @@ static void WriteConsoleInternal(HANDLE h, const WCHAR* p, unsigned len, const W
     {
         if (p[0] == '\n')
         {
-            WriteFile(h, "\r\n", 2, &written, nullptr);
+            if (!WriteFile(h, "\r\n", 2, &written, nullptr))
+                return false;
             --len;
             ++p;
         }
@@ -571,7 +592,7 @@ static void WriteConsoleInternal(HANDLE h, const WCHAR* p, unsigned len, const W
             if (s_console)
             {
                 if (!WriteConsoleW(h, p, run, &written, nullptr))
-                    break;
+                    return false;
             }
             else
             {
@@ -590,7 +611,7 @@ static void WriteConsoleInternal(HANDLE h, const WCHAR* p, unsigned len, const W
                     tmp.SetW(p, run);
                 }
                 if (!WriteFile(h, tmp.Text(), tmp.Length(), &written, nullptr))
-                    break;
+                    return false;
             }
         }
 
@@ -601,12 +622,20 @@ static void WriteConsoleInternal(HANDLE h, const WCHAR* p, unsigned len, const W
     if (color)
     {
         if (s_console)
-            WriteConsoleW(h, L"\x1b[m", 3, &written, nullptr);
+        {
+            if (!WriteConsoleW(h, L"\x1b[m", 3, &written, nullptr))
+                return false;
+        }
         else
-            WriteFile(h, "\x1b[m", 3, &written, nullptr);
+        {
+            if (!WriteFile(h, "\x1b[m", 3, &written, nullptr))
+                return false;
+        }
     }
 
     ReleaseConsoleMutex();
+    assert(!len);
+    return true;
 }
 
 void OutputConsole(HANDLE h, const WCHAR* p, unsigned len, const WCHAR* color)
@@ -619,7 +648,8 @@ void OutputConsole(HANDLE h, const WCHAR* p, unsigned len, const WCHAR* color)
     if (!s_paginate)
     {
 LDirect:
-        WriteConsoleInternal(h, p, len, color);
+        if (!WriteConsoleInternal(h, p, len, color))
+            exit(1);
         return;
     }
 
@@ -686,7 +716,8 @@ LDirect:
 
         // Output the logical line.
 
-        WriteConsoleInternal(h, p, run, color);
+        if (!WriteConsoleInternal(h, p, run, color))
+            exit(1);
 
         p = walk;
         len -= run;
