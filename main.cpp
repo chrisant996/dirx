@@ -623,6 +623,18 @@ unrecognized_long_opt_value:
                 if (!SetColorScaleMode(opt_value))
                     goto unrecognized_long_opt_value;
                 break;
+            case LOI_COMPACT_TIME:
+                flags |= FMT_DATE;
+                flags &= ~FMT_LONGNODATE;
+                SetDefaultTimeStyle(L"compact");
+                break;
+            case LOI_NO_COMPACT_TIME:
+                if (ClearDefaultTimeStyleIf(L"compact"))
+                {
+                    flags |= FMT_LONGNODATE;
+                    flags &= ~FMT_DATE;
+                }
+                break;
             case LOI_ESCAPE_CODES:
                 if (!SetUseEscapeCodes(opt_value))
                     goto unrecognized_long_opt_value;
@@ -706,8 +718,6 @@ unrecognized_long_opt_value:
             case LOI_NO_CLASSIFY:           flagsOFF = FMT_CLASSIFY; break;
             case LOI_NO_COLOR:              flagsOFF = FMT_COLORS; break;
             case LOI_NO_COLOR_SCALE:        SetColorScale(L"none"); break;
-            case LOI_COMPACT_TIME:          SetDefaultTimeStyle(L"compact"); break;
-            case LOI_NO_COMPACT_TIME:       ClearDefaultTimeStyleIf(L"compact"); break;
             case LOI_NO_FAT:                flagsOFF = FMT_FAT; break;
             case LOI_FIT_COLUMNS:           SetCanAutoFit(true); break;
             case LOI_NO_FIT_COLUMNS:        SetCanAutoFit(false); break;

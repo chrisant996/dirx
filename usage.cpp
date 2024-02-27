@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 by Christopher Antos
+// Copyright (c) 2024 by Christopher Antos
 // License: http://opensource.org/licenses/MIT
 
 // vim: set noet ts=8 sw=4 cino={0s:
@@ -165,7 +165,7 @@ const char c_long_usage[] =
 "			relative to the specified patterns instead of expanding\n"
 "			them to fully qualified paths.\n"
 "  --classify		Print '\\' by dir names and '@' by symlink names.\n"
-"  --compact		Use compact time format (short for\n"
+"  --compact		Use compact time format (short for --time and\n"
 "			--time-style=compact).\n"
 "  --escape-codes[=WHEN]\n"
 "			For colors and hyperlinks in modern terminals.\n"
