@@ -6,7 +6,7 @@
 #include "pch.h"
 #include "filesys.h"
 
-static int s_hide_dot_files = 1;
+static int s_hide_dot_files = 0;
 
 // -1 = Disable hiding dot files; show dot files, and ignore HideDotFiles(0) and HideDotFiles(1).
 //  0 = Show dot files.
