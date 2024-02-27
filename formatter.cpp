@@ -464,7 +464,7 @@ static void DisplayOne(HANDLE h, const FileInfo* const pfi, const FileInfo* cons
         assert(!pfi->IsPseudoDirectory());
 
         const FormatFlags flags_adjusted = (dir->flags & FMT_SUBDIRECTORIES) ? dir->flags|FMT_FULLNAME : dir->flags;
-        FormatFilename(s, pfi, dir->flags, 0, dir->dir.Text(), SelectColor(pfi, flags_adjusted, dir->dir.Text()));
+        FormatFilename(s, pfi, flags_adjusted, 0, dir->dir.Text(), SelectColor(pfi, flags_adjusted, dir->dir.Text()));
     }
     else
     {
