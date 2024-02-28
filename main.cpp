@@ -1027,6 +1027,26 @@ unrecognized_long_opt_value:
     if (e.Test())
         return e.Report();
 
+    if (g_debug)
+    {
+        StrW cwd;
+        GetCwd(cwd);
+        wprintf(L"debug: cwd=%s\n", cwd.Text());
+
+        int ii = 0;
+        for (const auto* p = patterns; p; p = p->m_next, ++ii)
+        {
+            wprintf(L"debug: pattern %u; dir '%s', fat %u, implicit %u, depth %u\n", ii, p->m_dir.Text(), p->m_isFAT, p->m_implicit, p->m_depth);
+            wprintf(L"debug: pattern %u; patterns", ii);
+            for (unsigned jj = 0; jj < p->m_patterns.size(); ++jj)
+            {
+                if (jj > 0)
+                    _putws(L",");
+                wprintf(L" %s", p->m_patterns[jj].Text());
+            }
+        }
+    }
+
     // Scan the file system and list the files.
 
     if (def.Settings().IsSet(FMT_ALTDATASTEAMS|FMT_ONLYALTDATASTREAMS))

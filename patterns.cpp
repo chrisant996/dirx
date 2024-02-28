@@ -639,6 +639,12 @@ bool GlobPatterns::Load(HANDLE h)
     return true;
 }
 
+void GlobPatterns::Dump() const
+{
+    for (unsigned ii = 0; ii < Count(); ++ii)
+        wprintf(L"debug: glob %u=%s\n", ii, GetPattern(ii).Text());
+}
+
 void GlobPatterns::Trim(StrW& s)
 {
     const WCHAR* end = s.Text();
@@ -703,6 +709,14 @@ void DirPattern::AddGitIgnore(const WCHAR* dir)
     {
         GlobPatterns globs;
         if (globs.Load(h))
+        {
+            if (g_debug && globs.Count())
+            {
+                wprintf(L"debug: .gitignore for %s\n", dir);
+                globs.Dump();
+            }
+
             m_ignore.emplace_back(std::move(globs));
+        }
     }
 }

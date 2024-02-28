@@ -1102,7 +1102,15 @@ void DirEntryFormatter::AddSubDir(const StrW& dir, const StrW& dir_rel, unsigned
         {
             std::shared_ptr<GlobPatterns> globs = std::make_shared<GlobPatterns>();
             if (globs && globs->Load(h))
+            {
+                if (globs->Count())
+                {
+                    wprintf(L"debug: .gitignore for %s\n", dir.Text());
+                    globs->Dump();
+                }
+
                 subdir.git_ignore = globs;
+            }
         }
     }
 

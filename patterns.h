@@ -53,6 +53,7 @@ public:
     void                Append(const WCHAR* p) { Insert(-1, p); }
 
     bool                Load(HANDLE h);
+    void                Dump() const;
 
     static void         Trim(StrW& s);
 
