@@ -10,6 +10,8 @@
 #include <tchar.h>
 #include <assert.h>
 
+extern int g_debug;
+
 #define implies(x, y)           (!(x) || (y))
 
 template <typename T> T clamp(T value, T min, T max)

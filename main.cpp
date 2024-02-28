@@ -35,6 +35,8 @@
 static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.Ab+c+C+f:F+g+G+h+i+I:j+J+k+l+L:n+o.p+q+Q.r+R+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
 static const WCHAR c_DIRXCMD[] = L"DIRXCMD";
 
+int g_debug = 0;
+
 static const WCHAR* get_env_prio(const WCHAR* a, const WCHAR* b=nullptr, const WCHAR* c=nullptr, const WCHAR** which=nullptr)
 {
     const WCHAR* env = nullptr;
@@ -213,6 +215,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"color-scale-mode",      nullptr,            LOI_COLOR_SCALE_MODE,   LOHA_REQUIRED },
         { L"compact",               nullptr,            LOI_COMPACT_TIME },
         { L"no-compact",            nullptr,            LOI_NO_COMPACT_TIME },
+        { L"debug",                 &g_debug,           1 },
+        { L"no-debug",              &g_debug,           0 },
         { L"escape-codes",          nullptr,            LOI_ESCAPE_CODES,       LOHA_OPTIONAL },
         { L"fat",                   nullptr,            'z' },
         { L"no-fat",                nullptr,            LOI_NO_FAT },
@@ -317,6 +321,16 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     }
 
     assert(!argvEnv.Argc());
+
+    if (g_debug)
+    {
+        const WCHAR* dirxcmd = _wgetenv(c_DIRXCMD);
+        if (dirxcmd)
+            wprintf(L"debug: DIRXCMD=%s\n", dirxcmd);
+        const WCHAR* cmdline = GetCommandLineW();
+        if (cmdline)
+            wprintf(L"debug: cmdline=%s\n", cmdline);
+    }
 
     // Full usage text.
 
