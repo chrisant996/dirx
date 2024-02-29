@@ -656,28 +656,31 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
 
     // The file might get displayed now, or might get deferred.
 
-    if (fImmediate && !fUsage)
+    if (!fUsage)
     {
-        class OutputDisplayOne : public OutputOperation
+        if (fImmediate)
         {
-        public:
-            OutputDisplayOne(std::unique_ptr<FileInfo>&& pfi)
-            : m_pfi(std::move(pfi)) {}
-
-            void Render(HANDLE h, const DirContext* dir) override
+            class OutputDisplayOne : public OutputOperation
             {
-                DisplayOne(h, m_pfi.get(), nullptr, dir);
-            }
+            public:
+                OutputDisplayOne(std::unique_ptr<FileInfo>&& pfi)
+                : m_pfi(std::move(pfi)) {}
 
-        private:
-            std::unique_ptr<FileInfo> m_pfi;
-        };
+                void Render(HANDLE h, const DirContext* dir) override
+                {
+                    DisplayOne(h, m_pfi.get(), nullptr, dir);
+                }
 
-        Render(new OutputDisplayOne(std::move(pfi)));
-    }
-    else
-    {
-        m_files.emplace_back(std::move(pfi));
+            private:
+                std::unique_ptr<FileInfo> m_pfi;
+            };
+
+            Render(new OutputDisplayOne(std::move(pfi)));
+        }
+        else
+        {
+            m_files.emplace_back(std::move(pfi));
+        }
     }
 }
 
