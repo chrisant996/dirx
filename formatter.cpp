@@ -176,10 +176,10 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags
                     sPic.Append(L"D  ");
                 if (!m_settings.IsSet(FMT_LONGNOSIZE))
                     sPic.Append(L"S  ");
-                sPic.Append(L"C?  ");
+                sPic.Append(L"[C?  ]");
                 if (!m_settings.IsSet(FMT_LONGNOATTRIBUTES))
-                    sPic.Append(L"T?  ");
-                sPic.Append(L"X?  O?  G?  R?  F");
+                    sPic.Append(L"[T?  ]");
+                sPic.Append(L"[X?  ][O?  ][G?  ][R?  ]F");
                 picture = sPic.Text();
             }
             break;
