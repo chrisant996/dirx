@@ -26,6 +26,7 @@ extern const WCHAR c_norm[] = L"\x1b[m";
 extern const WCHAR c_error[] = L"1;91";
 
 static double s_min_luminance = 0.4;
+static DWORD s_attrs_for_colors = ~0;
 
 static const WCHAR c_DIRX_COLORS[] = L"DIRX_COLORS";
 static const WCHAR c_default_colors[] =
@@ -1256,11 +1257,16 @@ void InitColors(const WCHAR* custom)
     }
 }
 
+void SetAttrsForColors(DWORD attrs_for_colors)
+{
+    s_attrs_for_colors = attrs_for_colors;
+}
+
 const WCHAR* LookupColor(const FileInfo* pfi, const WCHAR* dir, bool ignore_target_color)
 {
     assert(dir); // Otherwise can't check for orphaned symlinks.
 
-    DWORD attr = pfi->GetAttributes();
+    DWORD attr = pfi->GetAttributes() & s_attrs_for_colors;
     const StrW& long_name = pfi->GetLongName();
     const WCHAR* name = long_name.Text();
 

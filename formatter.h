@@ -55,7 +55,8 @@ public:
     void                OnScanFiles(const WCHAR* dir, const WCHAR* pattern, bool implicit, bool root_pass) override;
     void                OnDirectoryBegin(const WCHAR* dir, const WCHAR* dir_rel, const std::shared_ptr<const RepoStatus>& repo) override;
     void                OnFile(const WCHAR* dir, const WIN32_FIND_DATA* pfd) override;
-    void                OnDirectoryEnd(bool next_dir_is_different) override;
+    void                OnDirectoryEnd(const WCHAR* dir, bool next_dir_is_different) override;
+    void                OnPatternEnd(const DirPattern* pattern) override;
     void                OnVolumeEnd(const WCHAR* dir) override;
     void                Finalize() override;
     void                ReportError(Error& e) override;
@@ -114,3 +115,5 @@ private:
 };
 
 std::shared_ptr<const RepoStatus> FindRepo(const WCHAR* dir);
+void AppendTreeLines(StrW& s);
+bool IsTreeRoot();

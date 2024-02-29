@@ -190,6 +190,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_TIME,
         LOI_NO_TIME,
         LOI_TIME_STYLE,
+        LOI_TREE,
+        LOI_NO_TREE,
         LOI_TRUNCATE_CHAR,
         LOI_UTF8,
         LOI_NO_UTF8,
@@ -281,6 +283,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"time",                  nullptr,            LOI_TIME,               LOHA_OPTIONAL },
         { L"no-time",               nullptr,            LOI_NO_TIME },
         { L"time-style",            nullptr,            LOI_TIME_STYLE,         LOHA_REQUIRED },
+        { L"tree",                  nullptr,            LOI_TREE },
+        { L"no-tree",               nullptr,            LOI_NO_TREE },
         { L"truncate-char",         nullptr,            LOI_TRUNCATE_CHAR,      LOHA_REQUIRED },
         { L"usage",                 nullptr,            'u' },
         { L"utf8",                  nullptr,            LOI_UTF8 },
@@ -763,6 +767,8 @@ unrecognized_long_opt_value:
             case LOI_NO_SHORT_NAMES:        flagsOFF = FMT_SHORTNAMES; break;
             case LOI_NO_STREAMS:            flagsOFF = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;
             case LOI_STRING_SORT:           g_dwCmpStrFlags |= SORT_STRINGSORT; break;
+            case LOI_TREE:                  flagsON = FMT_TREE; break;
+            case LOI_NO_TREE:               flagsOFF = FMT_TREE; break;
             case LOI_UTF8:                  SetUtf8Output(true); break;
             case LOI_NO_UTF8:               SetUtf8Output(false); break;
             case LOI_WORD_SORT:             g_dwCmpStrFlags &= ~SORT_STRINGSORT; break;
@@ -881,6 +887,8 @@ unrecognized_long_opt_value:
             return e.Report();
     }
 
+    if (flags & FMT_TREE)
+        flags &= ~(FMT_BARE|FMT_BARERELATIVE|FMT_FULLNAME|FMT_FAT|FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
     if (flags & FMT_BARERELATIVE)
         flags |= FMT_BARE;
 
@@ -888,11 +896,7 @@ unrecognized_long_opt_value:
     if (nix_defaults)
         cColumns = 0;
 
-    if (flags & (FMT_BARE|FMT_FULLNAME|FMT_FULLTIME|FMT_COMPRESSED|FMT_SHOWOWNER|FMT_ONLYALTDATASTREAMS|FMT_ALTDATASTEAMS))
-    {
-        cColumns = 1;
-    }
-    else
+    // Need to always evaluate these, so that -l implies showing attributes.
     {
         bool long_attributes = false;
         for (unsigned ii = 0; opts.GetValue(ii, ch, opt_value); ii++)
@@ -948,7 +952,17 @@ unrecognized_long_opt_value:
 
         if (long_attributes)
             flags |= FMT_ATTRIBUTES;
+        else if (flags & FMT_TREE)
+        {
+            if (!(flags & (FMT_DATE|FMT_MINIDATE)))
+                flags |= FMT_LONGNODATE;
+            if (!(flags & (FMT_SIZE|FMT_MINISIZE)))
+                flags |= FMT_LONGNOSIZE;
+        }
     }
+
+    if (flags & (FMT_BARE|FMT_TREE|FMT_FULLNAME|FMT_FULLTIME|FMT_COMPRESSED|FMT_SHOWOWNER|FMT_ONLYALTDATASTREAMS|FMT_ALTDATASTEAMS))
+        cColumns = 1;
 
     if (cColumns > 1 && (flags & FMT_ATTRIBUTES))
         cColumns = 1;
@@ -959,11 +973,14 @@ unrecognized_long_opt_value:
         flags |= FMT_DIRBRACKETS;
     if (!(flags & FMT_FAT))
         flags |= FMT_FULLSIZE;
-    if (flags & FMT_BARE)
+    if (flags & (FMT_BARE|FMT_TREE))
     {
         flags |= FMT_HIDEPSEUDODIRS;
         flags &= ~(FMT_ALTDATASTEAMS|FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
-        SetUseIcons(L"never", true/*unless_always*/);
+        if (flags & FMT_TREE)
+            flags |= FMT_NOVOLUMEINFO|FMT_NOSUMMARY;
+        else
+            SetUseIcons(L"never", true/*unless_always*/);
     }
 
     if (flags & FMT_SEPARATETHOUSANDS)

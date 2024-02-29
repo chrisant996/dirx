@@ -15,6 +15,7 @@ void ReportColorlessError(Error& e);
 
 void InitColors(const WCHAR* custom);
 bool UseLinkTargetColor();
+void SetAttrsForColors(DWORD attrs_for_colors);
 const WCHAR* LookupColor(const FileInfo* pfi, const WCHAR* dir, bool ignore_target_color=false);
 const WCHAR* LookupColor(const WCHAR* name, DWORD attr, unsigned short mode);
 const WCHAR* GetAttrLetterColor(DWORD attr);

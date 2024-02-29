@@ -69,8 +69,22 @@ WCHAR* CopyStr(const WCHAR* p)
 
 void StripTrailingSlashes(StrW& s)
 {
-    while (s.Length() && IsPathSeparator(s.Text()[s.Length() - 1]))
-        s.SetLength(s.Length() - 1);
+    unsigned len = s.Length();
+    while (len > 0)
+    {
+        const WCHAR ch = s.Text()[len - 1];
+        if (!IsPathSeparator(ch))
+        {
+            s.SetLength(len);
+            break;
+        }
+        if (len > 1 && s.Text()[len - 2] == ':')
+        {
+            s.SetLength(len);
+            break;
+        }
+        --len;
+    }
 }
 
 void EnsureTrailingSlash(StrW& s)

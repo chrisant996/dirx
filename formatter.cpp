@@ -12,6 +12,7 @@
 #include "ecma48.h"
 #include "wcwidth.h"
 #include "columns.h"
+#include "str.h"
 
 #include <algorithm>
 #include <memory>
@@ -21,6 +22,21 @@ static RepoMap s_repo_map;
 std::shared_ptr<const RepoStatus> FindRepo(const WCHAR* dir)
 {
     return s_repo_map.Find(dir);
+}
+
+struct TreeFiles
+{
+    size_t              cursor = 0;
+    std::vector<std::unique_ptr<FileInfo>> files;
+    std::shared_ptr<DirContext> dir;
+};
+
+static std::map<const WCHAR*, std::unique_ptr<TreeFiles>, SortCaseless> s_tree_map;
+static std::vector<TreeFiles*> s_tree_stack;
+
+bool IsTreeRoot()
+{
+    return (g_settings->IsSet(FMT_TREE) && s_tree_stack.empty());
 }
 
 /*
@@ -449,7 +465,7 @@ void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const WCHAR* co
         Render(o);
     }
 
-    if (!Settings().IsSet(FMT_BARE))
+    if (!Settings().IsSet(FMT_BARE|FMT_TREE))
     {
         StrW s;
         if (Settings().IsSet(FMT_MINIHEADER))
@@ -714,7 +730,7 @@ static void FormatFileTotals(StrW& s, unsigned cFiles, unsigned __int64 cbTotal,
     }
 }
 
-void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
+void DirEntryFormatter::OnDirectoryEnd(const WCHAR* dir, bool next_dir_is_different)
 {
     bool do_end = next_dir_is_different;
 
@@ -909,7 +925,17 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
             const unsigned m_longest_dir_width;
         };
 
-        Render(new OutputFileList(std::move(m_files), Settings().m_num_columns, m_longest_file_width, m_longest_dir_width));
+        if (Settings().IsSet(FMT_TREE))
+        {
+            std::unique_ptr<TreeFiles> tree_files = std::make_unique<TreeFiles>();
+            tree_files->files = std::move(m_files);
+            tree_files->dir = m_dir;
+            s_tree_map.emplace(m_dir->dir.Text(), std::move(tree_files));
+        }
+        else
+        {
+            Render(new OutputFileList(std::move(m_files), Settings().m_num_columns, m_longest_file_width, m_longest_dir_width));
+        }
     }
 
     // Display summary.
@@ -948,6 +974,91 @@ void DirEntryFormatter::OnDirectoryEnd(bool next_dir_is_different)
     }
 
     m_line_break_before_miniheader = true;
+}
+
+void DirEntryFormatter::OnPatternEnd(const DirPattern* pattern)
+{
+    if (Settings().IsSet(FMT_TREE))
+    {
+        assert(s_tree_stack.empty());
+
+        bool got_info = false;
+        WIN32_FIND_DATAW fd = { 0 };
+        {
+            SHFile h = CreateFile(pattern->m_dir.Text(), FILE_READ_ATTRIBUTES|SYNCHRONIZE,
+                                FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, nullptr,
+                                OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OPEN_REPARSE_POINT, 0);
+            if (!h.Empty())
+            {
+                BY_HANDLE_FILE_INFORMATION bhfi;
+                got_info = !!GetFileInformationByHandle(h, &bhfi);
+                h.Close();
+                if (got_info)
+                {
+                    fd.dwFileAttributes = bhfi.dwFileAttributes;
+                    fd.ftCreationTime = bhfi.ftCreationTime;
+                    fd.ftLastAccessTime = bhfi.ftLastAccessTime;
+                    fd.ftLastWriteTime = bhfi.ftLastWriteTime;
+                    // fd.nFileSizeHigh = bhfi.nFileSizeHigh;
+                    // fd.nFileSizeLow = bhfi.nFileSizeLow;
+                }
+            }
+
+            if (!got_info)
+                fd.dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
+        }
+        wcscpy_s(fd.cFileName, pattern->m_dir.Text());
+
+        std::unique_ptr<FileInfo> info = std::make_unique<FileInfo>();
+        info->Init(pattern->m_dir.Text(), 0, &fd, Settings());
+        SetAttrsForColors(~(FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM));
+        if (got_info)
+        {
+            DisplayOne(m_hout, info.get(), nullptr, m_dir.get());
+        }
+        else
+        {
+            StrW s;
+            const WCHAR* color = SelectColor(info.get(), Settings().m_flags, pattern->m_dir.Text());
+            FormatFilename(s, info.get(), Settings().m_flags/* & (FMT_COLORS|FMT_CLASSIFY|FMT_HYPERLINKS|FMT_LOWERCASE|FMT_TREE)*/);
+            OutputConsole(m_hout, s.Text(), s.Length(), color);
+            OutputConsole(m_hout, L"\n");
+        }
+        SetAttrsForColors(~0);
+
+        const auto& t = s_tree_map.find(pattern->m_dir.Text());
+        if (t != s_tree_map.end())
+        {
+            s_tree_stack.emplace_back(t->second.get());
+
+            StrW tmp;
+            while (!s_tree_stack.empty())
+            {
+                auto frame = s_tree_stack.back();
+                if (frame->cursor >= frame->files.size())
+                {
+                    s_tree_stack.pop_back();
+                    continue;
+                }
+
+                const FileInfo* pfi = frame->files[frame->cursor].get();
+                DisplayOne(m_hout, pfi, nullptr, frame->dir.get());
+
+                if (pfi->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY)
+                {
+                    PathJoin(tmp, frame->dir->dir.Text(), pfi->GetLongName());
+                    const auto& sub = s_tree_map.find(tmp.Text());
+                    if (sub != s_tree_map.end())
+                        s_tree_stack.emplace_back(sub->second.get());
+                }
+
+                ++frame->cursor;
+            }
+        }
+
+        s_tree_stack.clear();
+        s_tree_map.clear();
+    }
 }
 
 void DirEntryFormatter::OnVolumeEnd(const WCHAR* dir)
@@ -1176,6 +1287,22 @@ void DirEntryFormatter::Render(OutputOperation* o)
         assert(m_outputs.empty());
         o->Render(m_hout, m_dir.get());
         delete o;
+    }
+}
+
+void AppendTreeLines(StrW& s)
+{
+    for (unsigned ll = 0; ll < s_tree_stack.size(); ++ll)
+    {
+        const auto& level = s_tree_stack[ll];
+        if (level->cursor >= level->files.size())
+            s.AppendSpaces(4);
+        else if (ll + 1 < s_tree_stack.size())
+            s.Append(L"\u2502   ");             // |
+        else if (level->cursor + 1 < level->files.size())
+            s.Append(L"\u251c\u2500\u2500 ");   // |--
+        else
+            s.Append(L"\u2514\u2500\u2500 ");   // elbow--
     }
 }
 

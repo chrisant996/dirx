@@ -44,7 +44,7 @@ enum FormatFlags : ULONGLONG
     FMT_NODIRTAGINSIZE          = 0x0000000040000000,   // Show - instead of <D> or <J> in size column.
     FMT_BARERELATIVE            = 0x0000000080000000,   // Makes bare mode omit the root part of the directory if there's only one directory pattern.
     FMT_SORTVERTICAL            = 0x0000000100000000,
-    //                          = 0x0000000200000000,
+    FMT_TREE                    = 0x0000000200000000,   // Shows the collection of files and directories as a tree.
     FMT_USAGE                   = 0x0000000400000000,
     FMT_USAGEGROUPED            = 0x0000000800000000,   // Show directory usage statistics grouped by top level directories.
     FMT_SKIPHIDDENDIRS          = 0x0000001000000000,

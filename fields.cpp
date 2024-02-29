@@ -2484,6 +2484,12 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const FileInfo* stre
                     if (show_reparse && UseLinkTargetColor())
                         field_color = SelectColor(pfi, m_settings.m_flags, dir, true);
 
+                    if (fLast)
+                    {
+                        if (m_settings.IsSet(FMT_TREE))
+                            AppendTreeLines(s);
+                    }
+
                     FormatFilename(s, pfi, flags, width, dir, field_color, show_reparse);
                     if (fLast)
                     {

@@ -69,6 +69,7 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 <tr><td><code>-z</code>, <code>--fat</code></td><td>Force FAT list format even on non-FAT volumes.</td></tr>
 <tr><td><code>--color-scale-mode=MODE</code></td><td>Mode for <code>--color-scale</code> (see <a href="#colors">Colors</a> for more info).<br/><em>MODE</em> can be <code>fixed</code>, <code>gradient</code> (default).</td></tr>
 <tr><td><code>--hyperlinks</code></td><td>Display entries as hyperlinks.</td></tr>
+<tr><td><code>--tree</code></td><td>List files and directories in a tree layout.</td></tr>
 </table>
 
 #### Filtering and Sorting Options

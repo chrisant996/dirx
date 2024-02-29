@@ -92,6 +92,9 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const WCHAR
                       const std::shared_ptr<const RepoStatus>& repo,
                       Error& e)
 {
+    if (depth > limit_depth)
+        return true;
+
     if (wcslen(dir) >= MaxPath())
     {
         e.Set(L"The directory name %1 is too long.") << dir;
@@ -133,7 +136,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const WCHAR
 
         callbacks.OnScanFiles(dir, pattern->m_patterns[ii].Text(), implicit, top);
 
-        if (usage && !ii && (implicit || !callbacks.IsRootSubDir()))
+        if ((usage && !ii && (implicit || !callbacks.IsRootSubDir())) || callbacks.Settings().IsSet(FMT_TREE))
         {
             callbacks.OnDirectoryBegin(dir, dir_rel, repo);
             displayed_header = true;
@@ -157,7 +160,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const WCHAR
                     return false;
                 }
             }
-            else
+            else if (!(!limit_depth && !depth && callbacks.Settings().IsSet(FMT_TREE)))
             {
                 do
                 {
@@ -282,7 +285,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const WCHAR
 
     call_OnDirectoryEnd = (any_headers_displayed && (any_files_found || usage));
     if (call_OnDirectoryEnd)
-        callbacks.OnDirectoryEnd(true);
+        callbacks.OnDirectoryEnd(dir, true);
 
     return any_files_found;
 }
@@ -332,7 +335,7 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
                         callbacks.OnVolumeEnd(prev_drive_dir.Text());
                         in_volume = false;
                     }
-                    else if (!callbacks.Settings().IsSet(FMT_BARE) || callbacks.Settings().IsSet(FMT_USAGE))
+                    else if (!callbacks.Settings().IsSet(FMT_BARE|FMT_TREE) || callbacks.Settings().IsSet(FMT_USAGE))
                     {
                         // File Not Found is not a fatal error:  report it and continue.
                         e.Set(L"File Not Found");
@@ -412,6 +415,8 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
             if (!callbacks.NextSubDir(dir, dir_rel, depth, git_ignore, repo) && p->m_next)
                 break;
         }
+
+        callbacks.OnPatternEnd(p);
 
         callbacks.Settings().m_flags = flagsRestore;
     }
