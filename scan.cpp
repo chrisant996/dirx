@@ -173,7 +173,9 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const WCHAR
                         continue;
                     if (callbacks.Settings().m_dwAttrMatch && (fd.dwFileAttributes & callbacks.Settings().m_dwAttrMatch) != callbacks.Settings().m_dwAttrMatch)
                         continue;
-                    if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && callbacks.Settings().IsSet(FMT_HIDEPSEUDODIRS) && IsPseudoDirectory(fd.cFileName))
+                    if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) &&
+                        ((callbacks.Settings().IsSet(FMT_HIDEPSEUDODIRS) && IsPseudoDirectory(fd.cFileName)) ||
+                         (callbacks.Settings().IsSet(FMT_TREE))))
                         continue;
                     if (IsHiddenName(fd.cFileName))
                         continue;
@@ -265,6 +267,18 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const WCHAR
                         continue;
                     if (git_ignore && git_ignore.get()->IsMatch(dir, fd.cFileName))
                         continue;
+
+                    if (callbacks.Settings().IsSet(FMT_TREE))
+                    {
+                        if (!displayed_header)
+                        {
+                            callbacks.OnDirectoryBegin(dir, dir_rel, repo);
+                            displayed_header = true;
+                            any_headers_displayed = true;
+                        }
+                        callbacks.OnFile(dir, &fd);
+                        any_files_found = true;
+                    }
 
                     strip = FindName(s.Text());
                     s.SetEnd(strip);
