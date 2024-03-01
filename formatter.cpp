@@ -1008,7 +1008,8 @@ void DirEntryFormatter::OnPatternEnd(const DirPattern* pattern)
             if (!got_info)
                 fd.dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
         }
-        wcscpy_s(fd.cFileName, pattern->m_dir.Text());
+        const WCHAR* rel_str = Settings().IsSet(FMT_BARERELATIVE) ? pattern->m_dir_rel.Text() : nullptr;
+        wcscpy_s(fd.cFileName, rel_str && *rel_str ? rel_str : pattern->m_dir.Text());
 
         std::unique_ptr<FileInfo> info = std::make_unique<FileInfo>();
         info->Init(pattern->m_dir.Text(), 0, &fd, Settings());

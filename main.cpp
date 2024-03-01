@@ -894,12 +894,14 @@ unrecognized_long_opt_value:
 
     if (flags & FMT_TREE)
     {
-        flags &= ~(FMT_BARE|FMT_BARERELATIVE|FMT_FULLNAME|FMT_FAT|FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
+        flags &= ~(FMT_BARE|FMT_FULLNAME|FMT_FAT|FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
         if (!dwAttrIncludeAny && !dwAttrMatch && !dwAttrExcludeAny)
             flags &= ~FMT_SKIPHIDDENDIRS;
     }
-    if (flags & FMT_BARERELATIVE)
+    else if (flags & FMT_BARERELATIVE)
+    {
         flags |= FMT_BARE;
+    }
 
     unsigned cColumns = 1;
     if (nix_defaults)
@@ -1063,6 +1065,8 @@ unrecognized_long_opt_value:
         for (const auto* p = patterns; p; p = p->m_next, ++ii)
         {
             wprintf(L"debug: pattern %u; dir '%s', fat %u, implicit %u, depth %u\n", ii, p->m_dir.Text(), p->m_isFAT, p->m_implicit, p->m_depth);
+            if (def.Settings().IsSet(FMT_BARERELATIVE))
+                wprintf(L"debug: pattern %u; dir_rel '%s'\n", ii, p->m_dir_rel.Text());
             wprintf(L"debug: pattern %u; patterns", ii);
             for (unsigned jj = 0; jj < p->m_patterns.size(); ++jj)
             {
@@ -1093,7 +1097,8 @@ unrecognized_long_opt_value:
         def.Settings().m_flags &= ~FMT_MINIHEADER;
     }
 
-    if (def.Settings().IsSet(FMT_BARERELATIVE))
+    if (def.Settings().IsSet(FMT_BARERELATIVE) &&
+        !def.Settings().IsSet(FMT_TREE))
     {
         // Eventually it would be nice to show the original input pattern.
         // But that's a little complicated, so for now use a simplified

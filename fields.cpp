@@ -2359,6 +2359,7 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const FileInfo* stre
     const unsigned max_file_width = m_max_filepart_width;
     const unsigned max_dir_width = m_max_dirpart_width + (m_settings.IsSet(FMT_DIRBRACKETS) ? 2 : 0);
 
+    assert(!(m_settings.IsSet(FMT_BARE))); // (FMT_BARERELATIVE would need dir_rel below)
     const WCHAR* dir = m_dir->dir.Text();
     const WCHAR* color = SelectColor(pfi, m_settings.m_flags, dir);
 
