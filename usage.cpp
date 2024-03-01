@@ -304,6 +304,7 @@ const char c_help_colors[] =
 "  Go  git repo other branch name\n"
 "  Gc  git repo is clean\n"
 "  Gd  git repo is dirty\n"
+"  GO  overlay style for dirty git repo\n"
 "  xx  punctuation (for example _ in the attributes field)\n"
 "  hM  the directory name with --mini-header\n"
 "  ur  the read-only attribute letter in the attributes field\n"

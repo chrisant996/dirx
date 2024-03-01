@@ -1620,6 +1620,7 @@ static void FormatGitRepo(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
 
     const WCHAR* color1 = nullptr;
     const WCHAR* color2 = nullptr;
+    const WCHAR* overlay = nullptr;
     const auto repo = FindRepo(full.Text());
     if (repo)
     {
@@ -1636,6 +1637,12 @@ static void FormatGitRepo(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
             color2 = GetColorByKey(branch.Empty() ? L"xx" : repo->main ? L"Gm" : L"Go");
             if (!color2)
                 color2 = L"";
+            if (!repo->clean)
+            {
+                overlay = GetColorByKey(L"GO");
+                if (!*overlay)
+                    overlay = nullptr;
+            }
         }
         if (branch.Empty())
         {
@@ -1664,15 +1671,17 @@ static void FormatGitRepo(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
     s.AppendSpaces(1);
 
     s.AppendColor(color2);
+    if (overlay && *overlay)
+        s.Printf(L"\x1b[%sm", overlay);
     s.Append(branch);
-    if (color2)
+    if (color2 || overlay)
     {
         const WCHAR* pad_color = StripLineStyles(color2);
-        if (pad_color != color2)
+        if (pad_color != color2 || overlay)
             s.AppendColor(pad_color);
     }
     s.AppendSpaces(max_width - 2 - branch_width);
-    s.AppendNormalIf(color2);
+    s.AppendNormalIf(color2 || overlay);
 }
 
 /*

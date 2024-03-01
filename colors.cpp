@@ -133,6 +133,7 @@ enum ColorIndex : unsigned short
     ciLinkPath,
     ciPunctuation,
     ciMiniHeader,
+    ciGitDirtyRepoOverlay,
 
     ciCOUNT,
 
@@ -675,6 +676,7 @@ static void InitColorMaps()
         { L"xx", { CFLAG_NOT_A_TYPE, ciPunctuation } },
 
         //---- ADDED BY DIRX -------------------------------------------------
+        { L"GO", { CFLAG_NOT_A_TYPE, ciGitDirtyRepoOverlay } }, // overlay style for dirty git repos with --git-repos
         { L"hM", { CFLAG_NOT_A_TYPE, ciMiniHeader } }, // the mini header for a directory ("c:\foo:")
         { L"cF", { CFLAG_NOT_A_TYPE, ciCompressionField } }, // the compression ratio field
         { L"oF", { CFLAG_NOT_A_TYPE, ciOwnerField } },  // the owner field

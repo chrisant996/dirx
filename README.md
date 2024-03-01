@@ -296,6 +296,7 @@ These let you define colors of various elements of the output.
 - `Go` Git repo other branch name.
 - `Gc` Git repo is clean.
 - `Gd` Git repo is dirty.
+- `GO` Overlay style for dirty git repo.
 - `xx` Punctuation (for example _ in the attributes field).
 - `hM` The directory name with --mini-header.
 - `ur` The read-only attribute letter in the attributes field.
