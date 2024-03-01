@@ -4,9 +4,14 @@
 
 ### Back burner
 - Debugging output.
+  - `AdjustPatterns()` etc.
 - Default colors.  Maybe a few different preset options; basic, attributes, file types?
 - Tree view?  The vertical extender lines can be tracked with a "more" bit per directory component.
-- Unit tests.
+- Unit tests.  Especially things like,
+  - `dirx \\\\` --> The specified path is invalid.
+  - `dirx 9:\` --> The system cannot find the path specified.
+  - `dirx \\` --> The filename, directory name, or volume label syntax is incorrect.
+  - etc.
 
 ### Future; maybe
 - Configurable icon mappings?
