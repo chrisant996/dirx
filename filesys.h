@@ -8,6 +8,7 @@
 #include "str.h"
 
 void HideDotFiles(int hide_dot_files);
+void DebugPrintHideDotFilesMode();
 
 bool IsPseudoDirectory(const WCHAR* dir);
 unsigned IsExtendedPath(const WCHAR* p);

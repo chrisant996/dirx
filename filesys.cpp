@@ -18,6 +18,12 @@ void HideDotFiles(int hide_dot_files)
         s_hide_dot_files = hide_dot_files;
 }
 
+void DebugPrintHideDotFilesMode()
+{
+    if (g_debug)
+        wprintf(L"debug: hide_dot_files=%d\n", s_hide_dot_files);
+}
+
 bool IsPseudoDirectory(const WCHAR* dir)
 {
     if (dir[0] != '.')

@@ -100,14 +100,14 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags
     if (!GetConsoleMode(m_hout, &dwMode))
     {
         if (g_debug)
-            _putws(L"debug: output is redirected\n");
+            wprintf(L"debug: output is redirected\n");
         m_settings.m_flags |= FMT_REDIRECTED;
     }
 
     if (!CanUseEscapeCodes(m_hout))
     {
         if (g_debug)
-            _putws(L"debug: escape codes suppressed\n");
+            wprintf(L"debug: escape codes suppressed\n");
         m_settings.m_flags &= ~FMT_HYPERLINKS;
     }
 
@@ -229,6 +229,7 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags
     if (g_debug)
     {
         wprintf(L"debug: format flags: 0x%08.8x%08.8x\n", DWORD(ULONGLONG(flags) >> 32), DWORD(flags));
+        DebugPrintHideDotFilesMode();
         wprintf(L"debug: immediate output: %s\n", m_fImmediate ? L"true" : L"false");
         wprintf(L"debug: delayed render: %s\n", m_delayed_render ? L"true" : L"false");
     }

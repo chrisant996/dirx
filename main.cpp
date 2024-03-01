@@ -1058,9 +1058,10 @@ unrecognized_long_opt_value:
             for (unsigned jj = 0; jj < p->m_patterns.size(); ++jj)
             {
                 if (jj > 0)
-                    _putws(L",");
+                    wprintf(L",");
                 wprintf(L" %s", p->m_patterns[jj].Text());
             }
+            wprintf(L"\n");
         }
     }
 
