@@ -115,5 +115,5 @@ private:
 };
 
 std::shared_ptr<const RepoStatus> FindRepo(const WCHAR* dir);
-void AppendTreeLines(StrW& s);
+void AppendTreeLines(StrW& s, const FormatFlags flags);
 bool IsTreeRoot();

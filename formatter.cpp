@@ -1290,19 +1290,42 @@ void DirEntryFormatter::Render(OutputOperation* o)
     }
 }
 
-void AppendTreeLines(StrW& s)
+void AppendTreeLines(StrW& s, const FormatFlags flags)
 {
+    const bool colors = !!(flags & FMT_COLORS);
+    const WCHAR* punct = colors ? GetColorByKey(L"xx") : nullptr;
     for (unsigned ll = 0; ll < s_tree_stack.size(); ++ll)
     {
+        const WCHAR* text;
+        unsigned spaces;
         const auto& level = s_tree_stack[ll];
         if (level->cursor >= level->files.size())
-            s.AppendSpaces(4);
+        {
+            text = nullptr;
+            spaces = 4;
+        }
         else if (ll + 1 < s_tree_stack.size())
-            s.Append(L"\u2502   ");             // |
+        {
+            text = L"\u2502";                   // |
+            spaces = 3;
+        }
         else if (level->cursor + 1 < level->files.size())
-            s.Append(L"\u251c\u2500\u2500 ");   // |--
+        {
+            text = L"\u251c\u2500\u2500";       // |--
+            spaces = 1;
+        }
         else
-            s.Append(L"\u2514\u2500\u2500 ");   // elbow--
+        {
+            text = L"\u2514\u2500\u2500";       // elbow--
+            spaces = 1;
+        }
+        if (text)
+        {
+            s.AppendColor(punct);
+            s.Append(text);
+            s.AppendNormalIf(punct);
+        }
+        s.AppendSpaces(spaces);
     }
 }
 

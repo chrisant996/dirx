@@ -2487,7 +2487,7 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const FileInfo* stre
                     if (fLast)
                     {
                         if (m_settings.IsSet(FMT_TREE))
-                            AppendTreeLines(s);
+                            AppendTreeLines(s, m_settings.m_flags);
                     }
 
                     FormatFilename(s, pfi, flags, width, dir, field_color, show_reparse);
