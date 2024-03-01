@@ -725,6 +725,13 @@ unrecognized_long_opt_value:
                 if (!SetDefaultTimeStyle(opt_value))
                     goto unrecognized_long_opt_value;
                 break;
+            case LOI_TREE:
+                flags |= FMT_TREE|FMT_SKIPHIDDENDIRS;
+                break;
+            case LOI_NO_TREE:
+                if (flags & FMT_TREE)
+                    flags &= ~(FMT_TREE|FMT_SKIPHIDDENDIRS);
+                break;
             case LOI_TRUNCATE_CHAR:
                 SetTruncationCharacterInHex(opt_value);
                 break;
@@ -767,8 +774,6 @@ unrecognized_long_opt_value:
             case LOI_NO_SHORT_NAMES:        flagsOFF = FMT_SHORTNAMES; break;
             case LOI_NO_STREAMS:            flagsOFF = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;
             case LOI_STRING_SORT:           g_dwCmpStrFlags |= SORT_STRINGSORT; break;
-            case LOI_TREE:                  flagsON = FMT_TREE; break;
-            case LOI_NO_TREE:               flagsOFF = FMT_TREE; break;
             case LOI_UTF8:                  SetUtf8Output(true); break;
             case LOI_NO_UTF8:               SetUtf8Output(false); break;
             case LOI_WORD_SORT:             g_dwCmpStrFlags &= ~SORT_STRINGSORT; break;
@@ -888,7 +893,11 @@ unrecognized_long_opt_value:
     }
 
     if (flags & FMT_TREE)
+    {
         flags &= ~(FMT_BARE|FMT_BARERELATIVE|FMT_FULLNAME|FMT_FAT|FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
+        if (!dwAttrIncludeAny && !dwAttrMatch && !dwAttrExcludeAny)
+            flags &= ~FMT_SKIPHIDDENDIRS;
+    }
     if (flags & FMT_BARERELATIVE)
         flags |= FMT_BARE;
 
