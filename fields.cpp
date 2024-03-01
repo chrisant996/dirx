@@ -1640,7 +1640,7 @@ static void FormatGitRepo(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
             if (!repo->clean)
             {
                 overlay = GetColorByKey(L"GO");
-                if (!*overlay)
+                if (overlay && !*overlay)
                     overlay = nullptr;
             }
         }
