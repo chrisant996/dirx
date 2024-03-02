@@ -112,6 +112,10 @@ private:
     std::shared_ptr<DirContext> m_dir;
 
     std::vector<std::unique_ptr<OutputOperation>> m_outputs;
+
+#ifdef DEBUG
+    std::vector<StrW> m_seen_dirs;
+#endif
 };
 
 std::shared_ptr<const RepoStatus> FindRepo(const WCHAR* dir);

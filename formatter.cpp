@@ -322,6 +322,10 @@ bool DirEntryFormatter::OnVolumeBegin(const WCHAR* dir, Error& e)
     DWORD dwSerialNumber;
     const bool line_break_before_volume = m_line_break_before_volume;
 
+#ifdef DEBUG
+    m_seen_dirs.clear();
+#endif
+
     m_cFilesTotal = 0;
     m_cbTotalTotal = 0;
     m_cbAllocatedTotal = 0;
@@ -408,6 +412,26 @@ void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const WCHAR* co
                          (!m_dir || !m_dir->dir.EqualI(dir)));
     if (fReset)
         UpdateRootGroup(dir);
+
+    if (g_debug)
+        wprintf(L"debug: OnDirectoryBegin '%s'%s\n", dir, fReset ? L", reset root group" : L"");
+
+#ifdef DEBUG
+    {
+        // Make sure OnDirectoryBegin is called only once per directory per
+        // volume.
+        bool seen = false;
+        for (const auto& seen_dir : m_seen_dirs)
+            if (seen_dir.EqualI(dir))
+            {
+                seen = true;
+                break;
+            }
+        assert(!seen);
+        if (!seen)
+            m_seen_dirs.emplace_back(dir);
+    }
+#endif
 
     m_files.clear();
     m_longest_file_width = 0;
@@ -675,6 +699,12 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
 
     if (!fUsage)
     {
+        if (g_debug)
+        {
+            const bool is_dir = !!(pfi->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY);
+            wprintf(L"debug: OnFile %s '%s'\n", is_dir ? L"DIR\\" : L"file", pfi->GetLongName().Text());
+        }
+
         if (fImmediate)
         {
             class OutputDisplayOne : public OutputOperation
@@ -928,10 +958,21 @@ void DirEntryFormatter::OnDirectoryEnd(const WCHAR* dir, bool next_dir_is_differ
 
         if (Settings().IsSet(FMT_TREE))
         {
-            std::unique_ptr<TreeFiles> tree_files = std::make_unique<TreeFiles>();
-            tree_files->files = std::move(m_files);
-            tree_files->dir = m_dir;
-            s_tree_map.emplace(m_dir->dir.Text(), std::move(tree_files));
+            auto& find = s_tree_map.find(m_dir->dir.Text());
+            if (find == s_tree_map.end())
+            {
+                std::unique_ptr<TreeFiles> tree_files = std::make_unique<TreeFiles>();
+                tree_files->files = std::move(m_files);
+                tree_files->dir = m_dir;
+                s_tree_map.emplace(m_dir->dir.Text(), std::move(tree_files));
+            }
+            else
+            {
+                auto& tree_files = find->second->files;
+                tree_files.insert(tree_files.end(),
+                    std::make_move_iterator(m_files.begin()),
+                    std::make_move_iterator(m_files.end()));
+            }
         }
         else
         {
@@ -1008,8 +1049,14 @@ void DirEntryFormatter::OnPatternEnd(const DirPattern* pattern)
             if (!got_info)
                 fd.dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
         }
-        const WCHAR* rel_str = Settings().IsSet(FMT_BARERELATIVE) ? pattern->m_dir_rel.Text() : nullptr;
-        wcscpy_s(fd.cFileName, rel_str && *rel_str ? rel_str : pattern->m_dir.Text());
+
+        StrW rel_str;
+        if (Settings().IsSet(FMT_BARERELATIVE))
+            rel_str.Set(pattern->m_dir_rel);
+        if (rel_str.Empty())
+            rel_str.Set(pattern->m_dir);
+        StripTrailingSlashes(rel_str);
+        wcscpy_s(fd.cFileName, rel_str.Text());
 
         std::unique_ptr<FileInfo> info = std::make_unique<FileInfo>();
         info->Init(pattern->m_dir.Text(), 0, &fd, Settings());
@@ -1221,7 +1268,7 @@ void DirEntryFormatter::AddSubDir(const StrW& dir, const StrW& dir_rel, unsigned
             {
                 if (globs->Count())
                 {
-                    wprintf(L"debug: .gitignore for %s\n", dir.Text());
+                    wprintf(L"debug: .gitignore for '%s'\n", dir.Text());
                     globs->Dump();
                 }
 

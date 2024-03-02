@@ -138,9 +138,12 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const WCHAR
 
         if ((usage && !ii && (implicit || !callbacks.IsRootSubDir())) || callbacks.Settings().IsSet(FMT_TREE))
         {
-            callbacks.OnDirectoryBegin(dir, dir_rel, repo);
-            displayed_header = true;
-            any_headers_displayed = true;
+            if (!displayed_header)
+            {
+                callbacks.OnDirectoryBegin(dir, dir_rel, repo);
+                displayed_header = true;
+                any_headers_displayed = true;
+            }
         }
 
         if (!usage ||
