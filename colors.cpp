@@ -48,7 +48,7 @@ static const WCHAR c_default_colors[] =
     // L"da=0:"
     L"lp=36:"
     L"su=1;35:sf=1;35:ur=32:"
-    L"or=31:"
+    L"or=31:bO=4:"
     L"ga=32:gm=34:gd=31:gv=33:gt=35:gi=90:gc=31:"
     L"Gm=32:Go=33:Gc=32:Gd=1;33:"
     ;
@@ -128,6 +128,7 @@ enum ColorIndex : unsigned short
 
     // Other.
     ciOrphan,
+    ciBrokenOverlay,
     ciCompressed,
     ciTemporary,
     ciLinkPath,
@@ -658,7 +659,7 @@ static void InitColorMaps()
 
         { L"lp", { CFLAG_NOT_A_TYPE, ciLinkPath } },
         { L"or", { CFLAG_NOT_A_TYPE, ciOrphan } },
-        // bO : the overlay style for broken symlink paths
+        { L"bO", { CFLAG_NOT_A_TYPE, ciBrokenOverlay } },
 
         { L"ex", { CFLAG_EXECUTABLE, ciExecutable } },
         { L"do", { CFLAG_DOCUMENT, ciDocument } },
@@ -1282,16 +1283,8 @@ const WCHAR* LookupColor(const FileInfo* pfi, const WCHAR* dir, bool ignore_targ
     {
         if (!s_link_target_color && !ignore_target_color)
             mode |= S_IFLNK;
-
-        if (dir) // Invalid...but don't crash if bug gets accidentally released.
-        {
-            StrW fullname;
-            PathJoin(fullname, dir, long_name);
-
-            struct _stat64 st;
-            if (_wstat64(fullname.Text(), &st) < 0)
-                mode &= ~(S_IFDIR|S_IFREG);
-        }
+        if (pfi->IsBroken())
+            mode &= ~(S_IFDIR|S_IFREG);
     }
 
     return LookupColor(name, attr, mode);

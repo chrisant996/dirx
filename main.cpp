@@ -36,6 +36,7 @@ static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.Ab+c+C+f:F+g+G+h+i+I:j+J+k+l+L:n+
 static const WCHAR c_DIRXCMD[] = L"DIRXCMD";
 
 int g_debug = 0;
+int g_nix_defaults = 0;             // By default, behave like CMD DIR.
 
 static const WCHAR* get_env_prio(const WCHAR* a, const WCHAR* b=nullptr, const WCHAR* c=nullptr, const WCHAR** which=nullptr)
 {
@@ -125,7 +126,6 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
 
     const WCHAR* more_colors = nullptr;
     bool show_all_attributes = false;
-    int nix_defaults = 0;           // By default, behave like CMD DIR.
 #ifdef DEBUG
     int print_all_icons = 0;
 #endif
@@ -464,7 +464,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                 dwAttrIncludeAny = 0;
                 dwAttrMatch = 0;
                 dwAttrExcludeAny = 0;
-                if (nix_defaults || used_A_flag)
+                if (g_nix_defaults || used_A_flag)
                     flags &= ~FMT_HIDEPSEUDODIRS;
             }
             used_A_flag = false;
@@ -678,14 +678,14 @@ unrecognized_long_opt_value:
                     goto unrecognized_long_opt_value;
                 break;
             case LOI_NIX:
-                nix_defaults = true;
+                g_nix_defaults = true;
                 HideDotFiles(true);
                 flags |= FMT_COLORS|FMT_NODIRTAGINSIZE|FMT_FORCENONFAT|FMT_HIDEPSEUDODIRS|FMT_SORTVERTICAL|FMT_SKIPHIDDENDIRS|FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER;
                 flags &= ~(FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT|FMT_FAT|FMT_SHORTNAMES|FMT_ONLYSHORTNAMES|FMT_FULLNAME|FMT_AUTOSEPTHOUSANDS|FMT_SEPARATETHOUSANDS);
                 SetDefaultTimeStyle(L"compact");
                 break;
             case LOI_NO_NIX:
-                nix_defaults = false;
+                g_nix_defaults = false;
                 HideDotFiles(false);
                 flags |= FMT_AUTOSEPTHOUSANDS;
                 flags &= ~(FMT_NODIRTAGINSIZE|FMT_HIDEPSEUDODIRS|FMT_SORTVERTICAL|FMT_FORCENONFAT|FMT_FAT|FMT_SKIPHIDDENDIRS|FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER);
@@ -907,7 +907,7 @@ unrecognized_long_opt_value:
     }
 
     unsigned cColumns = 1;
-    if (nix_defaults)
+    if (g_nix_defaults)
         cColumns = 0;
 
     // Need to always evaluate these, so that -l implies showing attributes.
@@ -983,7 +983,7 @@ unrecognized_long_opt_value:
 
     if (flags & FMT_FORCENONFAT)
         flags &= ~FMT_FAT;
-    if (cColumns != 1 && !nix_defaults && !(flags & (FMT_FAT|FMT_ATTRIBUTES|FMT_MINISIZE|FMT_CLASSIFY)))
+    if (cColumns != 1 && !g_nix_defaults && !(flags & (FMT_FAT|FMT_ATTRIBUTES|FMT_MINISIZE|FMT_CLASSIFY)))
         flags |= FMT_DIRBRACKETS;
     if (!(flags & FMT_FAT))
         flags |= FMT_FULLSIZE;
@@ -1035,7 +1035,7 @@ unrecognized_long_opt_value:
     }
 
     DirEntryFormatter def;
-    def.SetFitColumnsToContents(nix_defaults);
+    def.SetFitColumnsToContents(g_nix_defaults);
     def.Initialize(cColumns, flags, timestamp, filesize, dwAttrIncludeAny, dwAttrMatch, dwAttrExcludeAny, picture);
 
     if (def.Settings().IsSet(FMT_COLORS))
@@ -1092,7 +1092,7 @@ unrecognized_long_opt_value:
         }
     }
 
-    if (nix_defaults &&
+    if (g_nix_defaults &&
         def.Settings().IsSet(FMT_MINIHEADER) &&
         !def.Settings().IsSet(FMT_SUBDIRECTORIES) &&
         (!patterns || !patterns->m_next))

@@ -312,6 +312,7 @@ const char c_help_colors[] =
 "  sf  the system attribute letter in the attributes field\n"
 "  pi  the junction attribute letter in the attributes field\n"
 "  lp  the symlink path when showing symlink targets\n"
+"  bO  overlay style for broken symlink paths when showing symlink targets\n"
 "\n"
 "  NOTE:  the color element names above cannot be combined with types or\n"
 "         patterns; they're for setting general colors, and don't affect\n"

@@ -10,6 +10,8 @@
 
 void FileInfo::Init(const WCHAR* dir, DWORD granularity, const WIN32_FIND_DATA* pfd, const DirFormatSettings& settings)
 {
+    assert(dir);
+
     StrW full;
 
     m_long.Set(pfd->cFileName);
@@ -82,6 +84,19 @@ void FileInfo::Init(const WCHAR* dir, DWORD granularity, const WIN32_FIND_DATA* 
         m_dwReserved0 = pfd->dwReserved0;
     else
         m_dwReserved0 = 0;
+
+    if (IsReparseTag())
+    {
+        if (dir) // Invalid...but don't crash if bug gets accidentally released.
+        {
+            StrW fullname;
+            PathJoin(fullname, dir, m_long);
+
+            struct _stat64 st;
+            if (_wstat64(fullname.Text(), &st) < 0)
+                m_broken = true;
+        }
+    }
 }
 
 void FileInfo::InitStream(const WIN32_FIND_STREAM_DATA& fsd)

@@ -11,6 +11,7 @@
 #include <assert.h>
 
 extern int g_debug;
+extern int g_nix_defaults;
 
 #define implies(x, y)           (!(x) || (y))
 

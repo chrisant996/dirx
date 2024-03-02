@@ -70,6 +70,7 @@ public:
     void                AppendSpaces(int spaces);
 
     void                AppendColor(const WCHAR* color) { if (color) Printf(L"\x1b[0;%sm", color); };
+    void                AppendColorOverlay(const WCHAR* color, const WCHAR* overlay);
     void                AppendColorFallback(const WCHAR* color1, const WCHAR* color2);
     void                AppendColorNoLineStyles(const WCHAR* color);
     void                AppendColorElseNormal(const WCHAR* color1);
@@ -273,6 +274,23 @@ void Str<T>::AppendSpaces(int spaces)
         unsigned add = std::min<unsigned>(spaces, _countof(c_spaces) - 1);
         Append(c_spaces, add);
         spaces -= add;
+    }
+}
+
+template <class T>
+void Str<T>::AppendColorOverlay(const WCHAR* color, const WCHAR* overlay)
+{
+    if (color)
+    {
+        if (overlay && *overlay)
+            Printf(L"\x1b[0;%s;%sm", color, overlay);
+        else
+            Printf(L"\x1b[0;%sm", color);
+    }
+    else
+    {
+        if (overlay && *overlay)
+            Printf(L"\x1b[%sm", overlay);
     }
 }
 

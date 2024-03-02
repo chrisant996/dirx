@@ -806,14 +806,37 @@ static void FormatReparsePoint(StrW& s, const FileInfo* const pfi, const FormatF
     PathJoin(full, dir, pfi->GetLongName());
 
     const bool colors = !!(flags & FMT_COLORS);
-    const WCHAR* punct = colors ? GetColorByKey(L"xx") : nullptr;
+    const WCHAR* punct = nullptr;
+    const WCHAR* broken = nullptr;
+    const WCHAR* broken_overlay = nullptr;
+    if (colors)
+    {
+        if (pfi->IsBroken())
+        {
+            broken = GetColorByKey(L"or");
+            broken_overlay = GetColorByKey(L"bO");
+            if (g_nix_defaults)
+                punct = broken;
+        }
+        if (!punct)
+            punct = GetColorByKey(L"xx");
+    }
+
+    s.Append(L" ");
+
+    if (g_nix_defaults)
+    {
+        s.AppendColor(punct);
+        s.Append(L"->");
+        s.AppendNormalIf(punct);
+        s.Append(L" ");
+    }
 
     SHFile shFile = CreateFile(full.Text(), FILE_READ_EA, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, 0, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT|FILE_FLAG_BACKUP_SEMANTICS, 0);
     if (shFile.Empty())
     {
-        s.Append(L" ");
         s.AppendColor(punct);
-        s.Append(L"[..]");
+        s.Append(g_nix_defaults ? L"?" : L"[..]");
         s.AppendNormalIf(punct);
     }
     else
@@ -845,43 +868,51 @@ static void FormatReparsePoint(StrW& s, const FileInfo* const pfi, const FormatF
             }
         }
 
-        s.Append(L" ");
-
         if (tmp.Length())
         {
-            s.AppendColor(punct);
-            s.Append(L"[");
+            if (!g_nix_defaults)
+            {
+                s.AppendColor(punct);
+                s.Append(L"[");
+                s.AppendNormalIf(punct);
+            }
 
             const WCHAR* name = FindName(tmp.Text());
             const DWORD attr = pfi->GetAttributes();
             const int mode = (attr & FILE_ATTRIBUTE_DIRECTORY) ? S_IFDIR : S_IFREG;
             const WCHAR* color = colors ? LookupColor(name, attr, mode) : nullptr;
             const WCHAR* path_color = colors ? GetColorByKey(L"lp") : nullptr;
+            if (broken)
+                color = path_color = broken;
             if (!path_color && !color)
             {
-                s.AppendNormalIf(punct);
                 s.Append(tmp);
             }
             else
             {
                 if (!path_color)
                     path_color = color;
-                s.AppendColorElseNormalIf(path_color, punct);
+                s.AppendColorOverlay(path_color, broken_overlay);
 
                 s.Append(tmp.Text(), name - tmp.Text());
 
-                s.AppendColorElseNormalIf(color, path_color);
+                if (color != path_color)
+                    s.AppendColorElseNormalIf(color, path_color);
                 s.Append(name);
+                s.AppendNormalIf(color);
             }
 
-            s.AppendColor(punct);
-            s.Append(L"]");
-            s.AppendNormalIf(punct);
+            if (!g_nix_defaults)
+            {
+                s.AppendColor(punct);
+                s.Append(L"]");
+                s.AppendNormalIf(punct);
+            }
         }
         else
         {
             s.AppendColor(punct);
-            s.Append(L"[...]");
+            s.Append(g_nix_defaults ? L"??" : L"[...]");
             s.AppendNormalIf(punct);
         }
     }
@@ -1670,9 +1701,7 @@ static void FormatGitRepo(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
 
     s.AppendSpaces(1);
 
-    s.AppendColor(color2);
-    if (overlay && *overlay)
-        s.Printf(L"\x1b[%sm", overlay);
+    s.AppendColorOverlay(color2, overlay);
     s.Append(branch);
     if (color2 || overlay)
     {

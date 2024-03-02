@@ -39,6 +39,7 @@ public:
     bool                IsPseudoDirectory() const;
     bool                IsReparseTag() const;
     bool                IsSymLink() const;
+    bool                IsBroken() const { return m_broken; }
 
     void                SetAltDataStreams() const { m_has_alt_data_streams = true; }
     bool                HasAltDataStreams() const { return m_has_alt_data_streams; }
@@ -58,6 +59,7 @@ private:
     StrW                m_owner;
     mutable bool        m_has_alt_data_streams = false;
     bool                m_is_alt_data_stream = false;
+    bool                m_broken = false;
     std::unique_ptr<FileInfo>* m_streams = nullptr; // nullptr terminated, free with delete[].
 
 #ifdef DEBUG
