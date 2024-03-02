@@ -13,10 +13,32 @@
 
 static int s_escape_codes = -1;   // 0=no, 1=yes, -1=auto (when not redirected).
 static bool s_utf8 = false;
+static bool s_redirected_stdout = false;
+
+bool IsConsole(HANDLE h)
+{
+    DWORD dummy;
+    return !!GetConsoleMode(h, &dummy);
+}
 
 void SetUtf8Output(bool utf8)
 {
     s_utf8 = utf8;
+}
+
+void SetRedirectedStdOut(bool redirected)
+{
+    s_redirected_stdout = redirected;
+}
+
+bool IsRedirectedStdOut()
+{
+    return s_redirected_stdout;
+}
+
+bool IsAsciiLineCharMode()
+{
+    return !s_utf8 && s_redirected_stdout;
 }
 
 bool SetUseEscapeCodes(const WCHAR* s)
@@ -56,8 +78,7 @@ bool CanUseEscapeCodes(HANDLE hout)
     static bool s_console = false;
     if (s_h != hout)
     {
-        DWORD dummy;
-        s_console = !!GetConsoleMode(hout, &dummy);
+        s_console = IsConsole(hout);
         s_h = hout;
     }
     return s_console;
@@ -503,9 +524,7 @@ DWORD GetConsoleColsRows(HANDLE hout)
 
     if (!s_initialized)
     {
-        DWORD dw;
-
-        s_is_console = !!GetConsoleMode(hout, &dw);
+        s_is_console = IsConsole(hout);
 
         if (!s_is_console)
         {
@@ -541,8 +560,7 @@ static bool WriteConsoleInternal(HANDLE h, const WCHAR* p, unsigned len, const W
 
     if (s_h != h)
     {
-        DWORD dummy;
-        s_console = !!GetConsoleMode(h, &dummy);
+        s_console = IsConsole(h);
         s_h = h;
     }
 

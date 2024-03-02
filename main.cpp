@@ -67,6 +67,9 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     std::vector<FileInfo> rgFiles;
     StrW s;
 
+    if (!IsConsole(GetStdHandle(STD_OUTPUT_HANDLE)))
+        SetRedirectedStdOut(true);
+
     // Remember the app name, and generate the short usage text.
 
     StrW fmt;

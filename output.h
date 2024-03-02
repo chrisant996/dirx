@@ -5,7 +5,13 @@
 
 #pragma once
 
+bool IsConsole(HANDLE h);
+
 void SetUtf8Output(bool utf8);
+void SetRedirectedStdOut(bool redirected);
+bool IsRedirectedStdOut();
+bool IsAsciiLineCharMode();
+
 bool SetUseEscapeCodes(const WCHAR* s);
 bool CanUseEscapeCodes(HANDLE hout);
 

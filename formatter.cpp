@@ -96,8 +96,7 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags
                                          wcschr(g_sort_order, 'c'));
     m_settings.m_need_short_filenames = !!(flags & FMT_SHORTNAMES);
 
-    DWORD dwMode;
-    if (!GetConsoleMode(m_hout, &dwMode))
+    if (IsRedirectedStdOut())
     {
         if (g_debug)
             wprintf(L"debug: output is redirected\n");
@@ -1341,6 +1340,7 @@ void DirEntryFormatter::Render(OutputOperation* o)
 
 void AppendTreeLines(StrW& s, const FormatFlags flags)
 {
+    const bool ascii = IsAsciiLineCharMode();
     const bool colors = !!(flags & FMT_COLORS);
     const WCHAR* punct = colors ? GetColorByKey(L"xx") : nullptr;
     for (unsigned ll = 0; ll < s_tree_stack.size(); ++ll)
@@ -1355,17 +1355,17 @@ void AppendTreeLines(StrW& s, const FormatFlags flags)
         }
         else if (ll + 1 < s_tree_stack.size())
         {
-            text = L"\u2502";                   // |
+            text = ascii ? L"|" : L"\u2502";
             spaces = 3;
         }
         else if (level->cursor + 1 < level->files.size())
         {
-            text = L"\u251c\u2500\u2500";       // |--
+            text = ascii ? L"|--" : L"\u251c\u2500\u2500";
             spaces = 1;
         }
         else
         {
-            text = L"\u2514\u2500\u2500";       // elbow--
+            text = ascii ? L"+--" : L"\u2514\u2500\u2500";
             spaces = 1;
         }
         if (text)

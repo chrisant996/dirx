@@ -14,6 +14,7 @@
 #include "ecma48.h"
 #include "wcwidth.h"
 #include "columns.h"
+#include "output.h"
 
 #include <algorithm>
 #include <memory>
@@ -132,8 +133,7 @@ bool SetUseIcons(const WCHAR* s, bool unless_always)
         return false;
     if (!_wcsicmp(s, L"") || !_wcsicmp(s, L"auto"))
     {
-        DWORD dwMode;
-        s_use_icons = !!GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &dwMode);
+        s_use_icons = IsRedirectedStdOut();
         s_forced_icons_always = false;
     }
     else if (!_wcsicmp(s, L"always"))

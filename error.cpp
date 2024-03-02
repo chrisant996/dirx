@@ -220,9 +220,8 @@ bool Error::Report()
     StrW s;
     Format(s);
 
-    DWORD dummy;
     HANDLE herr = GetStdHandle(STD_ERROR_HANDLE);
-    if (GetConsoleMode(herr, &dummy))
+    if (IsConsole(herr))
     {
         while (s.Length() && s.Text()[s.Length() - 1] == ' ')
             s.SetLength(s.Length() - 1);
