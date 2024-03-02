@@ -388,7 +388,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     {
         app.ToUpper();
         s.Clear();
-        s.Printf(L"%s %hs, built %hs\n", app.Text(), VERSION_STR, __DATE__);
+        s.Printf(L"%s %hs, built %hs\nhttps://github.com/chrisant996/dirx\n", app.Text(), VERSION_STR, __DATE__);
         OutputConsole(GetStdHandle(STD_OUTPUT_HANDLE), s.Text());
         return 0;
     }
