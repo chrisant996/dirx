@@ -1918,7 +1918,7 @@ next_rule:
     }
 
     const WCHAR* ret = GetColorWithFallback(ci);
-    return hidden_opacity ? MaybeDim(ret) : ret;
+    return hidden_opacity ? MaybeDim(ret ? ret : L"39") : ret;
 }
 
 const WCHAR* GetAttrLetterColor(DWORD attr)
