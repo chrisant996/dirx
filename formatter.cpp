@@ -1178,7 +1178,7 @@ void DirEntryFormatter::OnVolumeEnd(const WCHAR* dir)
     ULARGE_INTEGER ulTotalFree;
 
     FormatTotalCount(s, CountDirs(), Settings());
-    s.Append(L" Dir(s) ");
+    s.Append(L" Dir(s)  ");
     if (SHGetDiskFreeSpace(root.Text(), &ulFreeToCaller, &ulTotalSize, &ulTotalFree))
     {
         FormatSizeForReading(s, *reinterpret_cast<unsigned __int64*>(&ulFreeToCaller), 15, Settings());
