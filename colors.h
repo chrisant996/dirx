@@ -26,6 +26,8 @@ const WCHAR* GetSizeUnitColor(ULONGLONG ull);
 const WCHAR* ApplyGradient(const WCHAR* color, ULONGLONG value, ULONGLONG min, ULONGLONG max);
 const WCHAR* StripLineStyles(const WCHAR* color);
 
+const WCHAR* GetDefaultColorString();
+
 extern const WCHAR c_norm[];
 extern const WCHAR c_error[];
 

@@ -32,7 +32,7 @@ static bool s_light_theme = false;
 
 static const WCHAR c_DIRX_COLORS[] = L"DIRX_COLORS";
 static const WCHAR c_default_colors[] =
-    L"hi=50%:"
+    L"hi=60%:"
     // L"sy=91:"
     L"di=1;33:"
     L"ln=1;34:"
@@ -54,6 +54,11 @@ static const WCHAR c_default_colors[] =
     L"ga=32:gm=34:gd=31:gv=33:gt=35:gi=90:gc=31:"
     L"Gm=32:Go=33:Gc=32:Gd=1;33:"
     ;
+
+const WCHAR* GetDefaultColorString()
+{
+    return c_default_colors;
+}
 
 /*
  * Color manipulations.
@@ -1318,7 +1323,7 @@ static bool GetSpacedToken(const WCHAR*& in, StrW& out, bool& quoted)
     quoted = false;
 
     const WCHAR* begin;
-    for (begin = in; *begin && *begin == ' '; ++begin) {}
+    for (begin = in; *begin && iswspace(*begin); ++begin) {}
 
     if (*begin == '!')
     {
@@ -1328,7 +1333,7 @@ static bool GetSpacedToken(const WCHAR*& in, StrW& out, bool& quoted)
     }
 
     const WCHAR* end;
-    for (end = begin; *end && *end != ' '; ++end)
+    for (end = begin; *end && !iswspace(*end); ++end)
     {
         if (*end == '\"')
         {

@@ -348,13 +348,19 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         {
             if (!wcsicmp(argv[0], L"colors"))
             {
-                s.SetA(c_help_colors);
+                StrW tmp;
+                tmp.SetA(c_help_colors);
+                s.Printf(tmp.Text(), app.Text(), app.Text());
             }
             else if (!wcsicmp(argv[0], L"colorsamples"))
             {
                 SetUseEscapeCodes(L"always");
                 PrintColorSamples();
                 return 0;
+            }
+            else if (!wcsicmp(argv[0], L"defaultcolors"))
+            {
+                s.Printf(L"The default color string is:\n\n%s\n", GetDefaultColorString());
             }
             else if (!wcsicmp(argv[0], L"icons"))
             {

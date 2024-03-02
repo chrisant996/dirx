@@ -24,6 +24,7 @@ const char c_long_usage[] =
 "  -?, --help		Display this help text.\n"
 "  -? colors		Display help text on color coding the file list.\n"
 "  -? colorsamples	Display samples of the supported color codes.\n"
+"  -? defaultcolors	Print the default DIRX_COLORS string.\n"
 "  -? icons		Display help text on file icons and Nerd Fonts.\n"
 "  -? pictures		Display help text on format pictures.\n"
 "  -? regex		Display help text on regular expression syntax.\n"
@@ -401,6 +402,8 @@ const char c_help_colors[] =
 "\n"
 "If the DIRX_COLORS environment variable is not set, then LS_COLORS is also\n"
 "checked.  DIRX enhancements are ignored when parsing LS_COLORS.)\n"
+"\n"
+"Run '%s -? defaultcolors' to print the default DIRX_COLORS string.\n"
 ;
 
 const char c_help_icons[] =

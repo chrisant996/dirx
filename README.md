@@ -244,7 +244,8 @@ Each condition can specify two-letter types, or patterns to match.  If more than
 - `tT` Temporary attribute.
 
 Setting `ro` by itself applies only to files, not directories.<br/>
-Setting `ln=target` or `ln=:` colors symlinks by the type of the target of the symlink.
+Setting `ln=target` or `ln=:` colors symlinks by the type of the target of the symlink.<br/>
+Setting `hi=50%` colors hidden files and directories at 50% luminance of whatever color the file or directory would have had.  Specify any percentage between 30% and 90%.  This can only be used with the `hi` attribute name.
 
 #### File groups:
 
@@ -304,6 +305,7 @@ These let you define colors of various elements of the output.
 - `sf` The system attribute letter in the attributes field.
 - `pi` The junction attribute letter in the attributes field.
 - `lp` The symlink path when showing symlink targets.
+- `bO` Overlay style for broken symlink paths when showing symlink targets.
 
 The color element names above cannot be combined with types or patterns; they're for setting general colors, and don't affect how file names are colored.
 
