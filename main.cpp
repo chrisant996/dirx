@@ -1092,7 +1092,8 @@ unrecognized_long_opt_value:
         }
     }
 
-    if (def.Settings().IsSet(FMT_MINIHEADER) &&
+    if (nix_defaults &&
+        def.Settings().IsSet(FMT_MINIHEADER) &&
         !def.Settings().IsSet(FMT_SUBDIRECTORIES) &&
         (!patterns || !patterns->m_next))
     {
