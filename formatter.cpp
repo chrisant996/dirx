@@ -389,7 +389,7 @@ void DirEntryFormatter::OnPatterns(bool grouped)
     m_grouped_patterns = grouped;
 }
 
-void DirEntryFormatter::OnScanFiles(const WCHAR* dir, const WCHAR* pattern, bool implicit, bool root_pass)
+void DirEntryFormatter::OnScanFiles(const WCHAR* dir, bool implicit, bool root_pass)
 {
     m_implicit = implicit;
     m_root_pass = root_pass;

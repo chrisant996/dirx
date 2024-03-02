@@ -52,7 +52,7 @@ public:
 
     bool                OnVolumeBegin(const WCHAR* dir, Error& e) override;
     void                OnPatterns(bool grouped) override;
-    void                OnScanFiles(const WCHAR* dir, const WCHAR* pattern, bool implicit, bool root_pass) override;
+    void                OnScanFiles(const WCHAR* dir, bool implicit, bool root_pass) override;
     void                OnDirectoryBegin(const WCHAR* dir, const WCHAR* dir_rel, const std::shared_ptr<const RepoStatus>& repo) override;
     void                OnFile(const WCHAR* dir, const WIN32_FIND_DATA* pfd) override;
     void                OnDirectoryEnd(const WCHAR* dir, bool next_dir_is_different) override;

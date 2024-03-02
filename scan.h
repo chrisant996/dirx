@@ -21,7 +21,7 @@ public:
 
     virtual bool        OnVolumeBegin(const WCHAR* dir, Error& e) = 0;
     virtual void        OnPatterns(bool grouped) = 0;
-    virtual void        OnScanFiles(const WCHAR* dir, const WCHAR* pattern, bool implicit, bool top) = 0;
+    virtual void        OnScanFiles(const WCHAR* dir, bool implicit, bool top) = 0;
     virtual void        OnDirectoryBegin(const WCHAR* dir, const WCHAR* dir_rel, const std::shared_ptr<const RepoStatus>& repo) = 0;
     virtual void        OnFile(const WCHAR* dir, const WIN32_FIND_DATA* pfd) = 0;
     virtual void        OnDirectoryEnd(const WCHAR* dir, bool next_is_different) = 0;

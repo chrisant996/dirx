@@ -134,7 +134,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const WCHAR
         WIN32_FIND_DATA fd;
         SHFind shFind;
 
-        callbacks.OnScanFiles(dir, pattern->m_patterns[ii].Text(), implicit, top);
+        callbacks.OnScanFiles(dir, implicit, top);
 
         if ((usage && !ii && (implicit || !callbacks.IsRootSubDir())) || callbacks.Settings().IsSet(FMT_TREE))
         {
@@ -318,9 +318,12 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
 
     StrW dir;
     StrW dir_rel;
+    bool implicit;
     StrW drive;
     StrW prev_drive;
     StrW prev_drive_dir; // OnVolumeBegin/OnVolumeEnd take a dir because they need to test for failure when converting the dir to a drive.
+    StrW prev_drive_dir_rel;
+    bool prev_drive_implicit;
     bool in_volume = false;
     bool any_files_found = false;
     for (const DirPattern* p = patterns; p; p = p->m_next)
@@ -337,6 +340,7 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
 
         dir.Set(p->m_dir);
         dir_rel.Set(p->m_dir_rel);
+        implicit = p->m_implicit;
         unsigned depth = p->m_depth;
 
         bool top = true;
@@ -357,6 +361,12 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
                     }
                     else if (!callbacks.Settings().IsSet(FMT_BARE|FMT_TREE) || callbacks.Settings().IsSet(FMT_USAGE))
                     {
+                        if (!callbacks.Settings().IsSet(FMT_USAGE))
+                        {
+                            callbacks.OnScanFiles(prev_drive_dir.Text(), prev_drive_implicit, true);
+                            callbacks.OnDirectoryBegin(prev_drive_dir.Text(), prev_drive_dir_rel.Text(), repo);
+                        }
+
                         // File Not Found is not a fatal error:  report it and continue.
                         e.Set(L"File Not Found");
                         callbacks.ReportError(e);
@@ -375,6 +385,8 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
 
                 prev_drive.Set(drive);
                 prev_drive_dir.Set(dir);
+                prev_drive_dir_rel.Set(dir_rel);
+                prev_drive_implicit = implicit;
                 any_files_found = false;
             }
 
