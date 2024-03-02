@@ -363,7 +363,28 @@ DirPattern* MakePatterns(int argc, const WCHAR** argv, const DirFormatSettings& 
             assert(p == cur->m_next);
             assert(p->m_patterns.size() == 1);
             cur->m_patterns.emplace_back();
-            cur->m_patterns.back() = std::move(p->m_patterns[0]);
+            {
+                // No duplicate patterns.  But this uses a case sensitive
+                // comparison; case could matter in a regex, or maybe in an
+                // underlying file system.  Duplicate entries are filtered out
+                // later anyway; the optimization here just reduces file
+                // system operations.
+                bool already = false;
+                for (const auto& pat_already : cur->m_patterns)
+                    if (pat_already.Equal(p->m_patterns[0]))
+                    {
+                        already = true;
+                        break;
+                    }
+                if (already)
+                {
+                    if (g_debug)
+                        wprintf(L"debug: discard duplicate pattern '%s'\n", p->m_patterns[0].Text());
+                    p->m_patterns[0].Clear();
+                }
+                else
+                    cur->m_patterns.back() = std::move(p->m_patterns[0]);
+            }
             cur->m_next = p->m_next;
             delete p;
             p = cur;
