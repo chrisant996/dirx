@@ -196,6 +196,9 @@ failed:
         root.Set(_dir);
     }
 
+    if (g_debug)
+        wprintf(L"debug: git status in '%s'%s\n", root.Text(), need_ignored ? L", plus ignored files" : L"");
+
     // Prevent GVFS from printing progress gibberish even while output is
     // redirected to a pipe.
     SetEnvironmentVariable(L"GVFS_UNATTENDED", L"1");
