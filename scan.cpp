@@ -361,6 +361,7 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
                         e.Set(L"File Not Found");
                         callbacks.ReportError(e);
                         e.Clear();
+                        rc = 1;
                     }
                 }
 
@@ -383,7 +384,6 @@ int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned li
             if (ScanFiles(callbacks, dir.Text(), dir_rel.Text(), depth, p, top, limit_depth, git_ignore, repo, e))
             {
                 any_files_found = true;
-                // REVIEW: Does rc=0 match CMD DIR behavior?
                 rc = 0;
             }
             if (e.Test())
