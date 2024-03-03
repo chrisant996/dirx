@@ -58,7 +58,6 @@ public:
     static void         Trim(StrW& s);
 
 private:
-    bool                TestForAnyLevel(const WCHAR* pattern);
     void                UpdateAnyNegations(bool is_negate, bool was_negate);
 
 private:

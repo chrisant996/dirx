@@ -622,6 +622,7 @@ void GlobPatterns::Insert(size_t index, const WCHAR* p)
 
 bool GlobPatterns::Load(HANDLE h)
 {
+    assert(m_root_initialized);
     assert(m_patterns.empty());
 
     DWORD bytes;
@@ -729,8 +730,11 @@ void DirPattern::AddGitIgnore(const WCHAR* dir)
     if (!h.Empty())
     {
         GlobPatterns globs;
+        globs.SetRoot(dir);
         if (globs.Load(h))
         {
+            globs.Append(L".git");
+
             if (g_debug && globs.Count())
             {
                 wprintf(L"debug: .gitignore for %s\n", dir);

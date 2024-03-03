@@ -701,7 +701,7 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
         if (g_debug)
         {
             const bool is_dir = !!(pfi->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY);
-            wprintf(L"debug: OnFile %s '%s'\n", is_dir ? L"DIR\\" : L"file", pfi->GetLongName().Text());
+            wprintf(L"debug: OnFile %s '%s'\n", is_dir ? L"DIR " : L"file", pfi->GetLongName().Text());
         }
 
         if (fImmediate)
