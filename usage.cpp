@@ -71,7 +71,8 @@ const char c_long_usage[] =
 #ifdef DEBUG
 "  --print-all-icons	Print a list of all icons (DEBUG ONLY).\n"
 #endif
-"  --tree		List files and directories in a tree layout.\n"
+"  --tree		Tree mode; recursively display files and directories in\n"
+"			a tree layout.\n"
 "\n"
 "FILTERING AND SORTING OPTIONS:\n"
 "  -a[...]		Display files with the specified attributes.  If\n"

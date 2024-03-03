@@ -178,7 +178,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const WCHAR
                         continue;
                     if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) &&
                         ((callbacks.Settings().IsSet(FMT_HIDEPSEUDODIRS) && IsPseudoDirectory(fd.cFileName)) ||
-                         (callbacks.Settings().IsSet(FMT_TREE))))
+                         (callbacks.Settings().IsSet(FMT_TREE) && subdirs && depth + 1 < limit_depth)))
                         continue;
                     if (IsHiddenName(fd.cFileName))
                         continue;
@@ -214,7 +214,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const WCHAR
         const bool filter_dirs = (usage &&
                                   !implicit &&
                                   callbacks.IsRootSubDir());
-        if (((subdirs && !ii) || filter_dirs) && depth + 1 <= limit_depth)
+        if (((subdirs && !ii) || filter_dirs) && depth + 1 < limit_depth)
         {
             const WCHAR* strip;
 

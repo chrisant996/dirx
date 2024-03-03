@@ -545,9 +545,9 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                 if (long(n) <= 0)
                     limit_depth = 0;
                 else if (n >= 0xffffffff)
-                    limit_depth = -1;
+                    limit_depth = unsigned(-1);
                 else
-                    limit_depth = n - 1;
+                    limit_depth = n;
             }
             break;
         case 'n':
@@ -735,11 +735,11 @@ unrecognized_long_opt_value:
                     goto unrecognized_long_opt_value;
                 break;
             case LOI_TREE:
-                flags |= FMT_TREE|FMT_SKIPHIDDENDIRS;
+                flags |= FMT_TREE|FMT_SKIPHIDDENDIRS|FMT_SUBDIRECTORIES;
                 break;
             case LOI_NO_TREE:
                 if (flags & FMT_TREE)
-                    flags &= ~(FMT_TREE|FMT_SKIPHIDDENDIRS);
+                    flags &= ~(FMT_TREE|FMT_SKIPHIDDENDIRS|FMT_SUBDIRECTORIES);
                 break;
             case LOI_TRUNCATE_CHAR:
                 SetTruncationCharacterInHex(opt_value);
@@ -1043,6 +1043,12 @@ unrecognized_long_opt_value:
     DirEntryFormatter def;
     def.SetFitColumnsToContents(g_nix_defaults);
     def.Initialize(cColumns, flags, timestamp, filesize, dwAttrIncludeAny, dwAttrMatch, dwAttrExcludeAny, picture);
+
+    if (g_debug)
+    {
+        if (limit_depth != unsigned(-1))
+            wprintf(L"debug: levels: %u\n", limit_depth);
+    }
 
     if (def.Settings().IsSet(FMT_COLORS))
     {
