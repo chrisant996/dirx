@@ -985,19 +985,42 @@ void DirEntryFormatter::OnDirectoryEnd(const WCHAR* dir, bool next_dir_is_differ
     {
         if (Settings().IsSet(FMT_USAGE))
         {
-            StrW s;
+            class OutputUsage : public OutputOperation
+            {
+            public:
+                OutputUsage(DirEntryFormatter& def, unsigned __int64 total, unsigned __int64 alloc, unsigned count, const WCHAR* dir)
+                : m_def(def), m_total(total), m_alloc(alloc), m_count(count), m_dir(dir) {}
+
+                void Render(HANDLE h, const DirContext* dir) override
+                {
+                    const FormatFlags flags = dir->flags;
+
+                    StrW s;
+                    const WhichFileSize which = FILESIZE_FILESIZE;
+                    FormatSize(s, m_total, &which, m_def.Settings(), 0);
+                    s.Append(L"  ");
+                    FormatSize(s, m_alloc, &which, m_def.Settings(), 0);
+                    s.Printf(L"  %7u  ", m_count);
+                    s.Append(m_dir);
+                    s.Append('\n');
+
+                    OutputConsole(h, s.Text(), s.Length());
+                }
+
+            private:
+                DirEntryFormatter& m_def;
+                const unsigned __int64 m_total;
+                const unsigned __int64 m_alloc;
+                const unsigned m_count;
+                const StrW m_dir;
+            };
+
             StrW dir;
-            FormatSize(s, m_cbTotal, nullptr, Settings(), 0);
-            s.Append(L"  ");
-            FormatSize(s, m_cbAllocated, nullptr, Settings(), 0);
-            s.Printf(L"  %7u  ", CountFiles());
             dir.Set(Settings().IsSet(FMT_USAGEGROUPED) ? m_root_group : m_dir->dir);
             StripTrailingSlashes(dir);
             if (Settings().IsSet(FMT_LOWERCASE))
                 dir.ToLower();
-            s.Append(dir);
-            s.Append('\n');
-            Render(new OutputText(std::move(s)));
+            Render(new OutputUsage(*this, m_cbTotal, m_cbAllocated, CountFiles(), dir.Text()));
             m_count_usage_dirs++;
         }
         else if (!Settings().IsSet(FMT_BARE|FMT_NOSUMMARY))
