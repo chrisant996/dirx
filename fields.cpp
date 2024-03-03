@@ -133,7 +133,7 @@ bool SetUseIcons(const WCHAR* s, bool unless_always)
         return false;
     if (!_wcsicmp(s, L"") || !_wcsicmp(s, L"auto"))
     {
-        s_use_icons = IsRedirectedStdOut();
+        s_use_icons = !IsRedirectedStdOut();
         s_forced_icons_always = false;
     }
     else if (!_wcsicmp(s, L"always"))
