@@ -578,7 +578,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                     case '-':   enable = true; break;
                     case '+':   enable = false; break;
                     case 'v':   FlipFlag(flags, FMT_NOVOLUMEINFO, enable, true); break;
-                    case 'h':   FlipFlag(flags, enable ? FMT_NOHEADER : FMT_NOHEADER|FMT_NOVOLUMEINFO, enable, true); break;
+                    case 'h':   FlipFlag(flags, enable ? FMT_NOHEADER|FMT_NOVOLUMEINFO : FMT_NOHEADER, enable, true); break;
                     case 's':   FlipFlag(flags, FMT_NOSUMMARY, enable, true); break;
                     default:    FailFlag(*walk, opt_value, ch, long_opt, e); return e.Report();
                     }
