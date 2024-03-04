@@ -47,6 +47,7 @@ void PrintColorSamples()
     OutputConsole(h, L"\n");
     OutputCenter(h, L"This is a chart of ANSI color escape codes for 8-bit colors.");
     OutputCenter(h, L"To make a code, start with \x1b[48;5;237;38;5;253m 38;5; \x1b[m and append the listed number.");
+    OutputCenter(h, L"Or start with \x1b[48;5;237;38;5;253m 48;5; \x1b[m for a background color.");
 
     OutputConsole(h, L"\n");
     OutputCenter(h, L"System colors:", true);
