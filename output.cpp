@@ -355,11 +355,15 @@ static unsigned CLinesFromString(const WCHAR* p, unsigned len, unsigned max_widt
     unsigned cx = 0;
     unsigned cLines = 1;
 
+    if (!max_width)
+        --max_width;
+
     ecma48_state state;
     ecma48_iter iter(p, state, len);
     while (const ecma48_code& code = iter.next())
     {
-        if (code.get_type() != ecma48_code::type_chars)
+        if (code.get_type() != ecma48_code::type_chars &&
+            code.get_type() != ecma48_code::type_c0)
             continue;
 
         len = code.get_length();
@@ -368,6 +372,9 @@ static unsigned CLinesFromString(const WCHAR* p, unsigned len, unsigned max_widt
             switch (*p)
             {
             case '\b':
+                if (cx)
+                    --cx;
+                continue;
             case '\r':
             case '\n':
                 continue;
@@ -740,5 +747,76 @@ LDirect:
         p = walk;
         len -= run;
     }
+}
+
+void ExpandTabs(const WCHAR* s, StrW& out, unsigned max_width)
+{
+    StrW tmp;
+
+    if (!max_width)
+    {
+        const DWORD dwColsRows = GetConsoleColsRows(GetStdHandle(STD_OUTPUT_HANDLE));
+        max_width = LOWORD(dwColsRows);
+        if (!max_width)
+            --max_width;
+    }
+
+    unsigned cx = 0;
+
+    ecma48_state state;
+    ecma48_iter iter(s, state);
+    while (const ecma48_code& code = iter.next())
+    {
+        if (code.get_type() != ecma48_code::type_chars &&
+            code.get_type() != ecma48_code::type_c0)
+        {
+            tmp.Append(code.get_pointer(), code.get_length());
+            continue;
+        }
+
+        unsigned len = code.get_length();
+        for (s = code.get_pointer(); *s && len; ++s, len--)
+        {
+            switch (*s)
+            {
+            case '\b':
+                if (cx)
+                    --cx;
+                tmp.Append(s, 1);
+                break;
+            case '\r':
+            case '\n':
+                cx = 0;
+                tmp.Append(s, 1);
+                break;
+            case '\t':
+                {
+                    unsigned new_cx = cx + c_cxTab - (cx % c_cxTab);
+                    if (new_cx >= max_width)
+                    {
+                        tmp.AppendSpaces(max_width - cx);
+                        cx = 0;
+                    }
+                    else
+                    {
+                        tmp.AppendSpaces(new_cx - cx);
+                        cx = new_cx;
+                    }
+                }
+                break;
+            default:
+                const WCHAR* a = s;
+                const char32_t ch = __decode(s, &len);
+                int w = __wcwidth(ch);
+                cx += (w < 0) ? 1 : w;
+                if (cx >= max_width)
+                    cx = (cx > max_width) ? w : 0;
+                tmp.Append(a, (s - a) + 1);
+                break;
+            }
+        }
+    }
+
+    out.Swap(tmp);
 }
 

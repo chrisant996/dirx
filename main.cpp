@@ -387,6 +387,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             s.Printf(fmt.Text(), app.Text());
         }
         SetPagination(true);
+        ExpandTabs(s.Text(), s);
         OutputConsole(GetStdHandle(STD_OUTPUT_HANDLE), s.Text());
         return 0;
     }
