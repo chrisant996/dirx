@@ -14,4 +14,5 @@
 - Configurable icon mappings?
 - Option to show column headers?
 - Post-process column computation to reduce rows by shifting items into a new column?  `ls` does not, but `eza` does.  I'm not sure I like the effect on the list; it makes it easy to lose track of the final column since it can end up having only a few files instead of at least ((N/COLS)-COLS) files.
+- Refactor width fitting so it can be deferred, and create an (MAXCOLS^2)/2 triangle of picture formatters?  It would use around 600KB of memory.  I'm not convinced the layout benefits are worth the performance costs or development costs.
 

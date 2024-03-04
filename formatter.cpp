@@ -894,6 +894,28 @@ void DirEntryFormatter::OnDirectoryEnd(const WCHAR* dir, bool next_dir_is_differ
                         }
                         else
                         {
+                            // This would like to fit each field independently
+                            // for each column.  But the bookkeeping for that
+                            // is expensive -- it needs (C*(C+1))/2 picture
+                            // formatters, where C is max number of columns
+                            // supported (SUPPORTED, not used).  It would need
+                            // to do width fitting in all of them, but only
+                            // for a subset of items in each, until that
+                            // candidate number of columns gets invalidated.
+                            // It's certainly possible, but I'm not convinced
+                            // it's worth the overhead performance cost, just
+                            // to save a couple characters here or there.
+                            //
+                            // Instead, this allows the Filename field(s) to
+                            // autofit, and uses the pre-calculated minimum
+                            // field widths based on the full collection of
+                            // files.
+                            //
+                            // But, it might be reasonable to refactor the
+                            // width fitting calculations so they happen
+                            // incrementally during CalculateColumns, instead
+                            // of happening during the file system scan, when
+                            // rendering is not Immediate.
                             col_widths = CalculateColumns([this, &picture](size_t i){
                                 return picture.GetMinWidth(m_files[i].get());
                             }, m_files.size(), vertical, spacing, console_width - 1);
