@@ -10,9 +10,11 @@ The demo image above was produced using the following:
 set DIRX_COLORS=di=1;33:ro=32:ro ex=1;32:ex=1:co=35:hi=38;2;204;64;64:sy=38;2;204;64;64:*.zip=36:da=38;5;33:sc=33:bu=33;4
 set DIRX_COLORS=%DIRX_COLORS%:sn=38;5;244:nt=38;2;239;65;54:ng=38;2;252;176;64:nm=38;2;240;230;50:nk=38;2;142;198;64:nb=38;2;1;148;68:sb=38;5;240
 
-set DIRXCMD=--icons --compact -Qv -whjv -Z -k -a-
+set DIRXCMD=--icons
 
-dirx -f "F19 S D T? G?"
+doskey d=dirx.exe --compact -Qv -whjv -Z -a- -f "F19 S D T? G?" $*
+
+d -k
 ```
 
 ## Usage
