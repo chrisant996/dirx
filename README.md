@@ -4,7 +4,7 @@ Displays a list of file and subdirectories in a directory.
 
 DirX is designed so that most command line options from the CMD `dir` command work the same, to make DirX mostly a drop-in replacement for `dir`.
 
-_**TBD: Sample screen shot(s).**_
+![image](demo1.png)
 
 ## Usage
 
