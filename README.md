@@ -39,12 +39,12 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 
 <table>
 <tr><td><code>-?</code>, <code>--help</code></td><td>Display the help text.</td></tr>
-<tr><td><code>-? colors</code></td><td>Display help text on [color coding the file list](#colors).</td></tr>
+<tr><td><code>-? colors</code></td><td>Display help text on <a href="#colors">color coding the file list</a>.</td></tr>
 <tr><td><code>-? colorsamples</code></td><td>Display samples of the supported color codes.</td></tr>
 <tr><td><code>-? defaultcolors</code></td><td>Print the default DIRX_COLORS string.</td></tr>
-<tr><td><code>-? icons</code></td><td>Display help text on [file icons and Nerd Fonts](#icons).</td></tr>
-<tr><td><code>-? pictures</code></td><td>Display help text on [format pictures](#format-pictures).</td></tr>
-<tr><td><code>-? regex</code></td><td>Display help text on [regular expression syntax](#regular-expressions).</td></tr>
+<tr><td><code>-? icons</code></td><td>Display help text on <a href="#icons">file icons and Nerd Fonts</a>.</td></tr>
+<tr><td><code>-? pictures</code></td><td>Display help text on <a href="#format-pictures">format pictures</a>.</td></tr>
+<tr><td><code>-? regex</code></td><td>Display help text on <a href="#regular-expressions">regular expression syntax</a>.</td></tr>
 <tr><td><code>-V</code>, <code>--version</code></td><td>Display version information.</td></tr>
 </table>
 
