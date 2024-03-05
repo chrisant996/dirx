@@ -89,7 +89,7 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 #### Filtering and Sorting Options
 
 <table>
-<tr><td><code>-a[...]</code></td><td>Display files with the specified attributes.  If attributes are combined, all attributes must match (-arhs only lists files with all three attributes set).  The - prefix excludes files with that attribute (-arh-s lists files that are read-only and hidden and not system).  The + prefix includes files that have any of the + attributes set (-ar+h+s lists files that are read-only and are hidden or system).
+<tr><td><code>-a[...]</code></td><td>Display files with the specified attributes.  If attributes are combined, all attributes must match (<code>-arhs</code> only lists files with all three attributes set).  The <code>-</code> prefix excludes files with that attribute (<code>-arh-s</code> lists files that are read-only and hidden and not system).  The <code>+</code> prefix includes files that have any of the + attributes set (<code>-ar+h+s</code> lists files that are read-only and are hidden or system).
     <table>
     <tr><td><code>r</code> Read-only files</td><td><code>e</code> Encrypted files</td></tr>
     <tr><td><code>h</code> Hidden files</td><td><code>t</code> Temporary files</td></tr>
