@@ -763,6 +763,8 @@ unrecognized_long_opt_value:
             case LOI_NO_GIT_IGNORE:         flagsOFF = FMT_GITIGNORE; break;
             case LOI_GIT_REPOS:             flagsON = FMT_GIT|FMT_GITREPOS; break;
             case LOI_GIT_REPOS_NO_STATUS:   flagsOFF = FMT_GITREPOS; break;
+            case LOI_HIDE_DOT_FILES:        HideDotFiles(true); break;
+            case LOI_NO_HIDE_DOT_FILES:     HideDotFiles(false); break;
             case LOI_HORIZONTAL:            flagsOFF = FMT_SORTVERTICAL; break;
             case LOI_HYPERLINKS:            flagsON = FMT_HYPERLINKS; break;
             case LOI_NO_HYPERLINKS:         flagsOFF = FMT_HYPERLINKS; break;
