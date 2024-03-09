@@ -8,8 +8,6 @@
 
 const char c_usage[] = "%s -? for help.";
 
-// --nix
-
 const char c_long_usage[] =
 "Displays a list of file and subdirectories in a directory.\n"
 "\n"
@@ -184,7 +182,7 @@ const char c_long_usage[] =
 "			environment variable (use '-? colors' for more info).\n"
 "  --nerd-fonts=VER	Select which Nerd Fonts version to use (see '-? colors'\n"
 "			for more info).\n"
-"  --nix		Selects default options that are similar to Unix and\n"
+"  --nix			Selects default options that are similar to Unix and\n"
 "			Linux systems.  Hides files starting with '.', skips\n"
 "			recursing into hidden directories, sorts vertically,\n"
 "			displays the file list in wide mode, selects 'compact'\n"
