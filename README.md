@@ -65,13 +65,13 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 <tr><td><code>-l</code>, <code>--long</code></td><td>Long mode; display one file per line, plus attributes.</td></tr>
 <tr><td><code>-n</code>, <code>--normal</code></td><td>Force normal list format even on FAT volumes.</td></tr>
 <tr><td><code>-Q</code>, <code>--quash[=TYPES]</code></td><td>Quash types of output.  Use <code>-Q</code> by itself as a synonym for <code>-Q+v+h+s</code>.<br/><em>TYPES</em> can be:
-    <table>
-    <tr><td><code>v</code></td><td>Suppress the volume information.</td></tr>
-    <tr><td><code>h</code></td><td>Suppress the header.</td></tr>
-    <tr><td><code>s</code></td><td>Suppress the summary.</td></tr>
-    <tr><td><code>-</code></td><td>Prefix to suppress next type (the default).</td></tr>
-    <tr><td><code>+</code></td><td>Prefix to un-suppress next type.</td></tr>
-    </table>
+    <ul>
+    <li><code>v</code> Suppress the volume information.</li>
+    <li><code>h</code> Suppress the header.</li>
+    <li><code>s</code> Suppress the summary.</li>
+    <li><code>-</code> Prefix to suppress next type (the default).</li>
+    <li><code>+</code> Prefix to un-suppress next type.</li>
+    </ul>
     </td></tr>
 <tr><td><code>-p</code>, <code>--paginate</code></td><td>Pause after each screen full of information.</td></tr>
 <tr><td><code>-R</code></td><td>Synonym for <code>--recurse</code>.</td></tr>
@@ -90,43 +90,48 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 
 <table>
 <tr><td><code>-a[...]</code></td><td>Display files with the specified attributes.  If attributes are combined, all attributes must match (<code>-arhs</code> only lists files with all three attributes set).  The <code>-</code> prefix excludes files with that attribute (<code>-arh-s</code> lists files that are read-only and hidden and not system).  The <code>+</code> prefix includes files that have any of the + attributes set (<code>-ar+h+s</code> lists files that are read-only and are hidden or system).
-    <table>
-    <tr><td><code>r</code> Read-only files</td><td><code>e</code> Encrypted files</td></tr>
-    <tr><td><code>h</code> Hidden files</td><td><code>t</code> Temporary files</td></tr>
-    <tr><td><code>s</code> System files</td><td><code>p</code> Sparse files</td></tr>
-    <tr><td><code>a</code> Ready for archiving</td><td><code>c</code> Compressed files</td></tr>
-    <tr><td><code>d</code> Directories</td><td><code>o</code> Offline files</td></tr>
-    <tr><td><code>i</code> Not content indexed files</td></tr>
-    <tr><td><code>j</code> Reparse points (mnemonic for junction)</td></tr>
-    <tr><td><code>l</code> Reparse points (mnemonic for link)</td></tr>
-    <tr><td><code>+</code> Prefix meaning any</td></tr>
-    <tr><td><code>-</code> Prefix meaning not</td></tr>
-    </table></td></tr>
+    <ul>
+    <li><code>r</code> Read-only files</li>
+    <li><code>h</code> Hidden files</li>
+    <li><code>s</code> System files</li>
+    <li><code>a</code> Ready for archiving</li>
+    <li><code>d</code> Directories</li>
+    <li><code>i</code> Not content indexed files</li>
+    <li><code>j</code> Reparse points (mnemonic for junction)</li>
+    <li><code>l</code> Reparse points (mnemonic for link)</li>
+    <li><code>e</code> Encrypted files</li>
+    <li><code>t</code> Temporary files</li>
+    <li><code>p</code> Sparse files</li>
+    <li><code>c</code> Compressed files</li>
+    <li><code>o</code> Offline files</li>
+    <li><code>+</code> Prefix meaning any</li>
+    <li><code>-</code> Prefix meaning not</li>
+    </ul></td></tr>
 <tr><td><code>-A</code>, <code>--almost-all</code></td><td>Display all files, except hide . and .. directories.</td></tr>
 <tr><td><code>-h</code></td><td>Hide . and .. directories.</td></tr>
 <tr><td><code>-I</code>, <code>--ignore-glob=GLOB</code></td><td>Glob patterns of files to ignore; the syntax is the same as in <code>.gitignore</code>.  The <code>/</code> is used as the directory separator.  An optional <code>!</code> prefix negates a pattern; any matching file excluded by a previous pattern will be included again.  Multiple patterns may be specified separated by a <code>;</code> or <code>|</code> character.</td></tr>
 <tr><td><code>-L</code>, <code>--levels=DEPTH</code></td><td>Limit the depth of recursion with <code>-s</code>.</td></tr>
 <tr><td><code>-o[...]</code></td><td>Sort the list by the specified options:
-    <table>
-    <tr><td><code>n</code> Name [and extension if <code>e</code> omitted] (alphabetic)</td></tr>
-    <tr><td><code>e</code> Extension (alphabetic)</td></tr>
-    <tr><td><code>g</code> Group directories first</td></tr>
-    <tr><td><code>d</code> Date/time (oldest first)</td></tr>
-    <tr><td><code>s</code> Size (smallest first)</td></tr>
-    <tr><td><code>c</code> Compression ratio</td></tr>
-    <tr><td><code>a</code> Simple ASCII order (sort <code>10</code> before <code>2</code>)</td></tr>
-    <tr><td><code>u</code> Unsorted</td></tr>
-    <tr><td><code>r</code> Reverse order for all options</td></tr>
-    <tr><td><code>-</code> Prefix to reverse order</td></tr>
-    </table></td></tr>
+    <ul>
+    <li><code>n</code> Name [and extension if <code>e</code> omitted] (alphabetic)</li>
+    <li><code>e</code> Extension (alphabetic)</li>
+    <li><code>g</code> Group directories first</li>
+    <li><code>d</code> Date/time (oldest first)</li>
+    <li><code>s</code> Size (smallest first)</li>
+    <li><code>c</code> Compression ratio</li>
+    <li><code>a</code> Simple ASCII order (sort <code>10</code> before <code>2</code>)</li>
+    <li><code>u</code> Unsorted</li>
+    <li><code>r</code> Reverse order for all options</li>
+    <li><code>-</code> Prefix to reverse order</li>
+    </ul></td></tr>
 <tr><td><code>-X</code>, <code>--skip=TYPES</code></td><td>Skip types during <code>-s</code>.  Use <code>-X</code> by itself as a synonym for <code>-X+d+j+r</code>.
-    <table>
-    <tr><td><code>d</code> Skip hidden directories (when used with <code>-s</code>)</td></tr>
-    <tr><td><code>j</code> Skip junctions (when used with <code>-s</code>)</td></tr>
-    <tr><td><code>r</code> Skip files with no alternate data streams</td></tr>
-    <tr><td><code>-</code> Prefix to skip next type (this is the default)</td></tr>
-    <tr><td><code>+</code> Prefix to un-skip next type</td></tr>
-    </table></td></tr>
+    <ul>
+    <li><code>d</code> Skip hidden directories (when used with <code>-s</code>)</li>
+    <li><code>j</code> Skip junctions (when used with <code>-s</code>)</li>
+    <li><code>r</code> Skip files with no alternate data streams</li>
+    <li><code>-</code> Prefix to skip next type (this is the default)</li>
+    <li><code>+</code> Prefix to un-skip next type</li>
+    </ul></td></tr>
 <tr><td><code>--git-ignore</code></td><td>Ignore files mentioned in .gitignore files.</td></tr>
 <tr><td><code>--hide-dot-files</code></td><td>Hide file and directory names starting with <code>.</code> or <code>_</code>.<br/>
     Using <code>-a</code> overrides this and shows them anyway.</td></tr>
@@ -143,19 +148,19 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 <tr><td><code>-r</code>, <code>--streams</code></td><td>List alternate data streams of the file.</td></tr>
 <tr><td><code>-S</code>, <code>--size</code></td><td>List the file size even in multple column formats.</td></tr>
 <tr><td><code>-S[acf]</code>, <code>--size=acf</code></td><td>Which size field to display or use for sorting:
-    <table>
-    <tr><td><code>a</code></td><td>Allocation size.</td></tr>
-    <tr><td><code>c</code></td><td>Compressed size.</td></tr>
-    <tr><td><code>f</code></td><td>File size (default).</td></tr>
-    </table></td></tr>
+    <ul>
+    <li><code>a</code> Allocation size.</li>
+    <li><code>c</code> Compressed size.</li>
+    <li><code>f</code> File size (default).</li>
+    </ul></td></tr>
 <tr><td><code>-t</code>, <code>--attributes</code></td><td>List the file attributes (use the flag twice to list all attributes, e.g. <code>-tt</code>).</td></tr>
 <tr><td><code>-T</code>, <code>--time</code></td><td>List the file time even in multiple column formats.</td></tr>
 <tr><td><code>-T[acw]</code>, <code>--time=acw</code></td><td>Which time field to display or use for sorting:
-    <table>
-    <tr><td><code>a</code></td><td>Access time.</td></tr>
-    <tr><td><code>c</code></td><td>Creation time.</td></tr>
-    <tr><td><code>w</code></td><td>Write time (default).</td></tr>
-    </table></td></tr>
+    <ul>
+    <li><code>a</code> Access time.</li>
+    <li><code>c</code> Creation time.</li>
+    <li><code>w</code> Write time (default).</li>
+    </ul></td></tr>
 <tr><td><code>-x</code>, <code>--short-names</code></td><td>Show 8.3 short file names.</td></tr>
 </table>
 
@@ -342,6 +347,8 @@ Colors are the [SGR parameter](https://en.wikipedia.org/wiki/ANSI_escape_code#SG
 
 The following color parameters are allowed.  Note that the color parameters are just sent to the terminal, and it is the terminal's responsibility to draw them properly.  Some parameters might not work in all terminal programs.
 
+Run `dirx -? colorsamples` to display a chart of the 8-bit color codes and the available styles.
+
 #### Styles:
 Code | Description | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Code | Description
 -|-|-|-|-
@@ -367,7 +374,7 @@ Code | Description | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Code | D
 `36` | dark cyan | | `96` | bright cyan
 `37` | dark white (gray) | | `97` | bright white
 
-To make a background color, add 10 to the color values above.
+To make a background color, add 10 to the text color values above.
 
 #### Extended colors:
 
@@ -376,7 +383,7 @@ Code | Description
 `38;2;n;n;n` | Specify a 24-bit color where each _n_ is from 0 to 255, and the order is _red_`;`_green_`;`_blue_.
 `38;5;n` | Specify an 8-bit color where _n_ is from 0 to 255.  Refer to the wikipedia link above for details.
 
-Run `dirx -? colorsamples` to display a chart of the 8-bit color codes and the available styles.
+To make a background color, add 10 to the extended color values above.
 
 ### Environment Variables
 
@@ -424,58 +431,58 @@ Use the `-f` option to specify a custom format picture to list files.  Format pi
 
 <table>
 <tr><td><code>F[#flx]</td><td>Filename field.  By default this automatically chooses the field width and style based on the other options used.
-    <table>
-    <tr><td><code>#</code> A number indicating the width for the field.  If a file name is wider, it is truncated.  If a file name is narrower, it is padded with spaces to the right.</td></tr>
-    <tr><td><code>f</code> Use FAT name format.</td></tr>
-    <tr><td><code>l</code> Show the long file name.</td></tr>
-    <tr><td><code>x</code> Show the short file name.</td></tr>
-    </table></td></tr>
+    <ul>
+    <li><code>#</code> A number indicating the width for the field.  If a file name is wider, it is truncated.  If a file name is narrower, it is padded with spaces to the right.</li>
+    <li><code>f</code> Use FAT name format.</li>
+    <li><code>l</code> Show the long file name.</li>
+    <li><code>x</code> Show the short file name.</li>
+    </ul></td></tr>
 <tr><td><code>S[msacf]</td><td>Size field.  By default this automatically chooses the field width and style based on the other options used.
-    <table>
-    <tr><td><code>m</code> Use mini format (use 4 characters, always abbreviate).</td></tr>
-    <tr><td><code>s</code> Use short format (use 9 characters, abbreviate when necessary).</td></tr>
-    <tr><td><code>a</code> Show the file allocation size.</td></tr>
-    <tr><td><code>c</code> Show the compressed file size.</td></tr>
-    <tr><td><code>f</code> Show the file data size.</td></tr>
-    </table></td></tr>
+    <ul>
+    <li><code>m</code> Use mini format (use 4 characters, always abbreviate).</li>
+    <li><code>s</code> Use short format (use 9 characters, abbreviate when necessary).</li>
+    <li><code>a</code> Show the file allocation size.</li>
+    <li><code>c</code> Show the compressed file size.</li>
+    <li><code>f</code> Show the file data size.</li>
+    </ul></td></tr>
 <tr><td><code>D[lmsxacw]</td><td>Date and time field.  By default this automatically chooses the field width and style based on the other options used.
-    <table>
-    <tr><td><code>l</code> Use locale format (like CMD with extensions enabled).</td></tr>
-    <tr><td><code>m</code> Use mini format (11 characters with time for recent files or year for older files).</td></tr>
-    <tr><td><code>i</code> Use iso format (11 characters; excludes year).</td></tr>
-    <tr><td><code>p</code> Use compact format (12 characters with time for recent files or year for older files; includes month name).</td></tr>
-    <tr><td><code>s</code> Use short format (15 characters with 2 digit year).</td></tr>
-    <tr><td><code>o</code> Use long iso format (16 characters with 4 digit year).</td></tr>
-    <tr><td><code>n</code> Use normal format (17 characters with 4 digit year).</td></tr>
-    <tr><td><code>x</code> Use extended format (24 characters with 4 digit year, plus minutes and milliseconds).</td></tr>
-    <tr><td><code>a</code> Show the last access time.</td></tr>
-    <tr><td><code>c</code> Show the creation time.</td></tr>
-    <tr><td><code>w</code> Show the last write time.</td></tr>
-    </table></td></tr>
+    <ul>
+    <li><code>l</code> Use locale format (like CMD with extensions enabled).</li>
+    <li><code>m</code> Use mini format (11 characters with time for recent files or year for older files).</li>
+    <li><code>i</code> Use iso format (11 characters; excludes year).</li>
+    <li><code>p</code> Use compact format (12 characters with time for recent files or year for older files; includes month name).</li>
+    <li><code>s</code> Use short format (15 characters with 2 digit year).</li>
+    <li><code>o</code> Use long iso format (16 characters with 4 digit year).</li>
+    <li><code>n</code> Use normal format (17 characters with 4 digit year).</li>
+    <li><code>x</code> Use extended format (24 characters with 4 digit year, plus minutes and milliseconds).</li>
+    <li><code>a</code> Show the last access time.</li>
+    <li><code>c</code> Show the creation time.</li>
+    <li><code>w</code> Show the last write time.</li>
+    </ul></td></tr>
 <tr><td><code>C[?]</td><td>Compression ratio field.  By default this shows the field even if the corresponding option was not specified.
-    <table>
-    <tr><td><code>?</code> Show only if the corresponding option was specified.</td></tr>
-    </table></td></tr>
+    <ul>
+    <li<code>?</code> Show only if the corresponding option was specified.</li>
+    </ul></td></tr>
 <tr><td><code>O[?]</td><td>Owner field.  By default this shows the field even if the corresponding option was not specified.
-    <table>
-    <tr><td><code>?</code> Show only if the corresponding option was specified.</td></tr>
-    </table></td></tr>
+    <ul>
+    <li><code>?</code> Show only if the corresponding option was specified.</li>
+    </ul></td></tr>
 <tr><td><code>X[?]</td><td>Short name field.  By default this shows the field even if the corresponding option was not specified.
-    <table>
-    <tr><td><code>?</code> Show only if the corresponding option was specified.</td></tr>
-    </table></td></tr>
+    <ul>
+    <li><code>?</code> Show only if the corresponding option was specified.</li>
+    </ul></td></tr>
 <tr><td><code>T[...]</td><td>Attributes field.  By default this shows the field even if the corresponding option was not specified, and shows all file attributes.  Control which attributes are listed as follows:
-    <table>
-    <tr><td colspan=2><code>?</code> Show only if the corresponding option was specified.</td></tr>
-    <tr><td><code>r</code> Read-only</td><td><code>e</code> Encrypted</td></tr>
-    <tr><td><code>h</code> Hidden</td><td><code>t</code> Temporary</td></tr>
-    <tr><td><code>s</code> System</td><td><code>p</code> Sparse</td></tr>
-    <tr><td><code>a</code> Ready for archiving</td><td><code>c</code> Compressed</td></tr>
-    <tr><td><code>d</code> Directory</td><td><code>o</code> Offline</td></tr>
-    <tr><td><code>i</code> Not content indexed</td></tr>
-    <tr><td><code>j</code> Reparse point (mnemonic for junction)</td></tr>
-    <tr><td><code>l</code> Reparse point (mnemonic for link)</td></tr>
-    </table></td></tr>
+    <ul>
+    <li><code>?</code> Show only if the corresponding option was specified.</li>
+    <li><code>r</code> Read-only</td><td><code>e</code> Encrypted</li>
+    <li><code>h</code> Hidden</td><td><code>t</code> Temporary</li>
+    <li><code>s</code> System</td><td><code>p</code> Sparse</li>
+    <li><code>a</code> Ready for archiving</td><td><code>c</code> Compressed</li>
+    <li><code>d</code> Directory</td><td><code>o</code> Offline</li>
+    <li><code>i</code> Not content indexed</li>
+    <li><code>j</code> Reparse point (mnemonic for junction)</li>
+    <li><code>l</code> Reparse point (mnemonic for link)</li>
+    </ul></td></tr>
 <tr><td><code>G[?]</td><td>Git file status field.  When in a git repo, this shows two letters corresponding to the git file status.</td></tr>
 <tr><td><code>R[?]</td><td>Git repo field.  When listing a directory that is a git repo, this shows the status and branch name.</td></tr>
 </table>
