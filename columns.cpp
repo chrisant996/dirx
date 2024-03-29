@@ -105,7 +105,7 @@ ColumnWidths CalculateColumns(const std::function<unsigned(size_t)>&& item_width
 
             assert(max_columns > 0);
             assert(candidates[max_columns - 1].valid);
-            assert(!max_columns || candidates[max_columns - 1].line_width <= max_width);
+            assert(max_columns == 1 || candidates[max_columns - 1].line_width <= max_width);
 
             for (const unsigned* col_widths = candidates[max_columns - 1].column_widths; max_columns--;)
                 out.emplace_back(*(col_widths++));
