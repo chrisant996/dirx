@@ -306,14 +306,31 @@ DirPattern* MakePatterns(int argc, const WCHAR** argv, const DirFormatSettings& 
 {
     DirPattern* patterns = nullptr;
     DirPattern* tail = nullptr;
+    StrW tmp;
 
     while (argc)
     {
-        DirPattern* const p = new DirPattern;
-        p->m_patterns.emplace_back();
-        p->m_patterns.back().Set(argv[0]);
-        p->m_dir_rel.Set(argv[0]);
-        AppendToTail(patterns, tail, p);
+        const WCHAR* pattern = argv[0];
+        if (wcschr(pattern, '"'))
+        {
+            tmp.Clear();
+            for (const WCHAR* walk = pattern; *walk; ++walk)
+            {
+                if (*walk != '"')
+                    tmp.Append(walk, 1);
+            }
+            pattern = tmp.Text();
+        }
+
+        if (*pattern)
+        {
+            DirPattern* const p = new DirPattern;
+            p->m_patterns.emplace_back();
+            p->m_patterns.back().Set(pattern);
+            p->m_dir_rel.Set(pattern);
+            AppendToTail(patterns, tail, p);
+        }
+
         argc--;
         argv++;
     }
@@ -327,7 +344,6 @@ DirPattern* MakePatterns(int argc, const WCHAR** argv, const DirFormatSettings& 
         AppendToTail(patterns, tail, p);
     }
 
-    StrW tmp;
     DirPattern* cur = 0;
     for (DirPattern* p = patterns; p; p = p->m_next)
     {
