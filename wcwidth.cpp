@@ -331,7 +331,8 @@ char32_t __decode(const WCHAR*& p, unsigned* len)
       WCHAR trail = p[1];
       if ((trail & 0xFC00) == 0xDC00) {
         ch = 0x10000 + (ch - 0xD800) * 0x400 + (trail - 0xDC00);
-        --len;
+        if (len)
+          --(*len);
         ++p;
       }
     }
