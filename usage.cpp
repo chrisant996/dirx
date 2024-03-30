@@ -25,6 +25,7 @@ const char c_long_usage[] =
 "  -? defaultcolors	Print the default DIRX_COLORS string.\n"
 "  -? icons		Display help text on file icons and Nerd Fonts.\n"
 "  -? pictures		Display help text on format pictures.\n"
+"  -? printallicons	Print a list of all icons.\n"
 "  -? regex		Display help text on regular expression syntax.\n"
 "  -V, --version		Display version information.\n"
 "\n"
@@ -66,9 +67,6 @@ const char c_long_usage[] =
 "			Mode for --color-scale (use '-? colors' for more info).\n"
 "			  fixed, gradient (default)\n"
 "  --hyperlinks		Display entries as hyperlinks.\n"
-#ifdef DEBUG
-"  --print-all-icons	Print a list of all icons (DEBUG ONLY).\n"
-#endif
 "  --tree		Tree mode; recursively display files and directories in\n"
 "			a tree layout.\n"
 "\n"

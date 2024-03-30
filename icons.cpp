@@ -11,14 +11,13 @@
 #include "filesys.h"
 #include "patterns.h"
 
-#ifdef DEBUG
+// For PrintAllIcons...
 #include "colors.h"
 #include "output.h"
 #include "formatter.h"
 #include "columns.h"
 #include "wcwidth.h"
 #include <algorithm>
-#endif
 
 #include <unordered_map>
 
@@ -1203,7 +1202,6 @@ const WCHAR* LookupIcon(const WCHAR* full, DWORD attr)
     return icon;
 }
 
-#ifdef DEBUG
 static bool CmpCaseless(std::wstring& a, std::wstring& b)
 {
     return wcsicmp(a.c_str(), b.c_str()) < 0;
@@ -1241,6 +1239,8 @@ static void PrintIcons(HANDLE h, std::vector<std::wstring>& strings, DWORD attr,
             tmp.AppendSpaces(spaces);
             OutputConsole(h, tmp.Text(), spaces);
             tmp.Set(strings[index].c_str());
+            if (c)
+                tmp.Printf(L"\x1b[0;%sm", StripLineStyles(c));
             tmp.AppendSpaces(col_widths[j] - 1 - spaces - __wcswidth(strings[index].c_str()));
             OutputConsole(h, tmp.Text(), tmp.Length(), c);
         }
@@ -1282,5 +1282,4 @@ void PrintAllIcons()
     }
     PrintIcons(h, strings, FILE_ATTRIBUTE_NORMAL, S_IFREG);
 }
-#endif
 

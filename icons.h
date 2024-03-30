@@ -10,7 +10,5 @@
 void SetNerdFontsVersion(unsigned ver=3);
 const WCHAR* LookupIcon(const WCHAR* full, DWORD attr);
 
-#ifdef DEBUG
 void PrintAllIcons();
-#endif
 

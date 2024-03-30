@@ -126,9 +126,6 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
 
     const WCHAR* more_colors = nullptr;
     bool show_all_attributes = false;
-#ifdef DEBUG
-    int print_all_icons = 0;
-#endif
 
     enum
     {
@@ -298,9 +295,6 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-wide",               nullptr,            '>' },
         { L"width",                 nullptr,            'W',                    LOHA_REQUIRED },
         { L"word-sort",             nullptr,            LOI_WORD_SORT },
-#ifdef DEBUG
-        { L"print-all-icons",       &print_all_icons,   1 },
-#endif
         { nullptr }
     };
 
@@ -371,6 +365,12 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                 StrW tmp;
                 tmp.SetA(c_help_icons);
                 s.Printf(tmp.Text(), c_help_icons_examples);
+            }
+            else if (!wcsicmp(argv[0], L"printallicons"))
+            {
+                SetUseIcons(L"always");
+                PrintAllIcons();
+                return 0;
             }
             else if (!wcsicmp(argv[0], L"pictures"))
             {
@@ -1064,14 +1064,6 @@ unrecognized_long_opt_value:
         assert(!e.Test());
         InitColors(more_colors);
     }
-
-#ifdef DEBUG
-    if (print_all_icons)
-    {
-        PrintAllIcons();
-        return 0;
-    }
-#endif
 
     // Determine path(s) to scan.
 
