@@ -331,6 +331,10 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
 
     if (g_debug)
     {
+        // Disable buffering, otherwise output can get lost during transitions
+        // from wprintf() to WriteConsoleW().
+        setbuf(stdout, NULL);
+
         const WCHAR* dirxcmd = _wgetenv(c_DIRXCMD);
         if (dirxcmd)
             wprintf(L"debug: DIRXCMD=%s\n", dirxcmd);
