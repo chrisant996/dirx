@@ -334,9 +334,9 @@ static const NerdFontIcon c_common_icons[] =
     { L"󰨖", ____ },     // SUBTITLE
     { L"󱁢", ____ },     // TERRAFORM
     { L"",      },     // TEXT
-    { L"𝐭",      },     // TYPST
+    { L"𝐭", ____ },     // TYPST
     { L"",      },     // UNITY
-    { L"󰕙", L"縉" },     // VECTOR
+    { L"󰕙", ____ },     // VECTOR
     { L"",      },     // VIDEO
     { L"",      },     // VIM
     { L"",      },     // WRENCH
