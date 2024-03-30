@@ -406,6 +406,11 @@ void DirEntryFormatter::OnScanFiles(const WCHAR* dir, bool implicit, bool root_p
 
 void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const WCHAR* const dir_rel, const std::shared_ptr<const RepoStatus>& repo)
 {
+#ifdef DEBUG
+    assert(!m_in_dir);
+    m_in_dir = true;
+#endif
+
     const bool fReset = (Settings().IsSet(FMT_USAGEGROUPED) ?
                          (IsRootSubDir() || IsNewRootGroup(dir)) :
                          (!m_dir || !m_dir->dir.EqualI(dir)));
@@ -413,7 +418,10 @@ void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const WCHAR* co
         UpdateRootGroup(dir);
 
     if (g_debug)
+    {
         wprintf(L"debug: OnDirectoryBegin '%s'%s\n", dir, fReset ? L", reset root group" : L"");
+        m_tick_begin = GetTickCount();
+    }
 
 #ifdef DEBUG
     {
@@ -762,6 +770,11 @@ static void FormatFileTotals(StrW& s, unsigned cFiles, unsigned __int64 cbTotal,
 
 void DirEntryFormatter::OnDirectoryEnd(const WCHAR* dir, bool next_dir_is_different)
 {
+#ifdef DEBUG
+    assert(m_in_dir);
+    m_in_dir = false;
+#endif
+
     bool do_end = next_dir_is_different;
 
     if (Settings().IsSet(FMT_USAGEGROUPED))
@@ -1051,6 +1064,14 @@ void DirEntryFormatter::OnDirectoryEnd(const WCHAR* dir, bool next_dir_is_differ
             FormatFileTotals(s, CountFiles(), m_cbTotal, m_cbAllocated, m_cbCompressed, Settings());
             s.Append('\n');
             Render(new OutputText(std::move(s)));
+        }
+
+        if (g_debug)
+        {
+            StrW s;
+            const UINT elapsed = GetTickCount() - m_tick_begin;
+            s.Printf(L"debug: elapsed %u ms\n", elapsed);
+            Render(new OutputText(s.Text()));
         }
 
         m_cFiles = 0;

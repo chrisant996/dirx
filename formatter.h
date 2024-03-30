@@ -113,8 +113,10 @@ private:
 
     std::vector<std::unique_ptr<OutputOperation>> m_outputs;
 
+    UINT                m_tick_begin = 0;
 #ifdef DEBUG
     std::vector<StrW> m_seen_dirs;
+    bool                m_in_dir = false;
 #endif
 };
 
