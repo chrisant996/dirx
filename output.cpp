@@ -519,6 +519,7 @@ DWORD GetConsoleColsRows(HANDLE hout)
 
     static BOOL s_initialized = false;
     static HANDLE s_hout = INVALID_HANDLE_VALUE;
+    static HANDLE s_console = INVALID_HANDLE_VALUE;
     static BOOL s_is_console;
     static WORD s_num_cols = 80;
     static WORD s_num_rows = 25;
@@ -527,30 +528,38 @@ DWORD GetConsoleColsRows(HANDLE hout)
     {
         s_initialized = false;
         s_hout = hout;
+        if (s_console != INVALID_HANDLE_VALUE)
+            CloseHandle(s_console);
+        s_console = INVALID_HANDLE_VALUE;
     }
 
     if (!s_initialized)
     {
         s_is_console = IsConsole(hout);
 
-        if (!s_is_console)
+        if (s_is_console)
+        {
+            s_console = hout;
+        }
+        else
         {
             s_num_cols = 0;
             s_num_rows = 0;
+            s_console = CreateFileW(L"CONOUT$", GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, 0, 0);
+        }
+
+        if (s_is_console || s_console != INVALID_HANDLE_VALUE)
+        {
+            CONSOLE_SCREEN_BUFFER_INFO csbi;
+
+            if (GetConsoleScreenBufferInfo(s_console, &csbi))
+            {
+                s_num_cols = (csbi.srWindow.Right - csbi.srWindow.Left) + 1;
+                s_num_rows = (csbi.srWindow.Bottom - csbi.srWindow.Top) + 1;
+            }
         }
 
         s_initialized = true;
-    }
-
-    if (s_is_console)
-    {
-        CONSOLE_SCREEN_BUFFER_INFO csbi;
-
-        if (GetConsoleScreenBufferInfo(hout, &csbi))
-        {
-            s_num_cols = (csbi.srWindow.Right - csbi.srWindow.Left) + 1;
-            s_num_rows = (csbi.srWindow.Bottom - csbi.srWindow.Top) + 1;
-        }
     }
 
     if (s_console_width)
