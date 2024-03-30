@@ -537,7 +537,7 @@ const T* OptionsTemplate<T>::GetArg(
     const T**& walk,
     int& argc_to_process)
 {
-    if (*p)
+    if (p && *p)
         return p;
 
     if (!argc)
