@@ -44,6 +44,7 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 <tr><td><code>-? defaultcolors</code></td><td>Print the default DIRX_COLORS string.</td></tr>
 <tr><td><code>-? icons</code></td><td>Display help text on <a href="#icons">file icons and Nerd Fonts</a>.</td></tr>
 <tr><td><code>-? pictures</code></td><td>Display help text on <a href="#format-pictures">format pictures</a>.</td></tr>
+<tr><td><code>-? printallicons</code></td><td>Print a list of all icons.</td></tr>
 <tr><td><code>-? regex</code></td><td>Display help text on <a href="#regular-expressions">regular expression syntax</a>.</td></tr>
 <tr><td><code>-V</code>, <code>--version</code></td><td>Display version information.</td></tr>
 </table>
