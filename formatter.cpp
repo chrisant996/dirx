@@ -945,10 +945,18 @@ void DirEntryFormatter::OnDirectoryEnd(const WCHAR* dir, bool next_dir_is_differ
                                 return picture.GetMinWidth(m_files[i].get());
                             }, m_files.size(), vertical, spacing, console_width - 1);
 
-                            for (unsigned i = 0; i < col_widths.size(); ++i)
+                            if (col_widths.empty())
                             {
                                 col_pictures.emplace_back(picture);
-                                col_pictures.back().GetMaxWidth(col_widths[i], true);
+                                col_pictures.back().GetMaxWidth(console_width - 1, true);
+                            }
+                            else
+                            {
+                                for (unsigned i = 0; i < col_widths.size(); ++i)
+                                {
+                                    col_pictures.emplace_back(picture);
+                                    col_pictures.back().GetMaxWidth(col_widths[i], true);
+                                }
                             }
                         }
 
