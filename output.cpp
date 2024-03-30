@@ -611,8 +611,16 @@ static bool WriteConsoleInternal(HANDLE h, const WCHAR* p, unsigned len, const W
     {
         if (p[0] == '\n')
         {
-            if (!WriteFile(h, "\r\n", 2, &written, nullptr))
-                return false;
+            if (s_console)
+            {
+                if (!WriteConsoleW(h, L"\r\n", 2, &written, nullptr))
+                    return false;
+            }
+            else
+            {
+                if (!WriteFile(h, "\r\n", 2, &written, nullptr))
+                    return false;
+            }
             --len;
             ++p;
         }
