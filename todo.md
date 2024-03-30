@@ -1,6 +1,7 @@
 # FEATURES
 
 ### BUGS
+- `dirx --nix --icons=never \Windows\WinSxS\ --width 1` pads the column to wider than the console width.  That's the design, because of background colors, but when there's no background color it can look like extra blank lines are being printed.
 
 ### Back burner
 - Default colors.  Maybe a few different preset options; basic, attributes, file types?
