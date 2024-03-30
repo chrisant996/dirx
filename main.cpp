@@ -485,7 +485,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                 fresh_a_flag = true;
                 dwAttrIncludeAny = 0;
                 dwAttrMatch = 0;
-                dwAttrExcludeAny = FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM;
+                dwAttrExcludeAny = g_nix_defaults ? FILE_ATTRIBUTE_HIDDEN : FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM;
                 HideDotFiles(true);
                 continue;
             }
@@ -693,6 +693,7 @@ unrecognized_long_opt_value:
                 HideDotFiles(true);
                 flags |= FMT_COLORS|FMT_NODIRTAGINSIZE|FMT_FORCENONFAT|FMT_HIDEPSEUDODIRS|FMT_SORTVERTICAL|FMT_SKIPHIDDENDIRS|FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER;
                 flags &= ~(FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT|FMT_FAT|FMT_SHORTNAMES|FMT_ONLYSHORTNAMES|FMT_FULLNAME|FMT_AUTOSEPTHOUSANDS|FMT_SEPARATETHOUSANDS);
+                dwAttrExcludeAny &= ~FILE_ATTRIBUTE_SYSTEM;
                 SetDefaultTimeStyle(L"compact");
                 break;
             case LOI_NO_NIX:
@@ -700,6 +701,7 @@ unrecognized_long_opt_value:
                 HideDotFiles(false);
                 flags |= FMT_AUTOSEPTHOUSANDS;
                 flags &= ~(FMT_NODIRTAGINSIZE|FMT_HIDEPSEUDODIRS|FMT_SORTVERTICAL|FMT_FORCENONFAT|FMT_FAT|FMT_SKIPHIDDENDIRS|FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER);
+                dwAttrExcludeAny |= FILE_ATTRIBUTE_SYSTEM;
                 SetDefaultTimeStyle(L"locale");
                 SetDefaultTimeStyle(L"locale");
                 break;
