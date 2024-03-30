@@ -126,6 +126,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
 
     const WCHAR* more_colors = nullptr;
     bool show_all_attributes = false;
+    int utf8_stdout = 0;
 
     enum
     {
@@ -193,8 +194,6 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_TREE,
         LOI_NO_TREE,
         LOI_TRUNCATE_CHAR,
-        LOI_UTF8,
-        LOI_NO_UTF8,
         LOI_WORD_SORT,
     };
 
@@ -287,8 +286,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-tree",               nullptr,            LOI_NO_TREE },
         { L"truncate-char",         nullptr,            LOI_TRUNCATE_CHAR,      LOHA_REQUIRED },
         { L"usage",                 nullptr,            'u' },
-        { L"utf8",                  nullptr,            LOI_UTF8 },
-        { L"no-utf8",               nullptr,            LOI_NO_UTF8 },
+        { L"utf8",                  &utf8_stdout,       1 },
+        { L"no-utf8",               &utf8_stdout,       0 },
         { L"version",               nullptr,            'V' },
         { L"vertical",              nullptr,            'v' },
         { L"wide",                  nullptr,            'w' },
@@ -322,6 +321,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     }
 
     assert(!argvEnv.Argc());
+
+    SetUtf8Output(!!utf8_stdout);
 
     if (g_debug)
     {
@@ -788,8 +789,6 @@ unrecognized_long_opt_value:
             case LOI_NO_SHORT_NAMES:        flagsOFF = FMT_SHORTNAMES; break;
             case LOI_NO_STREAMS:            flagsOFF = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;
             case LOI_STRING_SORT:           g_dwCmpStrFlags |= SORT_STRINGSORT; break;
-            case LOI_UTF8:                  SetUtf8Output(true); break;
-            case LOI_NO_UTF8:               SetUtf8Output(false); break;
             case LOI_WORD_SORT:             g_dwCmpStrFlags &= ~SORT_STRINGSORT; break;
             }
             break;
