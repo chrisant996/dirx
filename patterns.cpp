@@ -10,6 +10,7 @@
 #include "handle.h"
 #include "flags.h"
 #include "git.h"
+#include "output.h"
 
 inline void AppendToTail(DirPattern*& head, DirPattern*& tail, DirPattern* p)
 {
@@ -395,7 +396,7 @@ DirPattern* MakePatterns(int argc, const WCHAR** argv, const DirFormatSettings& 
                 if (already)
                 {
                     if (g_debug)
-                        wprintf(L"debug: discard duplicate pattern '%s'\n", p->m_patterns[0].Text());
+                        Printf(L"debug: discard duplicate pattern '%s'\n", p->m_patterns[0].Text());
                     p->m_patterns[0].Clear();
                 }
                 else
@@ -680,7 +681,7 @@ bool GlobPatterns::Load(HANDLE h)
 void GlobPatterns::Dump() const
 {
     for (unsigned ii = 0; ii < Count(); ++ii)
-        wprintf(L"debug: glob %u=%s\n", ii, GetPattern(ii).Text());
+        Printf(L"debug: glob %u=%s\n", ii, GetPattern(ii).Text());
 }
 
 void GlobPatterns::Trim(StrW& s)
@@ -753,7 +754,7 @@ void DirPattern::AddGitIgnore(const WCHAR* dir)
 
             if (g_debug && globs.Count())
             {
-                wprintf(L"debug: .gitignore for %s\n", dir);
+                Printf(L"debug: .gitignore for %s\n", dir);
                 globs.Dump();
             }
 

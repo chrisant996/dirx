@@ -8,6 +8,7 @@
 #include "flags.h"
 #include "filesys.h"
 #include "patterns.h"
+#include "output.h"
 
 #include <regex>
 
@@ -150,7 +151,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const WCHAR
             (!ii && (implicit || !callbacks.IsRootSubDir())))
         {
             if (g_debug)
-                wprintf(L"debug: scan '%s' for files\n", s.Text());
+                Printf(L"debug: scan '%s' for files\n", s.Text());
 
             shFind = __FindFirstFile(s, callbacks.Settings().m_need_short_filenames, &fd);
             if (shFind.Empty())
@@ -232,7 +233,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const WCHAR
             }
 
             if (g_debug)
-                wprintf(L"debug: scan '%s' for directories\n", s.Text());
+                Printf(L"debug: scan '%s' for directories\n", s.Text());
 
             shFind.Close();
             shFind = __FindFirstFile(s, callbacks.Settings().m_need_short_filenames, &fd);

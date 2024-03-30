@@ -325,16 +325,12 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
 
     if (g_debug)
     {
-        // Disable buffering, otherwise output can get lost during transitions
-        // from wprintf() to WriteConsoleW().
-        setbuf(stdout, NULL);
-
         const WCHAR* dirxcmd = _wgetenv(c_DIRXCMD);
         if (dirxcmd)
-            wprintf(L"debug: DIRXCMD=%s\n", dirxcmd);
+            Printf(L"debug: DIRXCMD=%s\n", dirxcmd);
         const WCHAR* cmdline = GetCommandLineW();
         if (cmdline)
-            wprintf(L"debug: cmdline=%s\n", cmdline);
+            Printf(L"debug: cmdline=%s\n", cmdline);
     }
 
     // Full usage text.
@@ -1056,7 +1052,7 @@ unrecognized_long_opt_value:
     if (g_debug)
     {
         if (limit_depth != unsigned(-1))
-            wprintf(L"debug: levels: %u\n", limit_depth);
+            Printf(L"debug: levels: %u\n", limit_depth);
     }
 
     if (def.Settings().IsSet(FMT_COLORS))
@@ -1075,22 +1071,22 @@ unrecognized_long_opt_value:
     {
         StrW cwd;
         GetCwd(cwd);
-        wprintf(L"debug: cwd=%s\n", cwd.Text());
+        Printf(L"debug: cwd=%s\n", cwd.Text());
 
         int ii = 0;
         for (const auto* p = patterns; p; p = p->m_next, ++ii)
         {
-            wprintf(L"debug: pattern %u; dir '%s', fat %u, implicit %u, depth %u\n", ii, p->m_dir.Text(), p->m_isFAT, p->m_implicit, p->m_depth);
+            Printf(L"debug: pattern %u; dir '%s', fat %u, implicit %u, depth %u\n", ii, p->m_dir.Text(), p->m_isFAT, p->m_implicit, p->m_depth);
             if (def.Settings().IsSet(FMT_BARERELATIVE))
-                wprintf(L"debug: pattern %u; dir_rel '%s'\n", ii, p->m_dir_rel.Text());
-            wprintf(L"debug: pattern %u; patterns", ii);
+                Printf(L"debug: pattern %u; dir_rel '%s'\n", ii, p->m_dir_rel.Text());
+            Printf(L"debug: pattern %u; patterns", ii);
             for (unsigned jj = 0; jj < p->m_patterns.size(); ++jj)
             {
                 if (jj > 0)
-                    wprintf(L",");
-                wprintf(L" %s", p->m_patterns[jj].Text());
+                    Printf(L",");
+                Printf(L" %s", p->m_patterns[jj].Text());
             }
-            wprintf(L"\n");
+            Printf(L"\n");
         }
     }
 

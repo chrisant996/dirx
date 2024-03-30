@@ -14,7 +14,6 @@
 #include "ecma48.h"
 #include "wcwidth.h"
 #include "columns.h"
-#include "output.h"
 
 #include <algorithm>
 #include <memory>

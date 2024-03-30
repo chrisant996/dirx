@@ -99,14 +99,14 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags
     if (IsRedirectedStdOut())
     {
         if (g_debug)
-            wprintf(L"debug: output is redirected\n");
+            Printf(L"debug: output is redirected\n");
         m_settings.m_flags |= FMT_REDIRECTED;
     }
 
     if (!CanUseEscapeCodes(m_hout))
     {
         if (g_debug)
-            wprintf(L"debug: escape codes suppressed\n");
+            Printf(L"debug: escape codes suppressed\n");
         m_settings.m_flags &= ~FMT_HYPERLINKS;
     }
 
@@ -227,10 +227,10 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags
 
     if (g_debug)
     {
-        wprintf(L"debug: format flags: 0x%08.8x%08.8x\n", DWORD(ULONGLONG(flags) >> 32), DWORD(flags));
+        Printf(L"debug: format flags: 0x%08.8x%08.8x\n", DWORD(ULONGLONG(flags) >> 32), DWORD(flags));
         DebugPrintHideDotFilesMode();
-        wprintf(L"debug: immediate output: %s\n", m_fImmediate ? L"true" : L"false");
-        wprintf(L"debug: delayed render: %s\n", m_delayed_render ? L"true" : L"false");
+        Printf(L"debug: immediate output: %s\n", m_fImmediate ? L"true" : L"false");
+        Printf(L"debug: delayed render: %s\n", m_delayed_render ? L"true" : L"false");
     }
 }
 
@@ -419,7 +419,7 @@ void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const WCHAR* co
 
     if (g_debug)
     {
-        wprintf(L"debug: OnDirectoryBegin '%s'%s\n", dir, fReset ? L", reset root group" : L"");
+        Printf(L"debug: OnDirectoryBegin '%s'%s\n", dir, fReset ? L", reset root group" : L"");
         m_tick_begin = GetTickCount();
     }
 
@@ -709,7 +709,7 @@ void DirEntryFormatter::OnFile(const WCHAR* const dir, const WIN32_FIND_DATA* co
         if (g_debug)
         {
             const bool is_dir = !!(pfi->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY);
-            wprintf(L"debug: OnFile %s '%s'\n", is_dir ? L"DIR " : L"file", pfi->GetLongName().Text());
+            Printf(L"debug: OnFile %s '%s'\n", is_dir ? L"DIR " : L"file", pfi->GetLongName().Text());
         }
 
         if (fImmediate)
@@ -1068,10 +1068,8 @@ void DirEntryFormatter::OnDirectoryEnd(const WCHAR* dir, bool next_dir_is_differ
 
         if (g_debug)
         {
-            StrW s;
             const UINT elapsed = GetTickCount() - m_tick_begin;
-            s.Printf(L"debug: elapsed %u ms\n", elapsed);
-            Render(new OutputText(s.Text()));
+            Printf(L"debug: elapsed %u ms\n", elapsed);
         }
 
         m_cFiles = 0;
@@ -1333,7 +1331,7 @@ void DirEntryFormatter::AddSubDir(const StrW& dir, const StrW& dir_rel, unsigned
             {
                 if (globs->Count())
                 {
-                    wprintf(L"debug: .gitignore for '%s'\n", dir.Text());
+                    Printf(L"debug: .gitignore for '%s'\n", dir.Text());
                     globs->Dump();
                 }
 

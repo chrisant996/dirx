@@ -836,3 +836,18 @@ void ExpandTabs(const WCHAR* s, StrW& out, unsigned max_width)
     out.Swap(tmp);
 }
 
+void PrintfV(const WCHAR* format, va_list args)
+{
+    StrW s;
+    s.PrintfV(format, args);
+    OutputConsole(GetStdHandle(STD_OUTPUT_HANDLE), s.Text(), s.Length());
+}
+
+void Printf(const WCHAR* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    PrintfV(format, args);
+    va_end(args);
+}
+

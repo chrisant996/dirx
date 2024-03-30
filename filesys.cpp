@@ -5,6 +5,7 @@
 
 #include "pch.h"
 #include "filesys.h"
+#include "output.h"
 
 static int s_hide_dot_files = 0;
 
@@ -21,7 +22,7 @@ void HideDotFiles(int hide_dot_files)
 void DebugPrintHideDotFilesMode()
 {
     if (g_debug)
-        wprintf(L"debug: hide_dot_files=%d\n", s_hide_dot_files);
+        Printf(L"debug: hide_dot_files=%d\n", s_hide_dot_files);
 }
 
 bool IsPseudoDirectory(const WCHAR* dir)
