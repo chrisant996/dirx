@@ -803,7 +803,19 @@ void DirEntryFormatter::OnDirectoryEnd(const WCHAR* dir, bool next_dir_is_differ
         }
 
         if (*g_sort_order)
+        {
+            UINT tick_begin;
+            if (g_debug)
+                tick_begin = GetTickCount();
+
             std::sort(m_files.begin(), m_files.end(), CmpFileInfo);
+
+            if (g_debug)
+            {
+                const UINT elapsed = GetTickCount() - tick_begin;
+                Printf(L"debug: sort %zu file(s) in %u ms\n", m_files.size(), elapsed);
+            }
+        }
 
         if (m_grouped_patterns && m_files.size())
         {
