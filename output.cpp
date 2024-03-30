@@ -667,7 +667,6 @@ static bool WriteConsoleInternal(HANDLE h, const WCHAR* p, unsigned len, const W
         }
     }
 
-    ReleaseConsoleMutex();
     assert(!len);
     return true;
 }
