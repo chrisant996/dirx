@@ -12,6 +12,8 @@
 #include "fields.h"
 
 #include <vector>
+#include <list>
+#include <unordered_set>
 
 struct SubDir;
 
@@ -67,6 +69,9 @@ public:
     unsigned            CountDirs() const override { return m_cDirs; }
     bool                IsOnlyRootSubDir() const override;
     bool                IsRootSubDir() const override;
+#ifdef DEBUG
+    bool                HasPendingSubDirs() const override { return !m_pending_subdirs.empty(); }
+#endif
 
     bool                IsNewRootGroup(const WCHAR* dir) const;
     void                UpdateRootGroup(const WCHAR* dir);
@@ -101,7 +106,8 @@ private:
     unsigned __int64    m_cbCompressedTotal = 0;
 
     std::vector<std::unique_ptr<FileInfo>> m_files;
-    std::vector<SubDir> m_subdirs;
+    std::list<std::unique_ptr<SubDir>> m_subdirs;
+    std::vector<std::unique_ptr<SubDir>> m_pending_subdirs;
     StrW                m_root;
     StrW                m_root_group;
     bool                m_implicit = false;
@@ -115,7 +121,8 @@ private:
 
     UINT                m_tick_begin = 0;
 #ifdef DEBUG
-    std::vector<StrW> m_seen_dirs;
+    std::list<StrW>     m_seen_dirs_storage;
+    std::unordered_set<const WCHAR*, HashCaseless, EqualCaseless> m_seen_dirs;
     bool                m_in_dir = false;
 #endif
 };

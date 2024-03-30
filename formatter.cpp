@@ -322,6 +322,7 @@ bool DirEntryFormatter::OnVolumeBegin(const WCHAR* dir, Error& e)
     const bool line_break_before_volume = m_line_break_before_volume;
 
 #ifdef DEBUG
+    m_seen_dirs_storage.clear();
     m_seen_dirs.clear();
 #endif
 
@@ -427,16 +428,13 @@ void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const WCHAR* co
     {
         // Make sure OnDirectoryBegin is called only once per directory per
         // volume.
-        bool seen = false;
-        for (const auto& seen_dir : m_seen_dirs)
-            if (seen_dir.EqualI(dir))
-            {
-                seen = true;
-                break;
-            }
+        const bool seen = m_seen_dirs.find(dir) != m_seen_dirs.end();
         assert(!seen);
         if (!seen)
-            m_seen_dirs.emplace_back(dir);
+        {
+            m_seen_dirs_storage.emplace_back(dir);
+            m_seen_dirs.insert(m_seen_dirs_storage.back().Text());
+        }
     }
 #endif
 
@@ -779,7 +777,7 @@ void DirEntryFormatter::OnDirectoryEnd(const WCHAR* dir, bool next_dir_is_differ
 
     if (Settings().IsSet(FMT_USAGEGROUPED))
         do_end = (m_subdirs.empty() ||
-                  IsNewRootGroup(m_subdirs[0].dir.Text()));
+                  IsNewRootGroup(m_subdirs.front()->dir.Text()));
 
     if (do_end)
     {
@@ -1331,12 +1329,12 @@ void DirEntryFormatter::AddSubDir(const StrW& dir, const StrW& dir_rel, unsigned
     assert(Settings().IsSet(FMT_SUBDIRECTORIES));
     assert(!IsPseudoDirectory(dir.Text()));
 
-    SubDir subdir;
-    subdir.dir.Set(dir);
-    subdir.dir_rel.Set(dir_rel);
-    subdir.depth = depth;
-    subdir.git_ignore = git_ignore;
-    m_subdirs.emplace_back(std::move(subdir));
+    std::unique_ptr<SubDir> subdir = std::make_unique<SubDir>();
+    subdir->dir.Set(dir);
+    subdir->dir_rel.Set(dir_rel);
+    subdir->depth = depth;
+    subdir->git_ignore = git_ignore;
+    m_pending_subdirs.emplace_back(std::move(subdir));
 
     if (Settings().IsSet(FMT_GITIGNORE))
     {
@@ -1355,23 +1353,32 @@ void DirEntryFormatter::AddSubDir(const StrW& dir, const StrW& dir_rel, unsigned
                     globs->Dump();
                 }
 
-                subdir.git_ignore = globs;
+                subdir->git_ignore = globs;
             }
         }
     }
 
     if (Settings().IsSet(FMT_GIT|FMT_GITREPOS))
     {
-        subdir.repo = s_repo_map.Find(dir.Text());
-        if (!subdir.repo)
-            subdir.repo = repo;
+        subdir->repo = s_repo_map.Find(dir.Text());
+        if (!subdir->repo)
+            subdir->repo = repo;
     }
 }
 
 void DirEntryFormatter::SortSubDirs()
 {
-    if (!m_subdirs.empty())
-        std::sort(m_subdirs.begin(), m_subdirs.end(), CmpSubDirs);
+    if (!m_pending_subdirs.empty())
+    {
+        std::sort(m_pending_subdirs.begin(), m_pending_subdirs.end(), CmpSubDirs);
+
+        assert(m_subdirs.empty() || CmpSubDirs(m_pending_subdirs.back(), m_subdirs.front()));
+
+        for (size_t ii = m_pending_subdirs.size(); ii--;)
+            m_subdirs.push_front(std::move(m_pending_subdirs[ii]));
+
+        m_pending_subdirs.clear();
+    }
 }
 
 bool DirEntryFormatter::NextSubDir(StrW& dir, StrW& dir_rel, unsigned& depth, std::shared_ptr<const GlobPatterns>& git_ignore, std::shared_ptr<const RepoStatus>& repo)
@@ -1386,12 +1393,13 @@ bool DirEntryFormatter::NextSubDir(StrW& dir, StrW& dir_rel, unsigned& depth, st
         return false;
     }
 
-    dir = std::move(m_subdirs[0].dir);
-    dir_rel = std::move(m_subdirs[0].dir_rel);
-    depth = m_subdirs[0].depth;
-    git_ignore = std::move(m_subdirs[0].git_ignore);
-    repo = std::move(m_subdirs[0].repo);
-    m_subdirs.erase(m_subdirs.begin());
+    auto& front = m_subdirs.front();
+    dir = std::move(front->dir);
+    dir_rel = std::move(front->dir_rel);
+    depth = front->depth;
+    git_ignore = std::move(front->git_ignore);
+    repo = std::move(front->repo);
+    m_subdirs.pop_front();
 
     // The only thing that needs the map is FormatGitRepo(), to avoid running
     // "git status" twice for the same repo.  So, once traversal dives into a

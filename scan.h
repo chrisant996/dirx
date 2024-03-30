@@ -36,6 +36,9 @@ public:
     virtual unsigned    CountDirs() const = 0;
     virtual bool        IsOnlyRootSubDir() const = 0;
     virtual bool        IsRootSubDir() const = 0;
+#ifdef DEBUG
+    virtual bool        HasPendingSubDirs() const = 0;
+#endif
 };
 
 int ScanDir(DirScanCallbacks& callbacks, const DirPattern* patterns, unsigned limit_depth, Error& e);

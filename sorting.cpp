@@ -103,7 +103,7 @@ static LONG ParseNum(const WCHAR*& p)
 
 DWORD g_dwCmpStrFlags = 0;
 
-int CmpStrN(const WCHAR* p1, int len1, const WCHAR* p2, int len2)
+int Sorting::CmpStrN(const WCHAR* p1, int len1, const WCHAR* p2, int len2)
 {
     const int n = CompareStringW(LOCALE_USER_DEFAULT, g_dwCmpStrFlags, p1, len1, p2, len2);
     if (!n)
@@ -114,7 +114,7 @@ int CmpStrN(const WCHAR* p1, int len1, const WCHAR* p2, int len2)
     return n - 2;
 }
 
-int CmpStrNI(const WCHAR* p1, int len1, const WCHAR* p2, int len2)
+int Sorting::CmpStrNI(const WCHAR* p1, int len1, const WCHAR* p2, int len2)
 {
     const int n = CompareStringW(LOCALE_USER_DEFAULT, g_dwCmpStrFlags|NORM_IGNORECASE, p1, len1, p2, len2);
     if (!n)
@@ -166,7 +166,7 @@ static int StrAlphaNumCompare(const WCHAR* p1, const WCHAR* p2)
         assert(implies(*end1, IsBeginNumeric(end1)));
         assert(implies(*end2, IsBeginNumeric(end2)));
 
-        const int result = CmpStrNI(p1, int(end1 - p1), p2, int(end2 - p2));
+        const int result = Sorting::CmpStrNI(p1, int(end1 - p1), p2, int(end2 - p2));
         if (result || !*end1)
             return result;
 
@@ -252,20 +252,20 @@ bool CmpFileInfo(const std::unique_ptr<FileInfo>& fi1, const std::unique_ptr<Fil
                     else if (name_len1 > name_len2)
                         n = 1;
                     else
-                        n = CmpStrI(ext1, ext2);
+                        n = Sorting::CmpStrI(ext1, ext2);
                 }
             }
             else
             {
                 if (s_ascii_sort)
-                    n = CmpStrI(name1, name2);
+                    n = Sorting::CmpStrI(name1, name2);
                 else
                     n = StrAlphaNumCompare(name1, name2);
             }
             break;
         case 'e':
             if (s_ascii_sort)
-                n = CmpStrI(ext1, ext2);
+                n = Sorting::CmpStrI(ext1, ext2);
             else
                 n = StrAlphaNumCompare(ext1, ext2);
             break;
@@ -305,8 +305,8 @@ bool CmpFileInfo(const std::unique_ptr<FileInfo>& fi1, const std::unique_ptr<Fil
     return n < 0;
 }
 
-bool CmpSubDirs(const SubDir& d1, const SubDir& d2)
+bool CmpSubDirs(const std::unique_ptr<SubDir>& d1, const std::unique_ptr<SubDir>& d2)
 {
-    return CmpStrI(d1.dir.Text(), d2.dir.Text()) < 0;
+    return Sorting::CmpStrI(d1->dir.Text(), d2->dir.Text()) < 0;
 }
 

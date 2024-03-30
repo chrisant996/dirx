@@ -252,6 +252,8 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const WCHAR
             }
             else
             {
+                assert(!callbacks.HasPendingSubDirs());
+
                 const unsigned new_depth = depth + 1;
                 assert(new_depth <= limit_depth);
                 do
