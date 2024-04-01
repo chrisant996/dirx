@@ -38,7 +38,7 @@ bool IsRedirectedStdOut()
 
 bool IsAsciiLineCharMode()
 {
-    return !s_utf8 && s_redirected_stdout;
+    return !s_utf8 && s_redirected_stdout && GetACP() != CP_UTF8;
 }
 
 bool SetUseEscapeCodes(const WCHAR* s)
