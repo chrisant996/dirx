@@ -339,6 +339,8 @@ bool SetPagination(bool paginate)
 {
     if (paginate)
     {
+        if (IsRedirectedStdOut())
+            return false;
         HANDLE hin = GetStdHandle(STD_INPUT_HANDLE);
         if (!GetConsoleMode(hin, &s_dwResetConsoleMode) ||
             !SetConsoleCtrlHandler(RestoreConsole, true) ||
