@@ -126,6 +126,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
 
     const WCHAR* more_colors = nullptr;
     bool show_all_attributes = false;
+    int print_all_icons = 0;
     int utf8_stdout = 0;
 
     enum
@@ -365,9 +366,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             }
             else if (!wcsicmp(argv[0], L"printallicons"))
             {
-                SetUseIcons(L"always");
-                PrintAllIcons();
-                return 0;
+                print_all_icons = true;
             }
             else if (!wcsicmp(argv[0], L"pictures"))
             {
@@ -381,16 +380,19 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                 s.SetA(c_help_regex);
             }
         }
-        if (s.Empty())
+        if (!print_all_icons)
         {
-            app.ToUpper();
-            fmt.SetA(c_long_usage);
-            s.Printf(fmt.Text(), app.Text());
+            if (s.Empty())
+            {
+                app.ToUpper();
+                fmt.SetA(c_long_usage);
+                s.Printf(fmt.Text(), app.Text());
+            }
+            SetPagination(true);
+            ExpandTabs(s.Text(), s);
+            OutputConsole(GetStdHandle(STD_OUTPUT_HANDLE), s.Text());
+            return 0;
         }
-        SetPagination(true);
-        ExpandTabs(s.Text(), s);
-        OutputConsole(GetStdHandle(STD_OUTPUT_HANDLE), s.Text());
-        return 0;
     }
 
     // Version information.
@@ -1058,6 +1060,15 @@ unrecognized_long_opt_value:
     {
         assert(!e.Test());
         InitColors(more_colors);
+    }
+
+    // Finally, print icons, if so requested.
+
+    if (print_all_icons)
+    {
+        SetUseIcons(L"always");
+        PrintAllIcons();
+        return 0;
     }
 
     // Determine path(s) to scan.
