@@ -346,7 +346,7 @@ static const NerdFontIcon c_common_icons[] =
 
     // Directories.
     { L"",      },     // FOLDER_TRASH
-    { L"",      },     // FOLDER_CONTACTS
+    { L"󰉌", L"" },     // FOLDER_CONTACTS
     { L"",      },     // FOLDER_DESKTOP
     { L"󰉍", L"" },     // FOLDER_DOWNLOADS
     { L"󰚝", L"ﮛ" },     // FOLDER_FAVORITES
