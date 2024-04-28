@@ -528,6 +528,15 @@ Operator | Description
 `\B` | Matches the null string not at a word boundary (`\Babc` matches `xabc` but not ` abc`).
 `\x` | Some _x_ characters have special meaning (refer to the full documentation).  For other characters, `\x` literally matches the character _x_.  Some characters require `\x` to match them, including `^`, `$`, `.`, `[`, `(`, `)`, `\|`, `!`, `?`, `+`, `*`, and `\`.
 
+## Building DirX
+
+DirX uses [Premake](http://premake.github.io) to generate Visual Studio solutions. Note that Premake >= 5.0.0-beta1 is required.
+
+1. Cd to your clone of dirx.
+2. Run <code>premake5.exe <em>toolchain</em></code> (where <em>toolchain</em> is one of Premake's actions - see `premake5.exe --help`).
+3. Build scripts will be generated in <code>.build\\<em>toolchain</em></code>. For example `.build\vs2022\dirx.sln`.
+4. Call your toolchain of choice (Visual Studio, msbuild.exe, etc).
+
 ## License
 
 Copyright (c) 2024 by Christopher Antos
