@@ -276,6 +276,13 @@ failed:
             }
 
             const char* parse = buffer + 3;
+            if (filestatus.staged == GitFileState::RENAMED)
+            {
+                const char* arrow = strstr(parse, " -> ");
+                if (arrow)
+                    parse = arrow + 4;
+            }
+
             const bool quoted = (*parse == '\"');
             if (quoted)
                 ++parse;
