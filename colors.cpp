@@ -143,6 +143,120 @@ static bool ParseNum(const WCHAR*& p, DWORD& num)
     return true;
 }
 
+int HasBackgroundColor(const WCHAR* p)
+{
+    // NOTE:  The caller is responsible for stripping leading/trailing spaces.
+
+    if (!p || !*p)      return false;   // nullptr or "" is "has no color specified".
+
+    if (p[0] == '0')
+    {
+        if (!p[1])      return false;   // "0" is default.
+        if (p[1] == '0')
+        {
+            if (!p[2])  return false;   // "00" is default.
+        }
+    }
+
+    enum { ST_NORMAL, ST_BYTES1, ST_BYTES2, ST_BYTES3, ST_XCOLOR };
+    int state = ST_NORMAL;
+    bool bk = false;
+
+    // Validate recognized color/style escape codes.
+    for (unsigned num = 0; true; ++p)
+    {
+        if (*p == ';' || !*p)
+        {
+            if (state == ST_NORMAL)
+            {
+                switch (num)
+                {
+                case 0:     // reset or normal
+                    bk = false;
+                    break;
+                case 1:     // bold
+                case 2:     // faint or dim
+                case 3:     // italic
+                case 4:     // underline
+                // case 5:     // slow blink
+                // case 6:     // rapid blink
+                case 7:     // reverse
+                // case 8:     // conceal (hide)
+                case 9:     // strikethrough
+                case 21:    // double underline
+                case 22:    // not bold and not faint
+                case 23:    // not italic
+                case 24:    // not underline
+                case 25:    // not blink
+                case 27:    // not reverse
+                // case 28:    // reveal (not conceal/hide)
+                case 29:    // not strikethrough
+                case 30: case 31: case 32: case 33: case 34: case 35: case 36: case 37: case 39:
+                /*case 40: case 41: case 42: case 43: case 44: case 45: case 46: case 47:*/ case 49:
+                // case 51:    // framed
+                // case 52:    // encircled
+                case 53:    // overline
+                // case 54:    // not framed and not encircled
+                case 55:    // not overline
+                case 59:    // default underline color
+                // case 73:    // superscript
+                // case 74:    // subscript
+                // case 75:    // not superscript and not subscript
+                case 90: case 91: case 92: case 93: case 94: case 95: case 96: case 97:
+                // case 100: case 101: case 102: case 103: case 104: case 105: case 106: case 107:
+                    break;
+                case 38:    // set foreground color
+                // case 48:    // set background color
+                // case 58:    // set underline color
+                    state = ST_XCOLOR;
+                    break;
+                case 40: case 41: case 42: case 43: case 44: case 45: case 46: case 47:
+                case 100: case 101: case 102: case 103: case 104: case 105: case 106: case 107:
+                case 48:
+                    bk = true;
+                    break;
+                default:
+                    return -1; // Unsupported SGR code.
+                }
+            }
+            else if (state == ST_XCOLOR)
+            {
+                if (num == 2)
+                    state = ST_BYTES3;
+                else if (num == 5)
+                    state = ST_BYTES1;
+                else
+                    return -1; // Unsupported extended color mode.
+            }
+            else if (state >= ST_BYTES1 && state <= ST_BYTES3)
+            {
+                if (num >= 0 && num <= 255)
+                    --state;
+                else
+                    return -1; // Unsupported extended color.
+            }
+            else
+            {
+                assert(false);
+                return -1; // Internal error.
+            }
+
+            num = 0;
+        }
+
+        if (!*p)
+            return bk; // Return whether background color was found.
+
+        if (*p >= '0' && *p <= '9')
+        {
+            num *= 10;
+            num += *p - '0';
+        }
+        else if (*p != ';')
+            return -1; // Unsupported or invalid SGR code.
+    }
+}
+
 enum class RgbFromColorMode { Foreground, PreferBackground, Background, BackgroundNotDefault };
 
 static COLORREF RgbFromColor(const WCHAR* color, RgbFromColorMode mode=RgbFromColorMode::Foreground)

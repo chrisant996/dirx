@@ -62,6 +62,8 @@ enum FormatFlags : ULONGLONG
     FMT_GITIGNORE               = 0x0001000000000000,
     FMT_GIT                     = 0x0002000000000000,
     FMT_GITREPOS                = 0x0004000000000000,
+
+    FMT_LASTCOLUMN              = 0x8000000000000000,   // Pseudo-flag to tell field format functions when it's the last column.
 };
 DEFINE_ENUM_FLAG_OPERATORS(FormatFlags);
 

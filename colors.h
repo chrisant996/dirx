@@ -11,6 +11,7 @@ class Error;
 class FileInfo;
 
 int ValidateColor(const WCHAR* p, const WCHAR* end=nullptr);
+int HasBackgroundColor(const WCHAR* p);
 void ReportColorlessError(Error& e);
 
 void InitColors(const WCHAR* custom);

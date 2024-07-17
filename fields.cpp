@@ -285,6 +285,11 @@ bool ClearDefaultTimeStyleIf(const WCHAR* time_style)
  * Formatter functions.
  */
 
+static bool CanAppendSpaces(const FormatFlags flags, const WCHAR* color)
+{
+    return !(flags & FMT_LASTCOLUMN) || HasBackgroundColor(color);
+}
+
 static void SelectFileTime(const FileInfo* const pfi, const WhichTimeStamp timestamp, SYSTEMTIME* const psystime)
 {
     FILETIME ft;
@@ -763,7 +768,8 @@ void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsigned ma
     }
 
     const WCHAR* nolines = StripLineStyles(color);
-    if (classify || hyperlinks || nolines != color)
+    const int canpad = CanAppendSpaces(flags, color);
+    if (classify || hyperlinks || nolines != color || !canpad)
     {
         unsigned spaces = 0;
         unsigned len = s.Length();
@@ -790,7 +796,8 @@ void FormatFilename(StrW& s, const FileInfo* pfi, FormatFlags flags, unsigned ma
         }
         if (nolines != color)
             s.AppendColor(nolines);
-        s.AppendSpaces(spaces);
+        if (canpad)
+            s.AppendSpaces(spaces);
     }
 
     s.AppendNormalIf(color);
@@ -1345,7 +1352,7 @@ static void FormatRelativeTime(StrW& s, const FILETIME& ft, bool mini=false)
         PrintfRelative(s, 7, mini, delta / (100*365*24*60 + 24*24*60));
 }
 
-static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& settings, const FieldInfo& field, const WCHAR* fallback_color=nullptr)
+static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& settings, const FormatFlags flags, const FieldInfo& field, const WCHAR* fallback_color=nullptr)
 {
     SYSTEMTIME systime;
     const WhichTimeStamp which = WhichTimeStampByField(settings, field.m_chSubField);
@@ -1359,7 +1366,7 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
 #endif
 
     const WCHAR* color = nullptr;
-    if (settings.IsSet(FMT_COLORS))
+    if (flags & FMT_COLORS)
     {
         color = GetColorByKey(L"da");
         if (!color)
@@ -1440,7 +1447,8 @@ static void FormatTime(StrW& s, const FileInfo* pfi, const DirFormatSettings& se
         {
             const unsigned len = s.Length();
             FormatRelativeTime(s, pfi->GetFileTime(which));
-            s.AppendSpaces(field.m_cchWidth - (s.Length() - len));
+            if (CanAppendSpaces(flags, color))
+                s.AppendSpaces(field.m_cchWidth - (s.Length() - len));
         }
         break;
 
@@ -1576,7 +1584,8 @@ static void FormatOwner(StrW& s, const FileInfo* pfi, const FormatFlags flags, u
     const WCHAR* color = (flags & FMT_COLORS) ? GetColorByKey(L"oF") : fallback_color;
     s.AppendColorNoLineStyles(color);
     s.Append(owner);
-    s.AppendSpaces(max_width - width);
+    if (CanAppendSpaces(flags, color))
+        s.AppendSpaces(max_width - width);
     s.AppendNormalIf(color);
 }
 
@@ -1733,15 +1742,21 @@ static void FormatGitRepo(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
 
     s.AppendSpaces(1);
 
+    const WCHAR* pad_color;
     s.AppendColorOverlay(color2, overlay);
     s.Append(branch);
     if (color2 || overlay)
     {
-        const WCHAR* pad_color = StripLineStyles(color2);
+        pad_color = StripLineStyles(color2);
         if (pad_color != color2 || overlay)
             s.AppendColor(pad_color);
     }
-    s.AppendSpaces(max_width - 2 - branch_width);
+    else
+    {
+        pad_color = nullptr;
+    }
+    if (CanAppendSpaces(flags, pad_color))
+        s.AppendSpaces(max_width - 2 - branch_width);
     s.AppendNormalIf(color2 || overlay);
 }
 
@@ -2440,6 +2455,14 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const FileInfo* stre
         s.Append(m_picture.Text() + ichCopied, ichCopyUpTo - ichCopied);
         ichCopied = ichCopyUpTo + 1;
 
+        // Tell the field format function whether this is the last column.
+
+        const bool fLast = (ii + 1 == m_fields.size() &&
+                            field.m_ichInsert + 1 == m_picture.Length());
+        FormatFlags flags = m_settings.m_flags;
+        if (fLast)
+            flags |= FMT_LASTCOLUMN;
+
         // Insert field value.
 
         if (stream)
@@ -2485,8 +2508,6 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const FileInfo* stre
                     if (m_settings.IsSet(FMT_LOWERCASE))
                         tmp.ToLower();
 
-                    const bool fLast = (ii + 1 == m_fields.size() &&
-                                        field.m_ichInsert + 1 == m_picture.Length());
                     unsigned width = GetFilenameFieldWidth(m_settings, &field, max_file_width, max_dir_width);
 
                     if (fLast && (m_settings.IsSet(FMT_FULLNAME)))
@@ -2498,9 +2519,6 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const FileInfo* stre
                         tmp.AppendSpaces(width - used);
                     }
 
-                    if (fLast)
-                        tmp.TrimRight();
-
                     s.Append(tmp);
                 }
                 break;
@@ -2508,32 +2526,37 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const FileInfo* stre
                 assert(false);
                 break;
             }
+
+            // Remove trailing spaces if it's the last column.  It doesn't
+            // need to consider whether there's a background color, because
+            // fields don't apply color to stream names.
+            if (fLast)
+                s.TrimRight();
         }
         else
         {
             switch (field.m_field)
             {
             case FLD_DATETIME:
-                FormatTime(s, pfi, m_settings, field, color);
+                FormatTime(s, pfi, m_settings, flags, field, color);
                 break;
             case FLD_FILESIZE:
                 FormatFileSize(s, pfi, m_settings, field.m_cchWidth, field.m_chStyle, field.m_chSubField, color);
                 break;
             case FLD_COMPRESSION:
-                FormatCompressed(s, pfi, m_settings.m_flags, color, field.m_chSubField);
+                FormatCompressed(s, pfi, flags, color, field.m_chSubField);
                 break;
             case FLD_ATTRIBUTES:
                 FormatAttributes(s, pfi->GetAttributes(), field.m_masks, field.m_chStyle, m_settings.IsSet(FMT_COLORS));
                 break;
             case FLD_OWNER:
-                FormatOwner(s, pfi, m_settings.m_flags, field.m_cchWidth, color);
+                FormatOwner(s, pfi, flags, field.m_cchWidth, color);
                 break;
             case FLD_SHORTNAME:
-                FormatFilename(s, pfi, m_settings.m_flags|FMT_SHORTNAMES|FMT_FAT|FMT_ONLYSHORTNAMES, 0, dir, color);
+                FormatFilename(s, pfi, flags|FMT_SHORTNAMES|FMT_FAT|FMT_ONLYSHORTNAMES, 0, dir, color);
                 break;
             case FLD_FILENAME:
                 {
-                    FormatFlags flags = m_settings.m_flags;
                     if (field.m_chSubField == 'x')
                         flags |= FMT_SHORTNAMES|FMT_FAT;
                     else
@@ -2541,8 +2564,6 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const FileInfo* stre
                     if (field.m_chStyle == 'f')
                         flags |= FMT_FAT;
 
-                    const bool fLast = (ii + 1 == m_fields.size() &&
-                                        field.m_ichInsert + 1 == m_picture.Length());
                     unsigned width = GetFilenameFieldWidth(m_settings, &field, max_file_width, max_dir_width);
 
                     if (!fLast)
@@ -2553,12 +2574,12 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const FileInfo* stre
                     const bool show_reparse = (fLast && dir && one_per_line && pfi->IsReparseTag());
                     const WCHAR* field_color = color;
                     if (show_reparse && UseLinkTargetColor())
-                        field_color = SelectColor(pfi, m_settings.m_flags, dir, true);
+                        field_color = SelectColor(pfi, flags, dir, true);
 
                     if (fLast)
                     {
                         if (m_settings.IsSet(FMT_TREE))
-                            AppendTreeLines(s, m_settings.m_flags);
+                            AppendTreeLines(s, flags);
                     }
 
                     FormatFilename(s, pfi, flags, width, dir, field_color, show_reparse);
@@ -2571,10 +2592,10 @@ void PictureFormatter::Format(StrW& s, const FileInfo* pfi, const FileInfo* stre
                 }
                 break;
             case FLD_GITFILE:
-                FormatGitFile(s, pfi, dir, m_settings.m_flags, m_dir->repo.get());
+                FormatGitFile(s, pfi, dir, flags, m_dir->repo.get());
                 break;
             case FLD_GITREPO:
-                FormatGitRepo(s, pfi, dir, m_settings.m_flags, field.m_cchWidth);
+                FormatGitRepo(s, pfi, dir, flags, field.m_cchWidth);
                 break;
             default:
                 assert(false);
