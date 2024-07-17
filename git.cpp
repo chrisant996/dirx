@@ -142,7 +142,7 @@ bool IsUnderRepo(const WCHAR* _dir, StrW& root)
         git_dir.SetLength(dir.Length());
         EnsureTrailingSlash(git_dir);
         git_dir.Append(L".git");
-        if (IsDir(git_dir.Text()))
+        if (GetFileType(git_dir.Text()) >= FileType::Dir)
         {
             root.Set(dir);
             return true;
@@ -191,7 +191,7 @@ failed:
     else
     {
         PathJoin(git_dir, _dir, L".git");
-        if (!IsDir(git_dir.Text()))
+        if (GetFileType(git_dir.Text()) < FileType::Dir)
             goto failed;
 
         root.Set(_dir);

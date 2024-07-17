@@ -183,13 +183,19 @@ bool IsHiddenName(const WCHAR* p)
             (p[0] == '.' || p[0] == '_'));
 }
 
-bool IsDir(const WCHAR* p)
+FileType GetFileType(const WCHAR* p)
 {
     WIN32_FIND_DATA fd;
     SHFind h = FindFirstFile(p, &fd);
     if (h.Empty())
-        return false;
-    return !!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+        return FileType::Invalid;
+    if (fd.dwFileAttributes == DWORD(-1))
+        return FileType::Invalid;
+    if (fd.dwFileAttributes & FILE_ATTRIBUTE_DEVICE)
+        return FileType::Device;
+    if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        return FileType::Dir;
+    return FileType::File;
 }
 
 bool IsTraversableReparse(const WIN32_FIND_DATA& fd)
