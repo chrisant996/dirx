@@ -1585,21 +1585,6 @@ static void FormatGitFile(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
     GitFileState staged;
     GitFileState working;
 
-    StrW full;
-    PathJoin(full, dir, pfi->GetLongName());
-
-    const auto& status = repo->status.find(full.Text());
-    if (status == repo->status.end())
-    {
-        staged = GitFileState::NONE;
-        working = GitFileState::NONE;
-    }
-    else
-    {
-        staged = status->second.staged;
-        working = status->second.working;
-    }
-
     static struct { WCHAR symbol; WCHAR color_key[3]; } c_symbols[] =
     {
         { '-', L"xx" },
@@ -1612,6 +1597,54 @@ static void FormatGitFile(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
         { 'U', L"gc" }, // GitFileState::UNMERGED
     };
     static_assert(_countof(c_symbols) == unsigned(GitFileState::COUNT), "wrong number of GitFileState symbols");
+
+    StrW full;
+    PathJoin(full, dir, pfi->GetLongName());
+
+    if (pfi->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY)
+    {
+        // For directories, summarize status of files within by choosing a
+        // symbol in priority order (as defined by the order of GitFileState).
+
+        // Determine the range to summarize.
+        EnsureTrailingSlash(full);
+        StrW upper_full(full);
+        const WCHAR* const last = upper_full.Text() + upper_full.Length() - 1;
+        upper_full.SetAt(last, (*last) + 1);
+        auto lower_bound = repo->status.upper_bound(full.Text());
+        auto upper_bound = repo->status.upper_bound(upper_full.Text());
+
+        // Loop over files in the range and keep the highest priority symbol
+        // (corresponding to the lowest value from GitFileState).
+        staged = GitFileState::COUNT;
+        working = GitFileState::COUNT;
+        for (auto iter = lower_bound; iter != upper_bound; ++iter)
+        {
+            if (staged > iter->second.staged)
+                staged = iter->second.staged;
+            if (working > iter->second.working)
+                working = iter->second.working;
+        }
+
+        if (staged == GitFileState::COUNT)
+            staged = GitFileState::NONE;
+        if (working == GitFileState::COUNT)
+            working = GitFileState::NONE;
+    }
+    else
+    {
+        const auto& status = repo->status.find(full.Text());
+        if (status == repo->status.end())
+        {
+            staged = GitFileState::NONE;
+            working = GitFileState::NONE;
+        }
+        else
+        {
+            staged = status->second.staged;
+            working = status->second.working;
+        }
+    }
 
     const WCHAR* color1;
     const WCHAR* color2;
