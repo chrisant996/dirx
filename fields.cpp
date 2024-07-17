@@ -1610,10 +1610,24 @@ static void FormatGitFile(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
     StrW full;
     PathJoin(full, dir, pfi->GetLongName());
 
+    // An exact lookup is needed for files, but also for directories since
+    // ignored and untracked folders are reported at the folder level.
+    const auto& status = repo->status.find(full.Text());
+    if (status == repo->status.end())
+    {
+        staged = GitFileState::NONE;
+        working = GitFileState::NONE;
+    }
+    else
+    {
+        staged = status->second.staged;
+        working = status->second.working;
+    }
+
     if (pfi->GetAttributes() & FILE_ATTRIBUTE_DIRECTORY)
     {
-        // For directories, summarize status of files within by choosing a
-        // symbol in priority order (as defined by the order of GitFileState).
+        // For directories, also summarize status of files within using
+        // priority order (as defined by the order of GitFileState).
 
         // Determine the range to summarize.
         EnsureTrailingSlash(full);
@@ -1625,8 +1639,10 @@ static void FormatGitFile(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
 
         // Loop over files in the range and keep the highest priority symbol
         // (corresponding to the lowest value from GitFileState).
-        staged = GitFileState::COUNT;
-        working = GitFileState::COUNT;
+        if (staged == GitFileState::NONE)
+            staged = GitFileState::COUNT;
+        if (working == GitFileState::NONE)
+            working = GitFileState::COUNT;
         for (auto iter = lower_bound; iter != upper_bound; ++iter)
         {
             if (staged > iter->second.staged)
@@ -1634,25 +1650,10 @@ static void FormatGitFile(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
             if (working > iter->second.working)
                 working = iter->second.working;
         }
-
         if (staged == GitFileState::COUNT)
             staged = GitFileState::NONE;
         if (working == GitFileState::COUNT)
             working = GitFileState::NONE;
-    }
-    else
-    {
-        const auto& status = repo->status.find(full.Text());
-        if (status == repo->status.end())
-        {
-            staged = GitFileState::NONE;
-            working = GitFileState::NONE;
-        }
-        else
-        {
-            staged = status->second.staged;
-            working = status->second.working;
-        }
     }
 
     const WCHAR* color1;
