@@ -44,8 +44,15 @@ struct RepoStatus
     std::map<const WCHAR*, FileStatus, SortCase> status;
 };
 
+struct GitStatusSymbol
+{
+    WCHAR               symbol;
+    WCHAR               color_key[3];
+};
+
 bool IsUnderRepo(const WCHAR* dir);
 std::shared_ptr<RepoStatus> GitStatus(const WCHAR* dir, bool need_ignored, bool walk_up=false);
+const GitStatusSymbol& GitSymbol(GitFileState state);
 
 class RepoMap
 {

@@ -1594,19 +1594,6 @@ static void FormatGitFile(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
     GitFileState staged;
     GitFileState working;
 
-    static struct { WCHAR symbol; WCHAR color_key[3]; } c_symbols[] =
-    {
-        { '-', L"xx" },
-        { 'N', L"ga" }, // GitFileState::NEW
-        { 'M', L"gm" }, // GitFileState::MODIFIED
-        { 'D', L"gd" }, // GitFileState::DELETED
-        { 'R', L"gv" }, // GitFileState::RENAMED
-        { 'T', L"gt" }, // GitFileState::TYPECHANGE
-        { 'I', L"gi" }, // GitFileState::IGNORED
-        { 'U', L"gc" }, // GitFileState::UNMERGED
-    };
-    static_assert(_countof(c_symbols) == unsigned(GitFileState::COUNT), "wrong number of GitFileState symbols");
-
     StrW full;
     PathJoin(full, dir, pfi->GetLongName());
 
@@ -1663,8 +1650,8 @@ static void FormatGitFile(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
     const WCHAR* color2;
     if (flags & FMT_COLORS)
     {
-        color1 = GetColorByKey(c_symbols[unsigned(staged)].color_key);
-        color2 = GetColorByKey(c_symbols[unsigned(working)].color_key);
+        color1 = GetColorByKey(GitSymbol(staged).color_key);
+        color2 = GetColorByKey(GitSymbol(working).color_key);
         if (!color1)
             color1 = L"";
         if (!color2)
@@ -1677,10 +1664,10 @@ static void FormatGitFile(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
     }
 
     s.AppendColor(color1);
-    s.Append(&c_symbols[unsigned(staged)].symbol, 1);
+    s.Append(&GitSymbol(staged).symbol, 1);
     if (color1 != color2)
         s.AppendColor(color2);
-    s.Append(&c_symbols[unsigned(working)].symbol, 1);
+    s.Append(&GitSymbol(working).symbol, 1);
     assert(!!color1 == !!color2);
     s.AppendNormalIf(color1);
 }

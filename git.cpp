@@ -7,6 +7,7 @@
 #include "git.h"
 #include "filesys.h"
 #include "output.h"
+#include "colors.h"
 
 RepoStatus::~RepoStatus()
 {
@@ -328,7 +329,48 @@ failed:
     filestatus.working = GitFileState::IGNORED;
     status->status.emplace(git_dir.Detach(), filestatus);
 
+    if (g_debug)
+    {
+        Printf(L"debug:   root:    %s\n", status->root.Text());
+        Printf(L"debug:   branch:  %s\n", status->branch.Text());
+        Printf(L"debug:   main:    %s\n", status->main ? L"yes" : L"no");
+        Printf(L"debug:   clean:   %s\n", status->clean ? L"yes" : L"no");
+        for (auto iter : status->status)
+        {
+            wide.Clear();
+            const WCHAR* color1 = GetColorByKey(GitSymbol(iter.second.staged).color_key);
+            const WCHAR* color2 = GetColorByKey(GitSymbol(iter.second.working).color_key);
+            wide.AppendColor(color1);
+            wide.Append(GitSymbol(iter.second.staged).symbol);
+            wide.AppendColorElseNormalIf(color2, color1);
+            wide.Append(GitSymbol(iter.second.working).symbol);
+            wide.AppendNormalIf(color2);
+            Printf(L"debug:   %s  %s\n", wide.Text(), iter.first);
+        }
+    }
+
     return status;
+}
+
+const GitStatusSymbol& GitSymbol(GitFileState state)
+{
+    static GitStatusSymbol c_symbols[] =
+    {
+        { '-', L"xx" },
+        { 'N', L"ga" }, // GitFileState::NEW
+        { 'M', L"gm" }, // GitFileState::MODIFIED
+        { 'D', L"gd" }, // GitFileState::DELETED
+        { 'R', L"gv" }, // GitFileState::RENAMED
+        { 'T', L"gt" }, // GitFileState::TYPECHANGE
+        { 'I', L"gi" }, // GitFileState::IGNORED
+        { 'U', L"gc" }, // GitFileState::UNMERGED
+    };
+    static_assert(_countof(c_symbols) == unsigned(GitFileState::COUNT), "wrong number of GitFileState symbols");
+
+    assert(state >= GitFileState::NONE);
+    assert(state < GitFileState::COUNT);
+
+    return c_symbols[unsigned(state)];
 }
 
 void RepoMap::Add(std::shared_ptr<const RepoStatus> repo)
