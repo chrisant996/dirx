@@ -1629,31 +1629,34 @@ static void FormatGitFile(StrW& s, const FileInfo* pfi, const WCHAR* dir, const 
         // For directories, also summarize status of files within using
         // priority order (as defined by the order of GitFileState).
 
-        // Determine the range to summarize.
+        // Determine the range to summarize:
+        // From first name > full (e.g. > "dirname\"),
+        // To first name >= next (e.g. >= "dirname]").
         EnsureTrailingSlash(full);
-        StrW upper_full(full);
-        const WCHAR* const last = upper_full.Text() + upper_full.Length() - 1;
-        upper_full.SetAt(last, (*last) + 1);
-        auto lower_bound = repo->status.upper_bound(full.Text());
-        auto upper_bound = repo->status.upper_bound(upper_full.Text());
+        StrW next(full);
+        const WCHAR* const last = next.Text() + next.Length() - 1;
+        next.SetAt(last, (*last) + 1);
 
-        // Loop over files in the range and keep the highest priority symbol
-        // (corresponding to the lowest value from GitFileState).
-        if (staged == GitFileState::NONE)
-            staged = GitFileState::COUNT;
-        if (working == GitFileState::NONE)
-            working = GitFileState::COUNT;
-        for (auto iter = lower_bound; iter != upper_bound; ++iter)
+        // The lower bound of the loop must start with the first entry greater
+        // than full, so use upper_bound().
+        auto lower_bound = repo->status.upper_bound(full.Text());
+        if (lower_bound != repo->status.end())
         {
-            if (staged > iter->second.staged)
-                staged = iter->second.staged;
-            if (working > iter->second.working)
-                working = iter->second.working;
+            // The upper bound of the loop must end with the first entry
+            // greater than or equal to next, so use lower_bound().
+            auto upper_bound = repo->status.lower_bound(next.Text());
+
+            // Loop over files in the range and keep the highest priority
+            // symbol (corresponding to the lowest value from GitFileState,
+            // not counting NONE).
+            for (auto iter = lower_bound; iter != upper_bound; ++iter)
+            {
+                if (staged > iter->second.staged || staged == GitFileState::NONE)
+                    staged = iter->second.staged;
+                if (working > iter->second.working || working == GitFileState::NONE)
+                    working = iter->second.working;
+            }
         }
-        if (staged == GitFileState::COUNT)
-            staged = GitFileState::NONE;
-        if (working == GitFileState::COUNT)
-            working = GitFileState::NONE;
     }
 
     const WCHAR* color1;
