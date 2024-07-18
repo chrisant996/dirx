@@ -71,7 +71,7 @@ bool CanUseEscapeCodes(HANDLE hout)
         return false;
     }
 
-    if (!IsWindows8Point1OrGreater())
+    if (!IsWindows10OrGreater())
         return false;
 
     static HANDLE s_h = 0;
