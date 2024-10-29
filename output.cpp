@@ -38,7 +38,7 @@ bool IsRedirectedStdOut()
 
 bool IsAsciiLineCharMode()
 {
-    return !s_utf8 && s_redirected_stdout && GetACP() != CP_UTF8;
+    return !s_utf8 && s_redirected_stdout && GetConsoleOutputCP() != CP_UTF8;
 }
 
 bool SetUseEscapeCodes(const WCHAR* s)
@@ -640,20 +640,15 @@ static bool WriteConsoleInternal(HANDLE h, const WCHAR* p, unsigned len, const W
             }
             else
             {
-                if (s_utf8)
-                {
-                    const size_t needed = WideCharToMultiByte(CP_UTF8, 0, p, int(run), 0, 0, 0, 0);
-                    char* out = tmp.Reserve(needed + 1);
-                    int used = WideCharToMultiByte(CP_UTF8, 0, p, int(run), out, int(needed), 0, 0);
+                const UINT cp = s_utf8 ? CP_UTF8 : GetConsoleOutputCP();
+                const size_t needed = WideCharToMultiByte(cp, 0, p, int(run), 0, 0, 0, 0);
+                char* out = tmp.Reserve(needed + 1);
+                int used = WideCharToMultiByte(cp, 0, p, int(run), out, int(needed), 0, 0);
 
-                    assert(unsigned(used) < tmp.Capacity());
-                    out[used] = '\0';
-                    tmp.ResyncLength();
-                }
-                else
-                {
-                    tmp.SetW(p, run);
-                }
+                assert(unsigned(used) < tmp.Capacity());
+                out[used] = '\0';
+                tmp.ResyncLength();
+
                 if (!WriteFile(h, tmp.Text(), tmp.Length(), &written, nullptr))
                     return false;
             }
