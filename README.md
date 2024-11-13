@@ -338,7 +338,7 @@ The most common use is to match a file extension, for example `*.txt` matches fi
 
 Patterns can include `?` and `*` wildcards, and can also include character sets enclosed in `[]`.  For example `ab[xyz]` matches `abx`, `aby`, and `abz`.  A set can include ranges, for example `[a-z]` matches any lowercase letter.  If the first character in the set is `!` or `^` the set excludes the listed characters, for example `[!0-9]` matches anything except digits.  The `?` character in a set matches any character but only if there's a character to match, for example `ab[?]` matches `abc`, but not `ab`.  Character sets can use `[:class:]` to specify a class of characters; _class_ can be one of `alnum`, `alpha`, `blank`, `cntrl`, `digit`, `graph`, `lower`, `print`, `punct`, `space`, `xdigit`, `upper`.
 
-Anything quoted is treated as a pattern, for example `ro` refers to a file named `ro` instead of read-only files.
+Anything quoted is treated as a pattern, for example `"ro"` refers to a file named `ro` instead of read-only files.
 
 A pattern by itself with no types applies only to files, not directories.  To specify a pattern that matches anything, combine `di` and the pattern.
 
