@@ -1,4 +1,5 @@
 // Generated from emoji-test.txt by 'premake5 tables'.
+// https://github.com/chrisant996/wcwidth-verifier
 
 static const struct interval emojis[] = {
 
