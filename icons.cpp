@@ -17,6 +17,7 @@
 #include "formatter.h"
 #include "columns.h"
 #include "wcwidth.h"
+#include "wcwidth_iter.h"
 #include <algorithm>
 
 #include <unordered_map>

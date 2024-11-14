@@ -29,6 +29,7 @@
 #include "samples.h"
 #include "icons.h"
 #include "usage.h"
+#include "wcwidth.h"
 
 #include <memory>
 
@@ -70,6 +71,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
 
     if (!IsConsole(GetStdHandle(STD_OUTPUT_HANDLE)))
         SetRedirectedStdOut(true);
+
+    detect_ucs2_limitation();
 
     // Remember the app name, and generate the short usage text.
 

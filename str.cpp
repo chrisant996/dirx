@@ -8,6 +8,7 @@
 #include <stdarg.h>
 #include "str.h"
 #include "wcwidth.h"
+#include "wcwidth_iter.h"
 
 int __vsnprintf(char* buffer, size_t len, const char* format, va_list args)
 {
@@ -120,7 +121,7 @@ unsigned TruncateWcwidth(StrW& s, const unsigned truncate_width, const WCHAR tru
 {
     const unsigned truncation_char_width = ((truncation_char == '.') ? 2 :
                                             (truncation_char == 0) ? 0 :
-                                            __wcwidth(truncation_char));
+                                            wcwidth(truncation_char));
 
     if (truncation_char_width > truncate_width)
     {
@@ -131,26 +132,18 @@ unsigned TruncateWcwidth(StrW& s, const unsigned truncate_width, const WCHAR tru
     const WCHAR* truncate = s.Text();
     unsigned width = 0;
 
-    for (const WCHAR* p = s.Text(); *p; ++p)
+    wcwidth_iter iter(s.Text(), s.Length());
+    while (true)
     {
+        const WCHAR* const p = iter.get_pointer();
+        const char32_t c = iter.next();
+        if (!c)
+            break;
+
         if (width + truncation_char_width <= truncate_width)
             truncate = p;
 
-        char32_t ch = *p;
-
-        // Decode surrogate pair.
-        if ((ch & 0xFC00) == 0xD800)
-        {
-            WCHAR trail = p[1];
-            if ((trail & 0xFC00) == 0xDC00)
-            {
-                ch = 0x10000 + (ch - 0xD800) * 0x400 + (trail - 0xDC00);
-                ++p;
-            }
-        }
-
-        int w = __wcwidth(ch);
-        w = (w < 0) ? 1 : w;
+        const int32 w = iter.character_wcwidth_onectrl();
 
         if (width + w > truncate_width)
         {

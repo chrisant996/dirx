@@ -13,6 +13,7 @@
 #include "output.h"
 #include "ecma48.h"
 #include "wcwidth.h"
+#include "wcwidth_iter.h"
 #include "columns.h"
 
 #include <algorithm>

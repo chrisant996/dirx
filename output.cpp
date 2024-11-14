@@ -6,8 +6,9 @@
 #include "pch.h"
 #include "output.h"
 #include "colors.h"
-#include "wcwidth.h"
 #include "ecma48.h"
+#include "wcwidth.h"
+#include "wcwidth_iter.h"
 
 #include <VersionHelpers.h>
 
@@ -368,10 +369,14 @@ static unsigned CLinesFromString(const WCHAR* p, unsigned len, unsigned max_widt
             code.get_type() != ecma48_code::type_c0)
             continue;
 
-        len = code.get_length();
-        for (p = code.get_pointer(); *p && len; ++p, len--)
+        wcwidth_iter inner_iter(code.get_pointer(), code.get_length());
+        while (true)
         {
-            switch (*p)
+            const char32_t c = inner_iter.next();
+            if (!c)
+                break;
+
+            switch (c)
             {
             case '\b':
                 if (cx)
@@ -389,9 +394,8 @@ static unsigned CLinesFromString(const WCHAR* p, unsigned len, unsigned max_widt
                 }
                 break;
             default:
-                const char32_t ch = __decode(p, &len);
-                int w = __wcwidth(ch);
-                cx += (w < 0) ? 1 : w;
+                const int32 w = inner_iter.character_wcwidth_onectrl();
+                cx += w;
                 if (cx >= max_width)
                 {
                     cx = (cx > max_width) ? w : 0;
@@ -787,10 +791,15 @@ void ExpandTabs(const WCHAR* s, StrW& out, unsigned max_width)
             continue;
         }
 
-        unsigned len = code.get_length();
-        for (s = code.get_pointer(); *s && len; ++s, len--)
+        wcwidth_iter inner_iter(code.get_pointer(), code.get_length());
+        while (true)
         {
-            switch (*s)
+            const WCHAR* const s = inner_iter.get_pointer();
+            const char32_t c = inner_iter.next();
+            if (!c)
+                break;
+
+            switch (c)
             {
             case '\b':
                 if (cx)
@@ -804,7 +813,7 @@ void ExpandTabs(const WCHAR* s, StrW& out, unsigned max_width)
                 break;
             case '\t':
                 {
-                    unsigned new_cx = cx + c_cxTab - (cx % c_cxTab);
+                    const unsigned new_cx = cx + c_cxTab - (cx % c_cxTab);
                     if (new_cx >= max_width)
                     {
                         tmp.AppendSpaces(max_width - cx);
@@ -818,13 +827,11 @@ void ExpandTabs(const WCHAR* s, StrW& out, unsigned max_width)
                 }
                 break;
             default:
-                const WCHAR* a = s;
-                const char32_t ch = __decode(s, &len);
-                int w = __wcwidth(ch);
-                cx += (w < 0) ? 1 : w;
+                const int32 w = inner_iter.character_wcwidth_onectrl();
+                cx += w;
                 if (cx >= max_width)
                     cx = (cx > max_width) ? w : 0;
-                tmp.Append(a, (s - a) + 1);
+                tmp.Append(s, inner_iter.character_length());
                 break;
             }
         }
