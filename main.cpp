@@ -72,7 +72,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     if (!IsConsole(GetStdHandle(STD_OUTPUT_HANDLE)))
         SetRedirectedStdOut(true);
 
-    detect_ucs2_limitation();
+    initialize_wcwidth();
 
     // Remember the app name, and generate the short usage text.
 

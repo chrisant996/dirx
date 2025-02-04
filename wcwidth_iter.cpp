@@ -76,7 +76,8 @@ char32_t wcwidth_iter::next()
         return c;
 
     // Try to parse emoji sequences.
-    if (g_color_emoji && m_chr_wcwidth)
+    const bool c_color_emoji = get_color_emoji();
+    if (c_color_emoji && m_chr_wcwidth)
     {
         // Check for a country flag sequence.
         if (c >= 0x1f1e6 && c <= 0x1f1ff && m_next >= 0x1f1e6 && m_next <= 0x1f1ff)
@@ -132,7 +133,7 @@ emoji_sequence:
         {
             // Variant selectors affect non-emoji as well, so treat them as
             // zero width for continuation purposes, but make the width 2.
-            if (g_color_emoji && is_variant_selector(m_next))
+            if (c_color_emoji && is_variant_selector(m_next))
             {
                 assert(m_chr_wcwidth == 1 || m_chr_wcwidth == 2);
                 m_chr_wcwidth = max<char32_t>(m_chr_wcwidth, 2);

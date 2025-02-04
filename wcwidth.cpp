@@ -67,10 +67,10 @@
 #include "wcwidth.h"
 
 static int32 s_combining_mark_width = 0;
+static bool s_color_emoji = false;
 static bool s_only_ucs2 = false;
 static bool s_win10 = false;
 static bool s_win11 = false;
-bool g_color_emoji = false;
 
 static int32 resolve_ambiguous_wcwidth(char32_t ucs);
 
@@ -100,27 +100,6 @@ static int32 bisearch(char32_t ucs, const struct interval *table, int32 max) {
 }
 
 #include "emoji-test.i"
-
-bool is_kana(char32_t ucs) {
-  static const struct interval kana[] = {
-    { 0x1100, 0x115f },     // Hangul Jamo (various characters)
-    { 0x302e, 0x302f },     // CJK Symbols and Punctuation (Hangul single/double dot tone marks)
-    { 0xa960, 0xa97c },     // Hangul Jamo Extended-A (various characters)
-    { 0x18800, 0x18aff },   // Tangut Components
-    { 0x18b00, 0x18cff },   // Khitan Small Script
-    { 0x1aff0, 0x1aff3 },   // Kana Extended-B (various tones)
-    { 0x1aff5, 0x1affb },   // Kana Extended-B (various tones)
-    { 0x1affd, 0x1affe },   // Kana Extended-B (various tones)
-    { 0x1b000, 0x1b0ff },   // Kana Supplement
-    { 0x1b100, 0x1b122 },   // Kana Extended-A
-    { 0x1b132, 0x1b132 },   // Small Kana Extension (various letters)
-    { 0x1b150, 0x1b152 },   // Small Kana Extension (various letters)
-    { 0x1b155, 0x1b155 },   // Small Kana Extension (various letters)
-    { 0x1b164, 0x1b167 },   // Small Kana Extension (various letters)
-    { 0x1b170, 0x1b2ff },   // Nushu
-  };
-  return !!bisearch(ucs, kana, _countof(kana) - 1);
-}
 
 static bool is_cjk_halfwidth(char32_t ucs) {
   static const struct interval halfwidth_exceptions[] = {
@@ -184,6 +163,11 @@ static const struct interval combining[] = {
   { 0xE0020, 0xE007F }, { 0xE0100, 0xE01EF }
 };
 
+bool is_combining(char32_t ucs)
+{
+  return !!bisearch(ucs, combining, _countof(combining) - 1);
+}
+
 /* The following two functions define the column width of an ISO 10646
  * character as follows:
  *
@@ -229,7 +213,7 @@ static int32 mk_wcwidth(char32_t ucs)
     return -1;
 
   /* special processing when color emoji support is enabled */
-  if (g_color_emoji) {
+  if (s_color_emoji) {
     /* characters with unqualified forms are width 1 without FE0F/etc */
     if (bisearch(ucs, possible_unqualified_half_width, _countof(possible_unqualified_half_width) - 1))
       return 1;
@@ -266,6 +250,42 @@ static int32 mk_wcwidth(char32_t ucs)
 
 static int32 mk_wcwidth_ucs2(char32_t ucs)
 {
+  static const struct interval ucs2_fullwidth_emoji[] = {
+    { 0x231A, 0x231B },     // Watch, hourglass.
+    { 0x23E9, 0x23EC },     // Media controls.
+    { 0x23F0, 0x23F0 },     // Alarm clock.
+    { 0x23F3, 0x23F3 },     // Hourglass not done.
+    { 0x25FD, 0x25FE },     // Medium-small squares.
+    { 0x2614, 0x2615 },     // Umbrella, hot beverage.
+    { 0x2648, 0x2653 },     // Zodiac signs.
+    { 0x267F, 0x267F },     // Wheelchair symbol.
+    { 0x2693, 0x2693 },     // Anchor.
+    { 0x26A1, 0x26A1 },     // High voltage.
+    { 0x26AA, 0x26AB },     // Circles.
+    { 0x26BD, 0x26BE },     // Soccer ball, baseball.
+    { 0x26C4, 0x26C5 },     // Snowman without snow, sun behind cloud.
+    { 0x26CE, 0x26CE },     // Ophiuchus.
+    { 0x26D4, 0x26D4 },     // No entry.
+    { 0x26EA, 0x26EA },     // Church.
+    { 0x26F2, 0x26F3 },     // Fountain, flag in hole.
+    { 0x26F5, 0x26F5 },     // Sailboat.
+    { 0x26FA, 0x26FA },     // Tent.
+    { 0x26FD, 0x26FD },     // Fuel pump.
+    { 0x2705, 0x2705 },     // Check mark button.
+    { 0x270A, 0x270B },     // Raised fist, raised hand.
+    { 0x2728, 0x2728 },     // Sparkles.
+    { 0x274C, 0x274C },     // Cross mark.
+    { 0x274E, 0x274E },     // Cross mark button.
+    { 0x2753, 0x2755 },     // Question marks, exclamation mark.
+    { 0x2757, 0x2757 },     // Exclamation mark.
+    { 0x2795, 0x2797 },     // Arithmetic operators.
+    { 0x27B0, 0x27B0 },     // Curly loop.
+    { 0x27BF, 0x27BF },     // Double curly loop.
+    { 0x2B1B, 0x2B1C },     // Large squares.
+    { 0x2B50, 0x2B50 },     // Star.
+    { 0x2B55, 0x2B55 },     // Hollow red circle.
+  };
+
   /* test for 8-bit control characters */
   if (ucs == 0)
     return 0;
@@ -276,20 +296,6 @@ static int32 mk_wcwidth_ucs2(char32_t ucs)
   if (ucs < 0xa0)
     return -1;
 
-  /* special processing when color emoji support is enabled */
-  if (g_color_emoji) {
-    /* characters with unqualified forms are width 1 without FE0F/etc */
-    if (bisearch(ucs, possible_unqualified_half_width, _countof(possible_unqualified_half_width) - 1))
-      return 1;
-    /* color emoji are width 2 */
-    if (bisearch(ucs, emojis, _countof(emojis) - 1))
-      return 2;
-  } else if (s_win11) {
-    /* Windows 11 conhost renders some emoji as full width monochrome glyphs */
-    if (bisearch(ucs, mono_emojis, _countof(mono_emojis) - 1))
-      return 2;
-  }
-
   /* binary search in table of non-spacing characters */
   if (bisearch(ucs, combining, _countof(combining) - 1))
     return s_combining_mark_width;
@@ -297,22 +303,27 @@ static int32 mk_wcwidth_ucs2(char32_t ucs)
   /* if we arrive here, ucs is not a combining or C0/C1 control character */
   if (ucs < 0x1100)
     return 1;
-  if (ucs <= 0x115f)                      /* Hangul Jamo init. consonants */
-    return 2;                                         // ...wcwidth expected 1
-  if (ucs == 0x2329 || ucs == 0x232a)
-    return s_win10 ? 2 : 1;
-  if (ucs >= 0x2e80 && ucs <= 0xa4cf)
-    return 1 + (s_win10 && !is_cjk_halfwidth(ucs));   // ...wcwidth expected 2
-  if (ucs >= 0xac00 && ucs <= 0xd7a3)     /* Hangul Syllables */
-    return 1 + (s_win10 && !is_cjk_halfwidth(ucs));   // ...wcwidth expected 2
-  if ((ucs >= 0xf900 && ucs <= 0xfaff) || /* CJK Compatibility Ideographs */
-      (ucs >= 0xfe10 && ucs <= 0xfe19) || /* Vertical forms */
-      (ucs >= 0xfe30 && ucs <= 0xfe6f))   /* CJK Compatibility Forms */
-    return s_win10 ? 2 : 1;
-  if ((ucs >= 0xff00 && ucs <= 0xff60) || /* Fullwidth Forms */
-      (ucs >= 0xffe0 && ucs <= 0xffe6))
-    return s_win10 ? 2 : 1;
-  if (ucs >= 0x10000)                     /* UCS2 on Windows 8.1 and lower */
+  if (s_win10)
+  {
+    if (ucs <= 0x115f)                      /* Hangul Jamo init. consonants */
+      return 2;                                         // ...wcwidth expected 1
+    if (ucs == 0x2329 || ucs == 0x232a)
+      return 2;
+    if (s_win11 && bisearch(ucs, ucs2_fullwidth_emoji, _countof(ucs2_fullwidth_emoji) - 1))
+      return 2;
+    if (ucs >= 0x2e80 && ucs <= 0xa4cf)
+      return 1 +  !is_cjk_halfwidth(ucs);               // ...wcwidth expected 2
+    if (ucs >= 0xac00 && ucs <= 0xd7a3)     /* Hangul Syllables */
+      return 1 + !is_cjk_halfwidth(ucs);                // ...wcwidth expected 2
+    if ((ucs >= 0xf900 && ucs <= 0xfaff) || /* CJK Compatibility Ideographs */
+        (ucs >= 0xfe10 && ucs <= 0xfe19) || /* Vertical forms */
+        (ucs >= 0xfe30 && ucs <= 0xfe6f))   /* CJK Compatibility Forms */
+      return 2;
+    if ((ucs >= 0xff00 && ucs <= 0xff60) || /* Fullwidth Forms */
+        (ucs >= 0xffe0 && ucs <= 0xffe6))
+      return 2;
+  }
+  if (ucs >= 0x10000)                       /* UCS2 in legacy console mode. */
     return 2;
   return 1;
 }
@@ -448,19 +459,10 @@ combining_mark_width_scope::~combining_mark_width_scope()
     s_combining_mark_width = m_old;
 }
 
-static bool IsWindowsTerminal()
+void initialize_wcwidth(const wcwidth_modes* modes)
 {
-    // This is an unreliable test but (1) there isn't a fully reliable test
-    // and (2) the more reliable approach involves analyzing the process
-    // hierarchy and that's more complexity than it's worth here (and it's
-    // more likely to tickle antivirus suites).
-    return !!_wgetenv(L"WT_SESSION");
-}
-
-bool detect_ucs2_limitation(bool force)
-{
-    static bool s_inited_only_ucs2 = false;
-    if (!s_inited_only_ucs2)
+    static bool s_inited = false;
+    if (!s_inited)
     {
 #pragma warning(push)
 #pragma warning(disable:4996)
@@ -469,19 +471,48 @@ bool detect_ucs2_limitation(bool force)
         {
             s_win10 = (ver.dwMajorVersion >= 10);
             s_win11 = (ver.dwMajorVersion > 10 || (ver.dwMajorVersion == 10 && ver.dwBuildNumber >= 22000));
-            s_only_ucs2 = !s_win10;
         }
-        s_inited_only_ucs2 = true;
-    }
-    if (force)
-    {
-        s_only_ucs2 = true;
-        s_inited_only_ucs2 = true;
-    }
-    if (s_win10 && IsWindowsTerminal())
-      g_color_emoji = true;
+        const bool winterm = !!_wgetenv(L"WT_SESSION");
+        s_color_emoji = winterm;
+        s_only_ucs2 = !s_win10 || !winterm;
+        s_inited = true;
 #pragma warning(pop)
+    }
+
+    if (modes)
+    {
+        if (modes->color_emoji)
+            s_color_emoji = modes->color_emoji > 0;
+        if (modes->only_ucs2)
+            s_only_ucs2 = modes->only_ucs2 > 0;
+    }
+
+    static UINT s_cp = 0; // Static so that it's visible in heap dumps.
+    s_cp = GetConsoleOutputCP();
+    if (is_CJK_codepage(s_cp))
+        wcwidth = s_only_ucs2 ? mk_wcwidth_cjk_ucs2 : mk_wcwidth_cjk;
+    else
+        wcwidth = s_only_ucs2 ? mk_wcwidth_ucs2 : mk_wcwidth;
+}
+
+bool get_color_emoji()
+{
+    return s_color_emoji;
+}
+
+bool get_only_ucs2()
+{
     return s_only_ucs2;
+}
+
+static int32 resolve_ambiguous_wcwidth(char32_t ucs)
+{
+    return 2;
+}
+
+bool is_CJK_codepage(UINT cp)
+{
+    return (cp == 932 || cp == 936 || cp == 949 || cp == 950);
 }
 
 /*
@@ -490,7 +521,7 @@ bool detect_ucs2_limitation(bool force)
  */
 bool is_variant_selector(char32_t ucs)
 {
-    assert(g_color_emoji);
+    assert(s_color_emoji);
     return (ucs == 0xfe0f ||                            // color variant
             ucs >= 0x1f3fb && ucs <= 0x1f3ff);          // skin tone
 }
@@ -503,13 +534,8 @@ bool is_variant_selector(char32_t ucs)
  */
 bool is_possible_unqualified_half_width(char32_t ucs)
 {
-    assert(g_color_emoji);
+    assert(s_color_emoji);
     return !!bisearch(ucs, possible_unqualified_half_width, _countof(possible_unqualified_half_width) - 1);
-}
-
-bool is_combining(char32_t ucs)
-{
-    return !!bisearch(ucs, combining, _countof(combining) - 1);
 }
 
 /*
@@ -517,38 +543,8 @@ bool is_combining(char32_t ucs)
  */
 bool is_emoji(char32_t ucs)
 {
-    assert(g_color_emoji);
+    assert(s_color_emoji);
     return !!bisearch(ucs, emojis, _countof(emojis) - 1);
-}
-
-static int32 resolve_ambiguous_wcwidth(char32_t ucs)
-{
-    return 2;
-}
-
-int32 is_CJK_codepage(UINT cp)
-{
-    return (cp == 932 || cp == 936 || cp == 949 || cp == 950);
-}
-
-void reset_wcwidths()
-{
-    int32 use_cjk = true;
-
-    detect_ucs2_limitation();
-
-    static UINT s_cp = 0; // Static so that it's visible in heap dumps.
-    s_cp = GetConsoleOutputCP();
-    use_cjk = is_CJK_codepage(s_cp);
-
-    if (use_cjk)
-    {
-        wcwidth = s_only_ucs2 ? mk_wcwidth_cjk_ucs2 : mk_wcwidth_cjk;
-    }
-    else
-    {
-        wcwidth = s_only_ucs2 ? mk_wcwidth_ucs2 : mk_wcwidth;
-    }
 }
 
 // vim: ts=2 expandtab sw=2
