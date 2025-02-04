@@ -31,7 +31,7 @@ BEGIN
             VALUE "FileDescription", "Dirx\0"
             VALUE "FileVersion", RC_VERSION_STR
             VALUE "InternalName", "Dirx\0"
-            VALUE "LegalCopyright", "Copyright \xa9 2024\0"
+            VALUE "LegalCopyright", "Copyright \xa9 2024-2025\0"
             VALUE "OriginalFilename", "dirx.exe\0"
             VALUE "ProductName", "Dirx\0"
             VALUE "ProductVersion", RC_VERSION_STR

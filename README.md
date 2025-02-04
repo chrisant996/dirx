@@ -539,6 +539,6 @@ DirX uses [Premake](http://premake.github.io) to generate Visual Studio solution
 
 ## License
 
-Copyright (c) 2024 by Christopher Antos
+Copyright (c) 2024-2025 by Christopher Antos
 License: http://opensource.org/licenses/MIT
 
