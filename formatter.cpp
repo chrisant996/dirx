@@ -1335,7 +1335,6 @@ void DirEntryFormatter::AddSubDir(const StrW& dir, const StrW& dir_rel, unsigned
     subdir->dir_rel.Set(dir_rel);
     subdir->depth = depth;
     subdir->git_ignore = git_ignore;
-    m_pending_subdirs.emplace_back(std::move(subdir));
 
     if (Settings().IsSet(FMT_GITIGNORE))
     {
@@ -1365,6 +1364,8 @@ void DirEntryFormatter::AddSubDir(const StrW& dir, const StrW& dir_rel, unsigned
         if (!subdir->repo)
             subdir->repo = repo;
     }
+
+    m_pending_subdirs.emplace_back(std::move(subdir));
 }
 
 void DirEntryFormatter::SortSubDirs()
