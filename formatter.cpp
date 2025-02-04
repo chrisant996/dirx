@@ -1374,10 +1374,51 @@ void DirEntryFormatter::SortSubDirs()
     {
         std::sort(m_pending_subdirs.begin(), m_pending_subdirs.end(), CmpSubDirs);
 
-        assert(m_subdirs.empty() || CmpSubDirs(m_pending_subdirs.back(), m_subdirs.front()));
-
-        for (size_t ii = m_pending_subdirs.size(); ii--;)
-            m_subdirs.push_front(std::move(m_pending_subdirs[ii]));
+        if (m_subdirs.empty() || CmpSubDirs(m_subdirs.back(), m_pending_subdirs.front()))
+        {
+            // m_pending_subdirs is all after m_subdirs; append to its back.
+            for (size_t ii = 0; ii < m_pending_subdirs.size(); ++ii)
+                m_subdirs.push_back(std::move(m_pending_subdirs[ii]));
+        }
+        else if (CmpSubDirs(m_pending_subdirs.back(), m_subdirs.front()))
+        {
+            // m_pending_subdirs is all before m_subdirs; prepend to its front.
+            for (size_t ii = m_pending_subdirs.size(); ii--;)
+                m_subdirs.push_front(std::move(m_pending_subdirs[ii]));
+        }
+        else
+        {
+            // They're interleaved; build a new list by merging the two.
+            std::list<std::unique_ptr<SubDir>> subdirs;
+            auto& ip = m_pending_subdirs.begin();
+            size_t rp = m_pending_subdirs.size();
+            auto& is = m_subdirs.begin();
+            size_t rs = m_subdirs.size();
+            while (rp && rs)
+            {
+                if (CmpSubDirs(*ip, *is))
+                {
+                    subdirs.push_back(std::move(*ip));
+                    ++ip, --rp;
+                }
+                else
+                {
+                    subdirs.push_back(std::move(*is));
+                    ++is, --rs;
+                }
+            }
+            while (rp--)
+            {
+                subdirs.push_back(std::move(*ip));
+                ++ip, --rp;
+            }
+            while (rs--)
+            {
+                subdirs.push_back(std::move(*is));
+                ++is, --rs;
+            }
+            m_subdirs.swap(subdirs);
+        }
 
         m_pending_subdirs.clear();
     }
