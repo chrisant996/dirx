@@ -1407,12 +1407,12 @@ void DirEntryFormatter::SortSubDirs()
                     ++is, --rs;
                 }
             }
-            while (rp--)
+            while (rp)
             {
                 subdirs.push_back(std::move(*ip));
                 ++ip, --rp;
             }
-            while (rs--)
+            while (rs)
             {
                 subdirs.push_back(std::move(*is));
                 ++is, --rs;
