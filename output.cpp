@@ -12,7 +12,15 @@
 
 #include <VersionHelpers.h>
 
-static int s_escape_codes = -1;   // 0=no, 1=yes, -1=auto (when not redirected).
+enum class EscapeCodesMode
+{
+    not_initialized,
+    prohibit,
+    allow,
+    automatic,  // When not redirected.
+};
+
+static EscapeCodesMode s_escape_codes = EscapeCodesMode::not_initialized;
 static bool s_utf8 = false;
 static bool s_redirected_stdout = false;
 
@@ -47,11 +55,11 @@ bool SetUseEscapeCodes(const WCHAR* s)
     if (!s)
         return false;
     else if (!_wcsicmp(s, L"") || !_wcsicmp(s, L"always"))
-        s_escape_codes = 1;
+        s_escape_codes = EscapeCodesMode::allow;
     else if (!_wcsicmp(s, L"never"))
-        s_escape_codes = 0;
+        s_escape_codes = EscapeCodesMode::prohibit;
     else if (!_wcsicmp(s, L"auto"))
-        s_escape_codes = -1;
+        s_escape_codes = EscapeCodesMode::automatic;
     else
         return false;
     return true;
@@ -59,16 +67,29 @@ bool SetUseEscapeCodes(const WCHAR* s)
 
 bool CanUseEscapeCodes(HANDLE hout)
 {
-    if (s_escape_codes > 0)
-        return true;
-    if (s_escape_codes == 0)
+    switch (s_escape_codes)
+    {
+    case EscapeCodesMode::prohibit:
         return false;
+    case EscapeCodesMode::allow:
+        return true;
+    case EscapeCodesMode::automatic:
+        break;
+    case EscapeCodesMode::not_initialized:
+        s_escape_codes = EscapeCodesMode::automatic;
+        break;
+    default:
+        assert(false);
+        return false;
+    }
+
+    assert(s_escape_codes == EscapeCodesMode::automatic);
 
     // See https://no-color.org/.
     const WCHAR* env = _wgetenv(L"NO_COLOR");
     if (env && *env)
     {
-        s_escape_codes = 0;
+        s_escape_codes = EscapeCodesMode::prohibit;
         return false;
     }
 
@@ -221,7 +242,7 @@ public:
     CRestoreConsole();
     ~CRestoreConsole();
 
-    void                End() { m_graceful = true; Restore(); }
+    void                SetGracefulExit() { m_graceful = true; }
 
 private:
     void                Restore();
@@ -270,12 +291,12 @@ void CRestoreConsole::Restore()
 {
     if (m_hout || m_herr)
     {
-        if (!m_graceful && s_escape_codes)
+        if (!m_graceful)
         {
             DWORD written;
-            if (m_hout)
+            if (m_hout && CanUseEscapeCodes(m_hout))
                 WriteConsoleW(m_hout, L"\x1b[m", 3, &written, nullptr);
-            if (m_herr)
+            if (m_herr && CanUseEscapeCodes(m_herr))
                 WriteConsoleW(m_herr, L"\x1b[m", 3, &written, nullptr);
         }
     }
@@ -509,6 +530,11 @@ exit:
  */
 
 static unsigned s_console_width = 0;
+
+void SetGracefulExit()
+{
+    s_restoreConsole.SetGracefulExit();
+}
 
 void SetConsoleWidth(unsigned long width)
 {

@@ -308,6 +308,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     if (!opts.Parse(argvEnv.Argc(), argvEnv.Argv(), c_opts, usage.Text(), OPT_NONE, long_opts))
     {
         fwprintf(stderr, L"In %%%s%%: %s", c_DIRXCMD, opts.ErrorString());
+        SetGracefulExit();
         return 1;
     }
 
@@ -321,6 +322,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     if (!opts.Parse(argc, argv, c_opts, usage.Text(), OPT_ANY|OPT_ANYWHERE|OPT_LONGABBR, long_opts))
     {
         fputws(opts.ErrorString(), stderr);
+        SetGracefulExit();
         return 1;
     }
 
@@ -355,6 +357,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             {
                 SetUseEscapeCodes(L"always");
                 PrintColorSamples();
+                SetGracefulExit();
                 return 0;
             }
             else if (!wcsicmp(argv[0], L"defaultcolors"))
@@ -394,6 +397,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             SetPagination(true);
             ExpandTabs(s.Text(), s);
             OutputConsole(GetStdHandle(STD_OUTPUT_HANDLE), s.Text());
+            SetGracefulExit();
             return 0;
         }
     }
@@ -406,6 +410,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         s.Clear();
         s.Printf(L"%s %hs, built %hs\nhttps://github.com/chrisant996/dirx\n", app.Text(), VERSION_STR, __DATE__);
         OutputConsole(GetStdHandle(STD_OUTPUT_HANDLE), s.Text());
+        SetGracefulExit();
         return 0;
     }
 
@@ -1071,6 +1076,7 @@ unrecognized_long_opt_value:
     {
         SetUseIcons(L"always");
         PrintAllIcons();
+        SetGracefulExit();
         return 0;
     }
 
@@ -1148,6 +1154,7 @@ unrecognized_long_opt_value:
     if (e.Test())
         return e.Report();
 
+    SetGracefulExit();
     return rc;
 }
 

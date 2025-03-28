@@ -14,6 +14,7 @@ bool IsAsciiLineCharMode();
 
 bool SetUseEscapeCodes(const WCHAR* s);
 bool CanUseEscapeCodes(HANDLE hout);
+void SetGracefulExit();
 
 bool SetPagination(bool paginate);
 DWORD GetConsoleColsRows(HANDLE hout);
