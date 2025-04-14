@@ -15,7 +15,8 @@ static bool s_explicit_extension = false;
 // Reverses the combination of g_sort_order and s_reverse_all.
 static bool s_reverse_sort_order = false;
 
-WCHAR g_sort_order[10] = L"";
+// Longest possible sort order string is "-c-d-e-g-n-s".
+WCHAR g_sort_order[16] = L"";
 
 void SetSortOrder(const WCHAR* order, Error& e)
 {
@@ -28,49 +29,70 @@ void SetSortOrder(const WCHAR* order, Error& e)
 
     SkipColonOrEqual(order);
 
-    if (wcscmp(order, L"-") == 0)
+    if (wcsicmp(order, L"u") == 0)
         return;
+    if (wcschr(order, 'u'))
+    {
+        e.Set(L"Invalid sort order '%1'; 'u' may only be used by itself.") << order;
+        return;
+    }
 
-    if (!*order)
-        *(set++) = 'g';
-    else if (!wcsicmp(order, L"u"))
-        order++;
+    bool need_gn = true;
+    bool minus = false;
 
     while (*order)
     {
         if (*order == '-')
         {
-            *(set++) = '-';
-        }
-        else if (*order == 'a')
-        {
-            s_ascii_sort = true;
-        }
-        else if (*order == 'r')
-        {
-            s_reverse_all = true;
+            if (*(order + 1) == '-')
+            {
+                e.Set(L"Invalid sort order '--'.");
+                return;
+            }
+            minus = true;
         }
         else
         {
-            if (*order == 'e')
-                s_explicit_extension = true;
-            if (!wcschr(L"nesgdc", *order))
+            if (*order == 'a')
             {
-                WCHAR tmp[2];
-                tmp[0] = *order;
-                tmp[1] = 0;
-                e.Set(L"Invalid sort order '%1'.") << tmp;
-                return;
+                s_ascii_sort = true;
             }
-            if (!wcschr(g_sort_order, *order))
-                *(set++) = *order;
+            else if (*order == 'r')
+            {
+                s_reverse_all = true;
+                need_gn = false;
+            }
+            else
+            {
+                if (*order == 'e')
+                    s_explicit_extension = true;
+                if (!wcschr(L"nesgdc", *order))
+                {
+                    WCHAR tmp[2];
+                    tmp[0] = *order;
+                    tmp[1] = 0;
+                    e.Set(L"Invalid sort order '%1'.") << tmp;
+                    return;
+                }
+                // Prevent duplicates, for efficiency.
+                if (!wcschr(g_sort_order, *order))
+                {
+                    if (minus)
+                        *(set++) = '-';
+                    *(set++) = *order;
+                }
+                need_gn = false;
+            }
+            minus = false;
         }
         ++order;
     }
 
-    if (!wcscmp(g_sort_order, L"-") ||
-        (g_sort_order[0] && !wcschr(g_sort_order, 'n')))
+    if (need_gn)
     {
+        if (minus)
+            *(set++) = '-';
+        *(set++) = 'g';
         *(set++) = 'n';
     }
 
@@ -80,6 +102,11 @@ void SetSortOrder(const WCHAR* order, Error& e)
 void SetReverseSort(bool reverse)
 {
     s_reverse_sort_order = reverse;
+}
+
+bool IsReversedSort()
+{
+    return (s_reverse_all ^ s_reverse_sort_order);
 }
 
 inline bool IsBeginNumeric(const WCHAR* p)
@@ -229,8 +256,6 @@ bool CmpFileInfo(const std::unique_ptr<FileInfo>& fi1, const std::unique_ptr<Fil
                 break;
         }
 
-        reverse = (reverse ^ s_reverse_all ^ s_reverse_sort_order);
-
         switch (*order)
         {
         case 'g':
@@ -242,17 +267,24 @@ bool CmpFileInfo(const std::unique_ptr<FileInfo>& fi1, const std::unique_ptr<Fil
             {
                 NameSplitter split1(name1, name_len1);
                 NameSplitter split2(name2, name_len2);
-                n = StrAlphaNumCompare(name1, name2);
-                if (!n)
+                if (s_ascii_sort)
                 {
-                    // The lengths can differ when the strings are equal
-                    // if they contain digits (e.g. "foo001" vs "foo1").
-                    if (name_len1 < name_len2)
-                        n = -1;
-                    else if (name_len1 > name_len2)
-                        n = 1;
-                    else
-                        n = Sorting::CmpStrI(ext1, ext2);
+                    n = Sorting::CmpStrI(name1, name2);
+                }
+                else
+                {
+                    n = StrAlphaNumCompare(name1, name2);
+                    if (!n)
+                    {
+                        // The lengths can differ when the strings are equal
+                        // if they contain digits (e.g. "foo001" vs "foo1").
+                        if (name_len1 < name_len2)
+                            n = -1;
+                        else if (name_len1 > name_len2)
+                            n = 1;
+                        else
+                            n = Sorting::CmpStrI(ext1, ext2);
+                    }
                 }
             }
             else

@@ -12,10 +12,11 @@
 
 struct SubDir;
 
-extern WCHAR g_sort_order[10];
+extern WCHAR g_sort_order[16];
 
 void SetSortOrder(const WCHAR* order, Error& e);
 void SetReverseSort(bool reverse);
+bool IsReversedSort();
 
 namespace Sorting
 {

@@ -807,8 +807,7 @@ void DirEntryFormatter::OnDirectoryEnd(const WCHAR* dir, bool next_dir_is_differ
             if (g_debug)
                 tick_begin = GetTickCount();
 
-            std::sort(m_files.begin(), m_files.end(), CmpFileInfo);
-
+            std::stable_sort(m_files.begin(), m_files.end(), CmpFileInfo);
             if (g_debug)
             {
                 const UINT elapsed = GetTickCount() - tick_begin;
@@ -838,6 +837,15 @@ void DirEntryFormatter::OnDirectoryEnd(const WCHAR* dir, bool next_dir_is_differ
             }
 
             // Swap the uniquely filtered array into place.
+            m_files.swap(files);
+        }
+
+        if (IsReversedSort())
+        {
+            std::vector<std::unique_ptr<FileInfo>> files;
+            files.reserve(m_files.size());
+            for (size_t i = m_files.size(); i--;)
+                files.emplace_back(std::move(m_files[i]));
             m_files.swap(files);
         }
 
