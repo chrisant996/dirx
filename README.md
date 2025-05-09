@@ -186,6 +186,7 @@ Prefix the filename part with :: to use a [regular expression](#regular-expressi
 <tr><td><code>--fit-columns</td><td>Fit more columns in <code>-w</code> mode by compacting column widths to fit their content (this is the default; use <code>--no-fit-columns</code> to disable it).</td></tr>
 <tr><td><code>--lower</td><td>Show file names using lower case.</td></tr>
 <tr><td><code>--mini-bytes</td><td>Show bytes in the mini size format when less than 1000.</td></tr>
+<tr><td><code>--mini-decimal</td><td>Always show one decimal place in the mini size format.</td></tr>
 <tr><td><code>--mini-header</td><td>Show a mini header of just the directory name above each directory listing (if more than one directory).</td></tr>
 <tr><td><code>--more-colors=LIST</td><td>Add color rules in the same format as the <code>DIRX_COLORS</code> environment variable (see <a href="#colors">Colors</a> for more info).</td></tr>
 <tr><td><code>--nerd-fonts=VER</td><td>Select which Nerd Fonts version to use (see <a href="#colors">Colors</a> for more info).</td></tr>
