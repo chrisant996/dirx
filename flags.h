@@ -58,7 +58,7 @@ enum FormatFlags : ULONGLONG
     FMT_LONGNODATE              = 0x0000100000000000,   // Omit date in long mode.
     FMT_LONGNOSIZE              = 0x0000200000000000,   // Omit size in long mode.
     FMT_LONGNOATTRIBUTES        = 0x0000400000000000,   // Omit attributes in long mode.
-    //                          = 0x0000800000000000,
+    FMT_MINIDECIMAL             = 0x0000800000000000,   // Always include a decimal in mini mode when formatting sizes.
     FMT_GITIGNORE               = 0x0001000000000000,
     FMT_GIT                     = 0x0002000000000000,
     FMT_GITREPOS                = 0x0004000000000000,

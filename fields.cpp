@@ -977,9 +977,15 @@ unsigned GetSizeFieldWidthByStyle(const DirFormatSettings& settings, WCHAR chSty
 {
     switch (GetEffectiveSizeFieldStyle(settings, chStyle))
     {
-    case 'm':       return 4;           // "9.9M"
-    case 's':       return 9;           // "123456789M"
-    default:        return 16;          // ",123,456,789,123"
+    case 'm':
+        if (settings.IsSet(FMT_MINIDECIMAL))
+            return 0;                   // Variable width.
+        else
+            return 4;                   // "9.9M"
+    case 's':
+        return 9;                       // "123456789M"
+    default:
+        return 16;                      // ",123,456,789,123"
     }
 }
 
@@ -1018,16 +1024,10 @@ void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* which, co
     {
     case 'm':
         {
-//#define MORE_PRECISION
-#ifdef MORE_PRECISION
-            const unsigned iLoFrac = 2;
-            const unsigned iHiFrac = 9;
-            static const WCHAR c_size_chars[] = { 'b', 'K', 'M', 'G', 'T' };
-#else
             const unsigned iLoFrac = 2;
             const unsigned iHiFrac = 2;
             static const WCHAR c_size_chars[] = { 'K', 'K', 'M', 'G', 'T' };
-#endif
+            // The possible units must match the possible color scales.
             static_assert(_countof(c_size_chars) == 5, "size mismatch");
 
             unit_color = (!nocolor && !(s_gradient && (s_scale_fields & SCALE_SIZE)) && which) ? GetSizeUnitColor(cbSize) : nullptr;
@@ -1041,11 +1041,34 @@ void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* which, co
                 iChSize++;
             }
 
-            if (iChSize >= iLoFrac && iChSize <= iHiFrac && dSize + 0.05 < 10.0)
+            const unsigned mini_width = max_width ? max_width : 4;
+            const bool abbrev = (settings.IsSet(FMT_MINIDECIMAL) ||
+                                 (iChSize >= iLoFrac && iChSize <= iHiFrac && dSize + 0.05 < 10.0));
+
+            if (abbrev)
             {
-                dSize += 0.05;
-                cbSize = static_cast<unsigned __int64>(dSize * 10);
-                s.Printf(L"%I64u.%I64u", cbSize / 10, cbSize % 10);
+                if (!iChSize)
+                {
+                    // Special case:  show 1..999 bytes as "1K", 0 bytes as "0K".
+                    if (cbSize)
+                    {
+                        dSize /= 1024;
+                        iChSize++;
+                    }
+                    dSize += 0.05;
+                    if (dSize < 0.1 && cbSize)
+                        cbSize = 1;
+                    else
+                        cbSize = static_cast<unsigned __int64>(dSize * 10);
+                }
+                else
+                {
+                    dSize += 0.05;
+                    cbSize = static_cast<unsigned __int64>(dSize * 10);
+                }
+                assert(implies(max_width, max_width > 3));
+                assert(mini_width > 3);
+                s.Printf(L"%*I64u.%I64u", mini_width - 3, cbSize / 10, cbSize % 10);
             }
             else
             {
@@ -1055,7 +1078,7 @@ void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* which, co
                 {
                     if (s_mini_bytes && cbSize <= 999)
                     {
-                        s.Printf(L"%*I64u", max_width ? max_width : 4, cbSize);
+                        s.Printf(L"%*I64u", mini_width, cbSize);
                         // s.Printf(L"%3I64u%c", cbSize, c_size_chars[iChSize]);
                         // s.Printf(L"%I64u.%I64u%c", cbSize / 100, (cbSize / 10) % 10, c_size_chars[iChSize + 1]);
                         break;
@@ -1069,7 +1092,8 @@ void FormatSize(StrW& s, unsigned __int64 cbSize, const WhichFileSize* which, co
                     }
                 }
                 assert(implies(max_width, max_width > 1));
-                s.Printf(L"%*I64u", max_width ? max_width - 1 : 3, cbSize);
+                assert(mini_width > 1);
+                s.Printf(L"%*I64u", mini_width - 1, cbSize);
             }
 
             s.AppendColor(unit_color);
@@ -1188,8 +1212,18 @@ static void FormatFileSize(StrW& s, const FileInfo* pfi, const DirFormatSettings
             if (nocolor)
                 fallback_color = nullptr;
             s.AppendColorNoLineStyles(fallback_color);
-            s.Append(tag);
-            s.AppendSpaces(max_width - unsigned(wcslen(tag)));
+            if (settings.IsSet(FMT_MINIDECIMAL))
+            {
+                // Right align.
+                s.AppendSpaces(max_width - unsigned(wcslen(tag)));
+                s.Append(tag);
+            }
+            else
+            {
+                // Left align.
+                s.Append(tag);
+                s.AppendSpaces(max_width - unsigned(wcslen(tag)));
+            }
             s.AppendNormalIf(fallback_color);
         }
     }
@@ -2167,7 +2201,7 @@ void PictureFormatter::ParsePicture(const WCHAR* picture)
             }
             break;
         case FLD_FILESIZE:
-            if (m_fit_columns_to_contents)
+            if (m_fit_columns_to_contents || m_settings.IsSet(FMT_MINIDECIMAL))
             {
                 m_need_filesize_width = true;
                 m_immediate = false;

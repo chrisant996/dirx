@@ -174,6 +174,7 @@ const char c_long_usage[] =
 "			--no-fit-columns to disable it).\n"
 "  --lower		Show file names using lower case.\n"
 "  --mini-bytes		Show bytes in the mini size format when less than 1000.\n"
+"  --mini-decimal	Always show one decimal place in the mini size format.\n"
 "  --mini-header		Show a mini header of just the directory name above\n"
 "			each directory listing (if more than one directory).\n"
 "  --more-colors=LIST	Add color rules in the same format as the DIRX_COLORS\n"

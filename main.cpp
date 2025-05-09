@@ -172,6 +172,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_NO_LOWER,
         LOI_MINI_BYTES,
         LOI_NO_MINI_BYTES,
+        LOI_MINI_DECIMAL,
+        LOI_NO_MINI_DECIMAL,
         LOI_MINI_HEADER,
         LOI_NO_MINI_HEADER,
         LOI_MORE_COLORS,
@@ -254,6 +256,8 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-lower",              nullptr,            LOI_NO_LOWER },
         { L"mini-bytes",            nullptr,            LOI_MINI_BYTES },
         { L"no-mini-bytes",         nullptr,            LOI_NO_MINI_BYTES },
+        { L"mini-decimal",          nullptr,            LOI_MINI_DECIMAL },
+        { L"no-mini-decimal",       nullptr,            LOI_NO_MINI_DECIMAL },
         { L"mini-header",           nullptr,            LOI_MINI_HEADER },
         { L"no-mini-header",        nullptr,            LOI_NO_MINI_HEADER },
         { L"more-colors",           nullptr,            LOI_MORE_COLORS,        LOHA_REQUIRED },
@@ -786,6 +790,8 @@ unrecognized_long_opt_value:
             case LOI_NO_LOWER:              flagsOFF = FMT_LOWERCASE; break;
             case LOI_MINI_BYTES:            SetMiniBytes(true); break;
             case LOI_NO_MINI_BYTES:         SetMiniBytes(false); break;
+            case LOI_MINI_DECIMAL:          flagsON = FMT_MINIDECIMAL; break;
+            case LOI_NO_MINI_DECIMAL:       flagsOFF = FMT_MINIDECIMAL; break;
             case LOI_MINI_HEADER:           flagsON = FMT_MINIHEADER; break;
             case LOI_NO_MINI_HEADER:        flagsOFF = FMT_MINIHEADER; break;
             case LOI_MORE_COLORS:           more_colors = opt_value; break;
@@ -1029,7 +1035,7 @@ unrecognized_long_opt_value:
             flags |= FMT_USAGEGROUPED;
         flags &= (FMT_COLORS|FMT_MINISIZE|FMT_LOWERCASE|FMT_FULLSIZE|FMT_COMPRESSED|
                   FMT_SEPARATETHOUSANDS|FMT_REDIRECTED|FMT_AUTOSEPTHOUSANDS|
-                  FMT_USAGE|FMT_USAGEGROUPED|FMT_MINIDATE);
+                  FMT_USAGE|FMT_USAGEGROUPED|FMT_MINIDATE|FMT_MINIDECIMAL);
         flags |= FMT_BARE|FMT_SUBDIRECTORIES|FMT_HIDEPSEUDODIRS;
         limit_depth = -1;
     }
