@@ -2377,7 +2377,11 @@ bool PictureFormatter::CanAutoFitFilename() const
 
 void PictureFormatter::SetDirContext(const std::shared_ptr<const DirContext>& dir)
 {
-    assert(implies(m_dir, m_dir == dir));
+    // The DirContext is meant to be set once.  However, there's an exception
+    // for tree mode because all directories need to share a single picture
+    // formatter so that field widths are computed across all files and
+    // directories, instead of per-directory.
+    assert(implies(m_dir && !(m_settings.IsSet(FMT_TREE)), m_dir == dir));
     m_dir = dir;
 }
 

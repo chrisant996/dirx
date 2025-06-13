@@ -116,6 +116,7 @@ private:
     unsigned            m_count_usage_dirs = 0;
 
     std::shared_ptr<DirContext> m_dir;
+    std::shared_ptr<PictureFormatter> m_tree_picture;
 
     std::vector<std::unique_ptr<OutputOperation>> m_outputs;
 

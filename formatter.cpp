@@ -226,6 +226,9 @@ void DirEntryFormatter::Initialize(unsigned num_columns, const FormatFlags flags
                     Settings().m_num_columns == 1);
     m_delayed_render = (IsGradientColorScaleMode() && GetColorScaleFields());
 
+    if (flags & FMT_TREE)
+        m_tree_picture = std::make_shared<PictureFormatter>(*m_picture_template);
+
     if (g_debug)
     {
         Printf(L"debug: format flags: 0x%08.8x%08.8x\n", DWORD(ULONGLONG(flags) >> 32), DWORD(flags));
@@ -452,7 +455,12 @@ void DirEntryFormatter::OnDirectoryBegin(const WCHAR* const dir, const WCHAR* co
         m_granularity = dwSectorsPerCluster * dwBytesPerSector;
 
     {
-        std::shared_ptr<PictureFormatter> picture = std::make_shared<PictureFormatter>(*m_picture_template);
+        std::shared_ptr<PictureFormatter> picture;
+        if (Settings().IsSet(FMT_TREE))
+            picture = m_tree_picture;
+        else
+            picture = std::make_shared<PictureFormatter>(*m_picture_template);
+
         std::shared_ptr<DirContext> context = std::make_shared<DirContext>(Settings().m_flags, picture);
         context->repo = repo;
         if (Settings().IsSet(FMT_SHORTNAMES))
@@ -1197,6 +1205,8 @@ void DirEntryFormatter::OnPatternEnd(const DirPattern* pattern)
 
         s_tree_stack.clear();
         s_tree_map.clear();
+
+        m_tree_picture = std::make_shared<PictureFormatter>(*m_picture_template);
     }
 }
 
