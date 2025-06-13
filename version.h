@@ -4,7 +4,7 @@
 #pragma once
 
 #define VERSION_MAJOR           0
-#define VERSION_MINOR           30
+#define VERSION_MINOR           31
 
 #define IND_VER2( a, b ) #a ## "." ## #b
 #define IND_VER4( a, b, c, d ) L#a ## L"." ## L#b ## L"." ## L#c ## L"." ## L#d
