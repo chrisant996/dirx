@@ -33,7 +33,7 @@
 
 #include <memory>
 
-static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.Ab+c+C+f:F+g+G+h+i+I:j+J+k+l+L:n+o.p+q+Q.r+R+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
+static const WCHAR c_opts[] = L"/:+?V,+1+2+4+a.Ab+Bc+C+f:F+g+G+h+i+I:j+J+k+l+L:n+o.p+q+Q.r+R+s+S.t+T.u+v+w+W:x+X.Y+z+Z+";
 static const WCHAR c_DIRXCMD[] = L"DIRXCMD";
 
 int g_debug = 0;
@@ -211,6 +211,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-attributes",         nullptr,            LOI_NO_ATTRIBUTES },
         { L"bare",                  nullptr,            'b' },
         { L"no-bare",               nullptr,            LOI_NO_BARE },
+        { L"almost-bare",           nullptr,            'B' },
         { L"bare-relative",         nullptr,            LOI_BARE_RELATIVE },
         { L"no-bare-relative",      nullptr,            LOI_NO_BARE_RELATIVE },
         { L"classify",              nullptr,            LOI_CLASSIFY },
@@ -541,6 +542,14 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             dwAttrExcludeAny = 0;
             flags |= FMT_HIDEPSEUDODIRS;
             used_A_flag = true;
+            break;
+        case 'B':
+            flags |= FMT_FORCENONFAT|FMT_SORTVERTICAL;
+            flags &= ~(FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT|FMT_FAT);
+            flags |= FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER;
+            flags |= FMT_LONGNODATE|FMT_LONGNOSIZE|FMT_NODIRTAGINSIZE;
+            flags &= ~(FMT_DATE|FMT_SIZE);
+            flags |= FMT_HIDEPSEUDODIRS|FMT_SKIPHIDDENDIRS;
             break;
         case 'I':
             SkipColonOrEqual(opt_value);
