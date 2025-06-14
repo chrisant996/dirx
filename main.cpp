@@ -546,7 +546,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         case 'B':
             flags |= FMT_FORCENONFAT|FMT_SORTVERTICAL;
             flags &= ~(FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT|FMT_FAT);
-            flags |= FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER;
+            flags |= FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER|FMT_MAYBEMINIHEADER;
             flags |= FMT_LONGNODATE|FMT_LONGNOSIZE|FMT_NODIRTAGINSIZE;
             flags &= ~(FMT_DATE|FMT_SIZE);
             flags |= FMT_HIDEPSEUDODIRS|FMT_SKIPHIDDENDIRS;
@@ -830,6 +830,9 @@ unrecognized_long_opt_value:
                 flags &= ~flagsOFF;
             else
                 assert(false);
+
+            if ((flagsON|flagsOFF) & FMT_MINIHEADER)
+                flags &= ~FMT_MAYBEMINIHEADER;
         }
     }
 
@@ -1135,8 +1138,8 @@ unrecognized_long_opt_value:
         }
     }
 
-    if (g_nix_defaults &&
-        def.Settings().IsSet(FMT_MINIHEADER) &&
+    if (def.Settings().IsSet(FMT_MINIHEADER) &&
+        (g_nix_defaults || def.Settings().IsSet(FMT_MAYBEMINIHEADER)) &&
         !def.Settings().IsSet(FMT_SUBDIRECTORIES) &&
         (!patterns || !patterns->m_next))
     {

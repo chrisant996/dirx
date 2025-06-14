@@ -53,7 +53,7 @@ enum FormatFlags : ULONGLONG
     FMT_NOHEADER                = 0x0000008000000000,
     FMT_NOSUMMARY               = 0x0000010000000000,
     FMT_MINIHEADER              = 0x0000020000000000,   // Show single line header per directory.
-    //                          = 0x0000040000000000,
+    FMT_MAYBEMINIHEADER         = 0x0000040000000000,   // Don't show single line header per directory if only 0 or 1 directory.
     //                          = 0x0000080000000000,
     FMT_LONGNODATE              = 0x0000100000000000,   // Omit date in long mode.
     FMT_LONGNOSIZE              = 0x0000200000000000,   // Omit size in long mode.
