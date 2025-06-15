@@ -581,7 +581,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             SkipColonOrEqual(opt_value);
             if (!*opt_value)
             {
-                flags &= ~(FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY);
+                FlipFlag(flags, FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY, false);
                 continue;
             }
             else

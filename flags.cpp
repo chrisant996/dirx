@@ -14,12 +14,23 @@ void SkipColonOrEqual(const WCHAR*& p)
         ++p;
 }
 
-void FlipFlag(FormatFlags& flags, FormatFlags flag, bool& enable, bool default_enable)
+void FlipFlag(FormatFlags& flags, FormatFlags flag, bool enable)
 {
+    if (!enable)
+    {
+        if (flag & FMT_NOHEADER)
+            flags &= ~FMT_MINIHEADER;
+    }
+
     if (enable)
         flags |= flag;
     else
         flags &= ~flag;
+}
+
+void FlipFlag(FormatFlags& flags, FormatFlags flag, bool& enable, bool default_enable)
+{
+    FlipFlag(flags, flag, enable);
     enable = default_enable;
 }
 
