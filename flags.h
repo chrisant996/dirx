@@ -67,8 +67,12 @@ enum FormatFlags : ULONGLONG
 };
 DEFINE_ENUM_FLAG_OPERATORS(FormatFlags);
 
+void FlipFlag(FormatFlags& flags, FormatFlags flag, bool enable);
 void FlipFlag(FormatFlags& flags, FormatFlags flag, bool& enable, bool default_enable);
 void FailFlag(WCHAR ch, const WCHAR* value, WCHAR short_opt, const LongOption<WCHAR>* long_opt, Error& e);
+
+inline void SetFlag(FormatFlags& flags, FormatFlags flag) { FlipFlag(flags, flag, true); }
+inline void ClearFlag(FormatFlags& flags, FormatFlags flag) { FlipFlag(flags, flag, false); }
 
 enum FieldType
 {

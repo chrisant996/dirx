@@ -14,12 +14,35 @@ void SkipColonOrEqual(const WCHAR*& p)
         ++p;
 }
 
-void FlipFlag(FormatFlags& flags, FormatFlags flag, bool& enable, bool default_enable)
+void FlipFlag(FormatFlags& flags, FormatFlags flag, bool enable)
 {
+    if (enable)
+    {
+        if (flag & FMT_FAT)                     flags &= ~FMT_FORCENONFAT;
+        if (flag & FMT_ATTRIBUTES)              flags &= ~FMT_LONGNOATTRIBUTES;
+        if (flag & FMT_DATE)                    flags &= ~FMT_LONGNODATE;
+        if (flag & FMT_SIZE)                    flags &= ~FMT_LONGNOSIZE;
+
+        // These take precedence if conflicting flags are set at the same time.
+        if (flag & FMT_FORCENONFAT)             flags &= ~FMT_FAT;
+        if (flag & FMT_LONGNOATTRIBUTES)        flags &= ~FMT_ATTRIBUTES;
+        if (flag & FMT_LONGNODATE)              flags &= ~FMT_DATE;
+        if (flag & FMT_LONGNOSIZE)              flags &= ~FMT_SIZE;
+    }
+    else
+    {
+        if (flag & FMT_NOHEADER)                flags &= ~FMT_MINIHEADER;
+    }
+
     if (enable)
         flags |= flag;
     else
         flags &= ~flag;
+}
+
+void FlipFlag(FormatFlags& flags, FormatFlags flag, bool& enable, bool default_enable)
+{
+    FlipFlag(flags, flag, enable);
     enable = default_enable;
 }
 
