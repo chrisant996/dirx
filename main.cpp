@@ -448,7 +448,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                 was_g = was_t = false;
 
             if (ch != 'g' || *opt_value != '+') was_g = false;
-            else if (was_g)                     flags |= FMT_GITREPOS;
+            else if (was_g)                     SetFlag(flags, FMT_GITREPOS);
             else                                was_g = true;
 
             if (ch != 't' || *opt_value != '+') was_t = false;
@@ -487,7 +487,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                 dwAttrMatch = 0;
                 dwAttrExcludeAny = 0;
                 if (g_nix_defaults || used_A_flag)
-                    flags &= ~FMT_HIDEPSEUDODIRS;
+                    ClearFlag(flags, FMT_HIDEPSEUDODIRS);
             }
             used_A_flag = false;
             SkipColonOrEqual(opt_value);
@@ -539,7 +539,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             dwAttrIncludeAny = 0;
             dwAttrMatch = 0;
             dwAttrExcludeAny = 0;
-            flags |= FMT_HIDEPSEUDODIRS;
+            SetFlag(flags, FMT_HIDEPSEUDODIRS);
             used_A_flag = true;
             break;
         case 'I':
@@ -567,21 +567,13 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             }
             break;
         case 'n':
-            if (long_opt || *opt_value == '+')
-            {
-                flags |= FMT_FORCENONFAT;
-                flags &= ~FMT_FAT;
-            }
-            else
-            {
-                flags &= ~FMT_FORCENONFAT;
-            }
+            FlipFlag(flags, FMT_FORCENONFAT, (long_opt || *opt_value == '+'));
             continue;
         case 'Q':
             SkipColonOrEqual(opt_value);
             if (!*opt_value)
             {
-                FlipFlag(flags, FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY, false);
+                ClearFlag(flags, FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY);
                 continue;
             }
             else
@@ -609,7 +601,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             SkipColonOrEqual(opt_value);
             if (!*opt_value)
             {
-                flags &= ~(FMT_SKIPHIDDENDIRS|FMT_SKIPJUNCTIONS|FMT_ONLYALTDATASTREAMS);
+                ClearFlag(flags, FMT_SKIPHIDDENDIRS|FMT_SKIPJUNCTIONS|FMT_ONLYALTDATASTREAMS);
                 continue;
             }
             else
@@ -630,15 +622,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             }
             continue;
         case 'z':
-            if (long_opt || *opt_value == '+')
-            {
-                flags |= FMT_FAT;
-                flags &= ~FMT_FORCENONFAT;
-            }
-            else
-            {
-                flags &= ~FMT_FAT;
-            }
+            FlipFlag(flags, FMT_FAT, (long_opt || *opt_value == '+'));
             continue;
 
         default:
@@ -647,12 +631,10 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             switch (long_opt->value)
             {
             case LOI_ATTRIBUTES:
-                flags |= FMT_ATTRIBUTES;
-                flags &= ~FMT_LONGNOATTRIBUTES;
+                SetFlag(flags, FMT_ATTRIBUTES);
                 break;
             case LOI_NO_ATTRIBUTES:
-                flags |= FMT_LONGNOATTRIBUTES;
-                flags &= ~FMT_ATTRIBUTES;
+                SetFlag(flags, FMT_LONGNOATTRIBUTES);
                 break;
             case LOI_COLOR_SCALE:
                 if (!SetColorScale(opt_value))
@@ -667,16 +649,12 @@ unrecognized_long_opt_value:
                     goto unrecognized_long_opt_value;
                 break;
             case LOI_COMPACT_TIME:
-                flags |= FMT_DATE;
-                flags &= ~FMT_LONGNODATE;
+                SetFlag(flags, FMT_DATE);
                 SetDefaultTimeStyle(L"compact");
                 break;
             case LOI_NO_COMPACT_TIME:
                 if (ClearDefaultTimeStyleIf(L"compact"))
-                {
-                    flags |= FMT_LONGNODATE;
-                    flags &= ~FMT_DATE;
-                }
+                    SetFlag(flags, FMT_LONGNODATE);
                 break;
             case LOI_ESCAPE_CODES:
                 if (!SetUseEscapeCodes(opt_value))
@@ -702,62 +680,54 @@ unrecognized_long_opt_value:
             case LOI_NIX:
                 g_nix_defaults = true;
                 HideDotFiles(true);
-                flags |= FMT_COLORS|FMT_NODIRTAGINSIZE|FMT_FORCENONFAT|FMT_HIDEPSEUDODIRS|FMT_SORTVERTICAL|FMT_SKIPHIDDENDIRS|FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER;
-                flags &= ~(FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT|FMT_FAT|FMT_SHORTNAMES|FMT_ONLYSHORTNAMES|FMT_FULLNAME|FMT_AUTOSEPTHOUSANDS|FMT_SEPARATETHOUSANDS);
+                SetFlag(flags, FMT_COLORS|FMT_NODIRTAGINSIZE|FMT_FORCENONFAT|FMT_HIDEPSEUDODIRS|FMT_SORTVERTICAL|FMT_SKIPHIDDENDIRS|FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER);
+                ClearFlag(flags, FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT|FMT_SHORTNAMES|FMT_ONLYSHORTNAMES|FMT_FULLNAME|FMT_AUTOSEPTHOUSANDS|FMT_SEPARATETHOUSANDS);
                 dwAttrExcludeAny &= ~FILE_ATTRIBUTE_SYSTEM;
                 SetDefaultTimeStyle(L"compact");
                 break;
             case LOI_NO_NIX:
                 g_nix_defaults = false;
                 HideDotFiles(false);
-                flags |= FMT_AUTOSEPTHOUSANDS;
-                flags &= ~(FMT_NODIRTAGINSIZE|FMT_HIDEPSEUDODIRS|FMT_SORTVERTICAL|FMT_FORCENONFAT|FMT_FAT|FMT_SKIPHIDDENDIRS|FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER);
+                SetFlag(flags, FMT_AUTOSEPTHOUSANDS);
+                ClearFlag(flags, FMT_NODIRTAGINSIZE|FMT_HIDEPSEUDODIRS|FMT_SORTVERTICAL|FMT_FORCENONFAT|FMT_FAT|FMT_SKIPHIDDENDIRS|FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER);
                 dwAttrExcludeAny |= FILE_ATTRIBUTE_SYSTEM;
                 SetDefaultTimeStyle(L"locale");
                 SetDefaultTimeStyle(L"locale");
                 break;
             case LOI_RELATIVE:
-                flags |= FMT_DATE;
-                flags &= ~FMT_LONGNODATE;
+                SetFlag(flags, FMT_DATE);
                 SetDefaultTimeStyle(L"relative");
                 break;
             case LOI_NO_RELATIVE:
                 if (ClearDefaultTimeStyleIf(L"relative"))
-                {
-                    flags |= FMT_LONGNODATE;
-                    flags &= ~FMT_DATE;
-                }
+                    SetFlag(flags, FMT_LONGNODATE);
                 break;
             case LOI_SIZE:
-                flags |= FMT_SIZE;
-                flags &= ~FMT_LONGNOSIZE;
+                SetFlag(flags, FMT_SIZE);
                 break;
             case LOI_NO_SIZE:
-                flags |= FMT_LONGNOSIZE;
-                flags &= ~FMT_SIZE;
+                SetFlag(flags, FMT_LONGNOSIZE);
                 break;
             case LOI_SIZE_STYLE:
                 if (!SetDefaultSizeStyle(opt_value))
                     goto unrecognized_long_opt_value;
                 break;
             case LOI_TIME:
-                flags |= FMT_DATE;
-                flags &= ~FMT_LONGNODATE;
+                SetFlag(flags, FMT_DATE);
                 break;
             case LOI_NO_TIME:
-                flags |= FMT_LONGNODATE;
-                flags &= ~FMT_DATE;
+                SetFlag(flags, FMT_LONGNODATE);
                 break;
             case LOI_TIME_STYLE:
                 if (!SetDefaultTimeStyle(opt_value))
                     goto unrecognized_long_opt_value;
                 break;
             case LOI_TREE:
-                flags |= FMT_TREE|FMT_SKIPHIDDENDIRS|FMT_SUBDIRECTORIES;
+                SetFlag(flags, FMT_TREE|FMT_SKIPHIDDENDIRS|FMT_SUBDIRECTORIES);
                 break;
             case LOI_NO_TREE:
                 if (flags & FMT_TREE)
-                    flags &= ~(FMT_TREE|FMT_SKIPHIDDENDIRS|FMT_SUBDIRECTORIES);
+                    ClearFlag(flags, (FMT_TREE|FMT_SKIPHIDDENDIRS|FMT_SUBDIRECTORIES));
                 break;
             case LOI_TRUNCATE_CHAR:
                 SetTruncationCharacterInHex(opt_value);
@@ -816,9 +786,9 @@ unrecognized_long_opt_value:
                 flagsOFF = flagsON;
 
             if (*opt_value == '+' || (long_opt && flagsON))
-                flags |= flagsON;
+                SetFlag(flags, flagsON);
             else if (*opt_value == '-' || (long_opt && flagsOFF))
-                flags &= ~flagsOFF;
+                ClearFlag(flags, flagsOFF);
             else
                 assert(false);
         }
@@ -850,14 +820,14 @@ unrecognized_long_opt_value:
             SkipColonOrEqual(opt_value);
             if (wcscmp(opt_value, L"-") == 0)
             {
-                flags &= ~(FMT_SIZE|FMT_MINISIZE);
+                ClearFlag(flags, FMT_SIZE|FMT_MINISIZE);
                 filesize = FILESIZE_FILESIZE;
                 continue;
             }
-            flags |= FMT_SIZE;
+            SetFlag(flags, FMT_SIZE);
             if (wcscmp(opt_value, L"S") == 0)
             {
-                flags |= FMT_FULLSIZE;
+                SetFlag(flags, FMT_FULLSIZE);
                 continue;
             }
             if (!wcscmp(opt_value, L"a"))
@@ -876,14 +846,14 @@ unrecognized_long_opt_value:
             SkipColonOrEqual(opt_value);
             if (wcscmp(opt_value, L"-") == 0)
             {
-                flags &= ~(FMT_DATE|FMT_MINIDATE);
+                ClearFlag(flags, (FMT_DATE|FMT_MINIDATE));
                 timestamp = TIMESTAMP_MODIFIED;
                 continue;
             }
-            flags |= FMT_DATE;
+            SetFlag(flags, FMT_DATE);
             if (wcscmp(opt_value, L"T") == 0)
             {
-                flags |= FMT_FULLTIME;
+                SetFlag(flags, FMT_FULLTIME);
                 continue;
             }
             if (!wcscmp(opt_value, L"a"))
@@ -900,16 +870,10 @@ unrecognized_long_opt_value:
             }
             break;
         case 'Y':
-            if (wcscmp(opt_value, L"-") == 0)
-                flags &= ~FMT_MINIDATE;
-            else
-                flags |= FMT_MINIDATE;
+            FlipFlag(flags, FMT_MINIDATE, (wcscmp(opt_value, L"-") != 0));
             break;
         case 'Z':
-            if (wcscmp(opt_value, L"-") == 0)
-                flags &= ~FMT_MINISIZE;
-            else
-                flags |= FMT_MINISIZE;
+            FlipFlag(flags, FMT_MINISIZE, (wcscmp(opt_value, L"-") != 0));
             break;
         }
     }
@@ -923,13 +887,13 @@ unrecognized_long_opt_value:
 
     if (flags & FMT_TREE)
     {
-        flags &= ~(FMT_BARE|FMT_FULLNAME|FMT_FAT|FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
+        ClearFlag(flags, FMT_BARE|FMT_FULLNAME|FMT_FAT|FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
         if (!dwAttrIncludeAny && !dwAttrMatch && !dwAttrExcludeAny)
-            flags &= ~FMT_SKIPHIDDENDIRS;
+            ClearFlag(flags, FMT_SKIPHIDDENDIRS);
     }
     else if (flags & FMT_BARERELATIVE)
     {
-        flags |= FMT_BARE;
+        SetFlag(flags, FMT_BARE);
     }
 
     unsigned cColumns = 1;
@@ -991,13 +955,13 @@ unrecognized_long_opt_value:
         }
 
         if (long_attributes)
-            flags |= FMT_ATTRIBUTES;
+            SetFlag(flags, FMT_ATTRIBUTES);
         else if (flags & FMT_TREE)
         {
             if (!(flags & (FMT_DATE|FMT_MINIDATE)))
-                flags |= FMT_LONGNODATE;
+                SetFlag(flags, FMT_LONGNODATE);
             if (!(flags & (FMT_SIZE|FMT_MINISIZE)))
-                flags |= FMT_LONGNOSIZE;
+                SetFlag(flags, FMT_LONGNOSIZE);
         }
     }
 
@@ -1008,45 +972,45 @@ unrecognized_long_opt_value:
         cColumns = 1;
 
     if (flags & FMT_FORCENONFAT)
-        flags &= ~FMT_FAT;
+        ClearFlag(flags, FMT_FAT);
     if (cColumns != 1 && !g_nix_defaults && !(flags & (FMT_FAT|FMT_ATTRIBUTES|FMT_MINISIZE|FMT_CLASSIFY)))
-        flags |= FMT_DIRBRACKETS;
+        SetFlag(flags, FMT_DIRBRACKETS);
     if (!(flags & FMT_FAT))
-        flags |= FMT_FULLSIZE;
+        SetFlag(flags, FMT_FULLSIZE);
     if (flags & (FMT_BARE|FMT_TREE))
     {
-        flags |= FMT_HIDEPSEUDODIRS;
-        flags &= ~(FMT_ALTDATASTEAMS|FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
+        SetFlag(flags, FMT_HIDEPSEUDODIRS);
+        ClearFlag(flags, FMT_ALTDATASTEAMS|FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
         if (flags & FMT_TREE)
-            flags |= FMT_NOVOLUMEINFO|FMT_NOSUMMARY;
+            SetFlag(flags, FMT_NOVOLUMEINFO|FMT_NOSUMMARY);
         else
             SetUseIcons(L"never", true/*unless_always*/);
     }
 
     if (flags & FMT_SEPARATETHOUSANDS)
-        flags |= FMT_FULLSIZE;
+        SetFlag(flags, FMT_FULLSIZE);
     if (flags & FMT_AUTOSEPTHOUSANDS)
-        flags |= FMT_SEPARATETHOUSANDS;
+        SetFlag(flags, FMT_SEPARATETHOUSANDS);
 
     if (flags & FMT_USAGE)
     {
         cColumns = 1;
         if (flags & FMT_SUBDIRECTORIES)
-            flags |= FMT_USAGEGROUPED;
-        flags &= (FMT_COLORS|FMT_MINISIZE|FMT_LOWERCASE|FMT_FULLSIZE|FMT_COMPRESSED|
-                  FMT_SEPARATETHOUSANDS|FMT_REDIRECTED|FMT_AUTOSEPTHOUSANDS|
-                  FMT_USAGE|FMT_USAGEGROUPED|FMT_MINIDATE|FMT_MINIDECIMAL);
-        flags |= FMT_BARE|FMT_SUBDIRECTORIES|FMT_HIDEPSEUDODIRS;
+            SetFlag(flags, FMT_USAGEGROUPED);
+        ClearFlag(flags, FMT_COLORS|FMT_MINISIZE|FMT_LOWERCASE|FMT_FULLSIZE|FMT_COMPRESSED|
+                         FMT_SEPARATETHOUSANDS|FMT_REDIRECTED|FMT_AUTOSEPTHOUSANDS|
+                         FMT_USAGE|FMT_USAGEGROUPED|FMT_MINIDATE|FMT_MINIDECIMAL);
+        SetFlag(flags, FMT_BARE|FMT_SUBDIRECTORIES|FMT_HIDEPSEUDODIRS);
         limit_depth = -1;
     }
 
     if (cColumns != 1)
-        flags &= ~(FMT_FULLSIZE|FMT_GITREPOS);
+        ClearFlag(flags, FMT_FULLSIZE|FMT_GITREPOS);
     if (cColumns > 2)
-        flags &= ~(FMT_GIT);
+        ClearFlag(flags, FMT_GIT);
 
     if ((flags & FMT_ATTRIBUTES) && show_all_attributes)
-        flags |= FMT_ALLATTRIBUTES;
+        SetFlag(flags, FMT_ALLATTRIBUTES);
 
     // Initialize directory entry formatter.
 
@@ -1055,7 +1019,7 @@ unrecognized_long_opt_value:
 
     if (!CanUseEscapeCodes(GetStdHandle(STD_OUTPUT_HANDLE)))
     {
-        flags &= ~FMT_COLORS;
+        ClearFlag(flags, FMT_COLORS);
         SetUseIcons(L"never", true/*unless_always*/);
         SetColorScale(L"none");
     }
