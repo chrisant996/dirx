@@ -544,12 +544,12 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             used_A_flag = true;
             break;
         case 'B':
-            flags |= FMT_FORCENONFAT|FMT_SORTVERTICAL;
-            flags &= ~(FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT|FMT_FAT);
-            flags |= FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|FMT_MINIHEADER|FMT_MAYBEMINIHEADER;
-            flags |= FMT_LONGNODATE|FMT_LONGNOSIZE|FMT_NODIRTAGINSIZE;
-            flags &= ~(FMT_DATE|FMT_SIZE);
-            flags |= FMT_HIDEPSEUDODIRS|FMT_SKIPHIDDENDIRS;
+            SetFlag(flags, FMT_FORCENONFAT|FMT_SORTVERTICAL|
+                           FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|
+                           FMT_MINIHEADER|FMT_MAYBEMINIHEADER|
+                           FMT_LONGNODATE|FMT_LONGNOSIZE|FMT_NODIRTAGINSIZE|
+                           FMT_HIDEPSEUDODIRS|FMT_SKIPHIDDENDIRS);
+            ClearFlag(flags, FMT_JUSTIFY_FAT|FMT_JUSTIFY_NONFAT);
             break;
         case 'I':
             SkipColonOrEqual(opt_value);
@@ -801,6 +801,8 @@ unrecognized_long_opt_value:
             else
                 assert(false);
 
+            // Explicitly choosing --mini-header makes it always appear,
+            // regardless how many directory patterns are present.
             if ((flagsON|flagsOFF) & FMT_MINIHEADER)
                 flags &= ~FMT_MAYBEMINIHEADER;
         }
