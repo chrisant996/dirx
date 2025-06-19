@@ -870,10 +870,16 @@ unrecognized_long_opt_value:
             }
             break;
         case 'Y':
-            FlipFlag(flags, FMT_MINIDATE, (wcscmp(opt_value, L"-") != 0));
+            if (wcscmp(opt_value, L"-") == 0)
+                ClearFlag(flags, FMT_MINIDATE);
+            else
+                SetFlag(flags, FMT_MINIDATE|FMT_DATE);
             break;
         case 'Z':
-            FlipFlag(flags, FMT_MINISIZE, (wcscmp(opt_value, L"-") != 0));
+            if (wcscmp(opt_value, L"-") == 0)
+                ClearFlag(flags, FMT_MINISIZE);
+            else
+                SetFlag(flags, FMT_MINISIZE|FMT_SIZE);
             break;
         }
     }
