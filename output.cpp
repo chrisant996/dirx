@@ -800,6 +800,8 @@ void ExpandTabs(const WCHAR* s, StrW& out, unsigned max_width)
     {
         const DWORD dwColsRows = GetConsoleColsRows(GetStdHandle(STD_OUTPUT_HANDLE));
         max_width = LOWORD(dwColsRows);
+        // max_width is always non-zero, but the code below in this function
+        // recognizes 0 as meaning unlimited width.
         if (!max_width)
             --max_width;
     }

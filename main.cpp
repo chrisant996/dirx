@@ -223,6 +223,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"color-scale-mode",      nullptr,            LOI_COLOR_SCALE_MODE,   LOHA_REQUIRED },
         { L"compact",               nullptr,            LOI_COMPACT_TIME },
         { L"no-compact",            nullptr,            LOI_NO_COMPACT_TIME },
+        { L"concise",               nullptr,            'B' }, // TODO: -B is a placeholder...
         { L"debug",                 &g_debug,           1 },
         { L"no-debug",              &g_debug,           0 },
         { L"escape-codes",          nullptr,            LOI_ESCAPE_CODES,       LOHA_OPTIONAL },
@@ -390,13 +391,19 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             {
                 s.SetA(c_help_regex);
             }
+            else if (!wcsicmp(argv[0], L"alphabetical"))
+            {
+                app.ToUpper();
+                fmt.SetA(MakeUsageString(true));
+                s.Printf(fmt.Text(), app.Text());
+            }
         }
         if (!print_all_icons)
         {
             if (s.Empty())
             {
                 app.ToUpper();
-                fmt.SetA(c_long_usage);
+                fmt.SetA(MakeUsageString());
                 s.Printf(fmt.Text(), app.Text());
             }
             SetPagination(true);

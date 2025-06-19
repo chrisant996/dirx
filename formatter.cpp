@@ -900,9 +900,7 @@ void DirEntryFormatter::OnDirectoryEnd(const WCHAR* dir, bool next_dir_is_differ
                         assert(implies(m_num_columns != 0, !(flags & FMT_ATTRIBUTES)));
 
                         const bool isFAT = !!(flags & FMT_FAT);
-                        unsigned console_width = LOWORD(GetConsoleColsRows(h));
-                        if (!console_width)
-                            console_width = 80;
+                        const unsigned console_width = LOWORD(GetConsoleColsRows(h));
 
                         if (GetIconWidth() && isFAT)
                         {
