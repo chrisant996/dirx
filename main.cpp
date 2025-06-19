@@ -432,6 +432,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     unsigned limit_depth = -1;
     bool fresh_a_flag = true;
     bool used_A_flag = false;
+    bool used_B_flag = false;
     const WCHAR* picture = 0;
     const LongOption<WCHAR>* long_opt;
     StrW ignore_globs;
@@ -544,6 +545,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             used_A_flag = true;
             break;
         case 'B':
+            used_B_flag = true;
             SetFlag(flags, FMT_FORCENONFAT|FMT_SORTVERTICAL|
                            FMT_NOVOLUMEINFO|FMT_NOHEADER|FMT_NOSUMMARY|
                            FMT_MINIHEADER|FMT_MAYBEMINIHEADER|
@@ -1045,7 +1047,7 @@ unrecognized_long_opt_value:
     }
 
     DirEntryFormatter def;
-    def.SetFitColumnsToContents(g_nix_defaults);
+    def.SetFitColumnsToContents(g_nix_defaults || used_B_flag);
     def.Initialize(cColumns, flags, timestamp, filesize, dwAttrIncludeAny, dwAttrMatch, dwAttrExcludeAny, picture);
 
     if (g_debug)
