@@ -1,14 +1,226 @@
 ﻿// Copyright (c) 2024 by Christopher Antos
 // License: http://opensource.org/licenses/MIT
 
-// vim: set noet ts=8 sw=4 cino={0s:
+// vim: set et ts=4 sw=4 cino={0s:
 
 #include "pch.h"
 #include "usage.h"
 
+#include <vector>
+#include <map>
+#include <algorithm>
+
 const char c_usage[] = "%s -? for help.";
 
-const char c_long_usage[] =
+enum FlagSection
+{
+    USAGE,
+    DISPLAY,
+    FILTER,
+    FIELD,
+    FORMAT,
+    MAX
+};
+
+struct FlagUsageInfo
+{
+    FlagSection         section;
+    const char*         flag;
+    const char*         desc;
+};
+
+static const FlagUsageInfo c_usage_info[] =
+{
+    // USAGE -----------------------------------------------------------------
+    { USAGE,    "-?, --help",               "Display this help text.\n" },
+    { USAGE,    "-? alphabetical",          "Display this help text in alphabetical order.\n" },
+    { USAGE,    "-? colors",                "Display help text on color coding the file list.\n" },
+    { USAGE,    "-? colorsamples",          "Display samples of the supported color codes.\n" },
+    { USAGE,    "-? defaultcolors",         "Print the default DIRX_COLORS string.\n" },
+    { USAGE,    "-? icons",                 "Display help text on file icons and Nerd Fonts.\n" },
+    { USAGE,    "-? pictures",              "Display help text on format pictures.\n" },
+    { USAGE,    "-? printallicons",         "Print a list of all icons.\n" },
+    { USAGE,    "-? regex",                 "Display help text on regular expression syntax.\n" },
+    { USAGE,    "-V, --version",            "Display version information.\n" },
+
+    // DISPLAY OPTIONS -------------------------------------------------------
+    { DISPLAY,  "-1",                       "Display one column per line.\n" },
+    { DISPLAY,  "-2",                       "Display two columns per line (more in wide consoles).\n" },
+    { DISPLAY,  "-4",                       "Display four columns per line (more in wide consoles).\n" },
+    { DISPLAY,  "-a, --all",                "Display all files (include hidden and system files).\n" },
+    { DISPLAY,  "-b, --bare",               "Bare mode; only display names, no header/detail/etc.\n" },
+    { DISPLAY,  "-c, --color",              "Display with colors (use '-? colors' for more info).\n" },
+    { DISPLAY,  "-g, --git",                "List each file's git status.\n" },
+    { DISPLAY,  "-gg, --git-repos",         "List status of git repo roots and each file's git\n"
+                                            "status (or --git-repos-no-status to omit file status).\n" },
+    { DISPLAY,  "-G, --grid",               "Synonym for --wide.\n" },
+    { DISPLAY,  "-i, --icons[=WHEN]",       "Display file icons (use '-? icons' for more info).\n"
+                                            "  always, auto, never (default)\n" },
+    { DISPLAY,  "-k, --color-scale[=FIELD]",
+                                            "Highlight levels of certain fields distinctly.\n"
+                                            "  all, age, size, none (default)\n" },
+    { DISPLAY,  "-l, --long",               "Long mode; display one file per line, plus attributes.\n" },
+    { DISPLAY,  "-n, --normal",             "Force normal list format even on FAT volumes.\n" },
+    { DISPLAY,  "-Q, --quash[=TYPES]",      "Quash types of output.  Use -Q by itself as a synonym\n"
+                                            "for -Q+v+h+s.\n"
+                                            "  v  Suppress the volume information\n"
+                                            "  h  Suppress the header\n"
+                                            "  s  Suppress the summary\n"
+                                            "  -  Prefix to suppress next type (the default)\n"
+                                            "  +  Prefix to un-suppress next type\n" },
+    { DISPLAY,  "-p, --paginate",           "Pause after each screen full of information.\n" },
+    { DISPLAY,  "-R",                       "Synonym for --recurse.\n" },
+    { DISPLAY,  "-s, --recurse",            "Subdirectories; recursively display files in specified\n"
+                                            "directory and all subdirectories.\n" },
+    { DISPLAY,  "-u, --usage",              "Display directory size usage data.\n" },
+    { DISPLAY,  "-v, --vertical",           "Sort columns vertically.\n" },
+    { DISPLAY,  "    --horizontal",         "Sort columns horizontally (the default).\n" },
+    { DISPLAY,  "-w, --wide",               "Wide mode; show as many columns as fit.\n" },
+    { DISPLAY,  "-z, --fat",                "Force FAT list format even on non-FAT volumes.\n" },
+    { DISPLAY,  "--color-scale-mode=MODE",  "Mode for --color-scale (use '-? colors' for more info).\n"
+                                            "  fixed, gradient (default)\n" },
+    { DISPLAY,  "--hyperlinks",             "Display entries as hyperlinks.\n" },
+    { DISPLAY,  "--tree",                   "Tree mode; recursively display files and directories in\n"
+                                            "a tree layout.\n" },
+
+    // FILTERING AND SORTING OPTIONS -----------------------------------------
+    { FILTER,   "-a[...]",                  "Display files with the specified attributes.  If\n"
+                                            "attributes are combined, all attributes must match\n"
+                                            "(-arhs only lists files with all three attributes set).\n"
+                                            "The - prefix excludes files with that attribute (-arh-s\n"
+                                            "lists files that are read-only and hidden and not\n"
+                                            "system).  The + prefix includes files that have any of\n"
+                                            "the + attributes set (-ar+h+s lists files that are\n"
+                                            "read-only and are hidden or system).\n"
+                                            "  r  Read-only files            e  Encrypted files\n"
+                                            "  h  Hidden files               t  Temporary files\n"
+                                            "  s  System files               p  Sparse files\n"
+                                            "  a  Ready for archiving        c  Compressed files\n"
+                                            "  d  Directories                o  Offline files\n"
+                                            "  i  Not content indexed files\n"
+                                            "  j  Reparse points (mnemonic for junction)\n"
+                                            "  l  Reparse points (mnemonic for link)\n"
+                                            "  +  Prefix meaning any\n"
+                                            "  -  Prefix meaning not\n" },
+    { FILTER,   "-A, --almost-all",         "Display all files, except hide . and .. directories.\n" },
+    { FILTER,   "-h",                       "Hide . and .. directories.\n" },
+    { FILTER,   "-I, --ignore-glob=GLOB",   "Glob patterns of files to ignore; the syntax is the\n"
+                                            "same as in .gitignore.  The / is used as the directory\n"
+                                            "separator.  An optional ! prefix negates a pattern; any\n"
+                                            "matching file excluded by a previous pattern will be\n"
+                                            "included again.  Multiple patterns may be specified\n"
+                                            "separated by a ; or | character.\n" },
+    { FILTER,   "-L, --levels=DEPTH",       "Limit the depth of recursion with -s.\n" },
+    { FILTER,   "-o[...]",                  "Sort the list by the specified options:\n"
+                                            "  n  Name [and extension if 'e' omitted] (alphabetic)\n"
+                                            "  e  Extension (alphabetic)\n"
+                                            "  g  Group directories first\n"
+                                            "  d  Date/time (oldest first)\n"
+                                            "  s  Size (smallest first)\n"
+                                            "  c  Compression ratio\n"
+                                            "  a  Simple ASCII order (sort \"10\" before \"2\")\n"
+                                            "  u  Unsorted\n"
+                                            "  r  Reverse order for all options\n"
+                                            "  -  Prefix to reverse order\n" },
+    { FILTER,   "-X, --skip=TYPES",         "Skip types during -s.  Use -X by itself as a synonym\n"
+                                            "for -X+d+j+r.\n"
+                                            "  d  Skip hidden directories (when used with -s)\n"
+                                            "  j  Skip junctions (when used with -s)\n"
+                                            "  r  Skip files with no alternate data streams\n"
+                                            "  -  Prefix to skip next type (this is the default)\n"
+                                            "  +  Prefix to un-skip next type\n" },
+    { FILTER,   "--git-ignore",             "Ignore files mentioned in .gitignore files.\n" },
+    { FILTER,   "--hide-dot-files",         "Hide file and directory names starting with '.' or '_'.\n"
+                                            "Using -a overrides this and shows them anyway.\n" },
+    { FILTER,   "--reverse",                "Reverse the selected sort order.\n" },
+    { FILTER,   "--string-sort",            "Sort punctuation as symbols.\n" },
+    { FILTER,   "--word-sort",              "Sort punctuation as part of the word (default).\n" },
+
+    // FIELD OPTIONS ---------------------------------------------------------
+    { FIELD,    "-C, --ratio",              "List the compression ratio.\n" },
+    { FIELD,    "-q, --owner",              "List the owner of the file.\n" },
+    { FIELD,    "-r, --streams",            "List alternate data streams of the file.\n" },
+    { FIELD,    "-S, --size",               "List the file size even in multple column formats.\n" },
+    { FIELD,    "-S[acf], --size=acf",      "Which size field to display or use for sorting:\n"
+                                            "  a  Allocation size\n"
+                                            "  c  Compressed size\n"
+                                            "  f  File size (default)\n" },
+    { FIELD,    "-t, --attributes",         "List the file attributes (use the flag twice to list\n"
+                                            "all attributes, e.g. -tt).\n" },
+    { FIELD,    "-T, --time",               "List the file time even in multiple column formats.\n" },
+    { FIELD,    "-T[acw], --time=acw",      "Which time field to display or use for sorting:\n"
+                                            "  a  Access time\n"
+                                            "  c  Creation time\n"
+                                            "  w  Write time (default)\n" },
+    { FIELD,    "-x, --short-names",        "Show 8.3 short file names.\n" },
+
+    // FORMATTING OPTIONS ----------------------------------------------------
+    { FORMAT,   "-,",                       "Show the thousand separator in sizes (the default).\n" },
+    { FORMAT,   "-f[...]",                  "Use the specified format picture.  You can greatly\n"
+                                            "customize how the list is displayed (use '-? pictures'\n"
+                                            "for more info).\n" },
+    { FORMAT,   "-F, --full-paths",         "Show full file paths in the file name column.\n" },
+    { FORMAT,   "-j",                       "Justify file names in FAT list format.\n" },
+    { FORMAT,   "-J",                       "Justify file names in non-FAT list formats.\n" },
+    { FORMAT,   "--justify[=WHEN]",         "Justify file names, in which list formats.  If WHEN is\n"
+                                            "omitted, 'always' is assumed.\n"
+                                            "  always, fat, normal, never (default)\n" },
+    { FORMAT,   "-SS",                      "Show long file sizes (implies -S).  Note that some list\n"
+                                            "formats limit the file size width.\n" },
+    { FORMAT,   "-TT",                      "Show long dates and times (implies -T).  Note that some\n"
+                                            "list formats limit the date and time width.\n" },
+    { FORMAT,   "-W, --width=COLS",         "Override the screen width.\n" },
+    { FORMAT,   "-Y",                       "Abbreviate dates and times (implies -T).\n" },
+    { FORMAT,   "-Z",                       "Abbreviate file sizes as 1K, 15M, etc (implies -S).\n" },
+    { FORMAT,   "--bare-relative",          "When listing subdirectories recursively, print paths\n"
+                                            "relative to the specified patterns instead of expanding\n"
+                                            "them to fully qualified paths (implies --bare).\n" },
+    { FORMAT,   "--classify",               "Print '\\' by dir names and '@' by symlink names.\n" },
+    { FORMAT,   "--compact",                "Use compact time format (short for --time and\n"
+                                            "--time-style=compact).\n" },
+    { FORMAT,   "--escape-codes[=WHEN]",    "For colors and hyperlinks in modern terminals.\n"
+                                            "  always, auto (default), never\n" },
+    { FORMAT,   "--fit-columns",            "Fit more columns in -w mode by compacting column widths\n"
+                                            "to fit their content (this is the default; use\n"
+                                            "--no-fit-columns to disable it).\n" },
+    { FORMAT,   "--lower",                  "Show file names using lower case.\n" },
+    { FORMAT,   "--mini-bytes",             "Show bytes in the mini size format when less than 1000.\n" },
+    { FORMAT,   "--mini-decimal",           "Always show one decimal place in the mini size format.\n" },
+    { FORMAT,   "--mini-header",            "Show a mini header of just the directory name above\n"
+                                            "each directory listing (if more than one directory).\n" },
+    { FORMAT,   "--more-colors=LIST",       "Add color rules in the same format as the DIRX_COLORS\n"
+                                            "environment variable (use '-? colors' for more info).\n" },
+    { FORMAT,   "--nerd-fonts=VER",         "Select which Nerd Fonts version to use (see '-? colors'\n"
+                                            "for more info).\n" },
+    { FORMAT,   "--nix",                    "Selects default options that are similar to Unix and\n"
+                                            "Linux systems.  Hides files starting with '.', skips\n"
+                                            "recursing into hidden directories, sorts vertically,\n"
+                                            "displays the file list in wide mode, fits field widths\n"
+                                            "to their contents, selects 'compact' time style, shows\n"
+                                            "a mini directory header above file lists, quashes\n"
+                                            "volume/header/summary output, disables filename\n"
+                                            "justify, shows long file names, shows '-' as size for\n"
+                                            "dirs, and suppresses thousands separators.\n" },
+    { FORMAT,   "--pad-icons=SPACES",       "Number of spaces to print after an icon.\n" },
+    { FORMAT,   "--relative",               "Use relative time format (short for --time and\n"
+                                            "--time-style=relative).\n" },
+    { FORMAT,   "--size-style=STYLE",       "Which size format to use for display by default when\n"
+                                            "not overridden by other format options:\n"
+                                            "  mini, short, normal (default)\n" },
+    { FORMAT,   "--time-style=STYLE",       "Which time format to use for display by default when\n"
+                                            "not overridden by other format options:\n"
+                                            "  locale (default), mini, compact, short, normal,\n"
+                                            "  full, iso, long-iso, relative\n" },
+    { FORMAT,   "--truncate-char=HEX",      "Set the truncation character for file names that don't\n"
+                                            "fit in the allotted space.  Specify a Unicode character\n"
+                                            "value in hexadecimal (e.g. 2192 is a right-pointing\n"
+                                            "arrow and 25b8 is a right-pointing triangle).  Or\n"
+                                            "specify 002e to use .. (two periods).\n" },
+    { FORMAT,   "--utf8",                   "When output is redirected, produce UTF8 output instead\n"
+                                            "of using the system codepage.\n" },
+};
+
+static const char c_usage_prolog[] =
 "Displays a list of file and subdirectories in a directory.\n"
 "\n"
 "%s [options] [drive:][path][filename]\n"
@@ -19,193 +231,9 @@ const char c_long_usage[] =
 "			expression.  For more information about regular\n"
 "			expressions use '-? regex'.\n"
 "\n"
-"  -?, --help		Display this help text.\n"
-"  -? colors		Display help text on color coding the file list.\n"
-"  -? colorsamples	Display samples of the supported color codes.\n"
-"  -? defaultcolors	Print the default DIRX_COLORS string.\n"
-"  -? icons		Display help text on file icons and Nerd Fonts.\n"
-"  -? pictures		Display help text on format pictures.\n"
-"  -? printallicons	Print a list of all icons.\n"
-"  -? regex		Display help text on regular expression syntax.\n"
-"  -V, --version		Display version information.\n"
-"\n"
-"DISPLAY OPTIONS:\n"
-"  -1			Display one column per line.\n"
-"  -2			Display two columns per line (more in wide consoles).\n"
-"  -4			Display four columns per line (more in wide consoles).\n"
-"  -a, --all		Display all files (include hidden and system files).\n"
-"  -b, --bare		Bare mode; only display names, no header/detail/etc.\n"
-"  -c, --color		Display with colors (use '-? colors' for more info).\n"
-"  -g, --git		List each file's git status.\n"
-"  -gg, --git-repos	List status of git repo roots and each file's git\n"
-"			status (or --git-repos-no-status to omit file status).\n"
-"  -G, --grid		Synonym for --wide.\n"
-"  -i, --icons[=WHEN]	Display file icons (use '-? icons' for more info).\n"
-"			  always, auto, never (default)\n"
-"  -k, --color-scale[=FIELD]\n"
-"			Highlight levels of certain fields distinctly.\n"
-"			  all, age, size, none (default)\n"
-"  -l, --long		Long mode; display one file per line, plus attributes.\n"
-"  -n, --normal		Force normal list format even on FAT volumes.\n"
-"  -Q, --quash[=TYPES]	Quash types of output.  Use -Q by itself as a synonym\n"
-"			for -Q+v+h+s.\n"
-"			  v  Suppress the volume information\n"
-"			  h  Suppress the header\n"
-"			  s  Suppress the summary\n"
-"			  -  Prefix to suppress next type (the default)\n"
-"			  +  Prefix to un-suppress next type\n"
-"  -p, --paginate	Pause after each screen full of information.\n"
-"  -R			Synonym for --recurse.\n"
-"  -s, --recurse		Subdirectories; recursively display files in specified\n"
-"			directory and all subdirectories.\n"
-"  -u, --usage		Display directory size usage data.\n"
-"  -v, --vertical	Sort columns vertically.\n"
-"      --horizontal	Sort columns horizontally (the default).\n"
-"  -w, --wide		Wide mode; show as many columns as fit.\n"
-"  -z, --fat		Force FAT list format even on non-FAT volumes.\n"
-"  --color-scale-mode=MODE\n"
-"			Mode for --color-scale (use '-? colors' for more info).\n"
-"			  fixed, gradient (default)\n"
-"  --hyperlinks		Display entries as hyperlinks.\n"
-"  --tree		Tree mode; recursively display files and directories in\n"
-"			a tree layout.\n"
-"\n"
-"FILTERING AND SORTING OPTIONS:\n"
-"  -a[...]		Display files with the specified attributes.  If\n"
-"			attributes are combined, all attributes must match\n"
-"			(-arhs only lists files with all three attributes set).\n"
-"			The - prefix excludes files with that attribute (-arh-s\n"
-"			lists files that are read-only and hidden and not\n"
-"			system).  The + prefix includes files that have any of\n"
-"			the + attributes set (-ar+h+s lists files that are\n"
-"			read-only and are hidden or system).\n"
-"			  r  Read-only files            e  Encrypted files\n"
-"			  h  Hidden files               t  Temporary files\n"
-"			  s  System files               p  Sparse files\n"
-"			  a  Ready for archiving        c  Compressed files\n"
-"			  d  Directories                o  Offline files\n"
-"			  i  Not content indexed files\n"
-"			  j  Reparse points (mnemonic for junction)\n"
-"			  l  Reparse points (mnemonic for link)\n"
-"			  +  Prefix meaning any\n"
-"			  -  Prefix meaning not\n"
-"  -A, --almost-all	Display all files, except hide . and .. directories.\n"
-"  -h			Hide . and .. directories.\n"
-"  -I, --ignore-glob=GLOB\n"
-"			Glob patterns of files to ignore; the syntax is the\n"
-"			same as in .gitignore.  The / is used as the directory\n"
-"			separator.  An optional ! prefix negates a pattern; any\n"
-"			matching file excluded by a previous pattern will be\n"
-"			included again.  Multiple patterns may be specified\n"
-"			separated by a ; or | character.\n"
-"  -L, --levels=DEPTH	Limit the depth of recursion with -s.\n"
-"  -o[...]		Sort the list by the specified options:\n"
-"			  n  Name [and extension if 'e' omitted] (alphabetic)\n"
-"			  e  Extension (alphabetic)\n"
-"			  g  Group directories first\n"
-"			  d  Date/time (oldest first)\n"
-"			  s  Size (smallest first)\n"
-"			  c  Compression ratio\n"
-"			  a  Simple ASCII order (sort \"10\" before \"2\")\n"
-"			  u  Unsorted\n"
-"			  r  Reverse order for all options\n"
-"			  -  Prefix to reverse order\n"
-"  -X, --skip=TYPES	Skip types during -s.  Use -X by itself as a synonym\n"
-"			for -X+d+j+r.\n"
-"			  d  Skip hidden directories (when used with -s)\n"
-"			  j  Skip junctions (when used with -s)\n"
-"			  r  Skip files with no alternate data streams\n"
-"			  -  Prefix to skip next type (this is the default)\n"
-"			  +  Prefix to un-skip next type\n"
-"  --git-ignore		Ignore files mentioned in .gitignore files.\n"
-"  --hide-dot-files	Hide file and directory names starting with '.' or '_'.\n"
-"			Using -a overrides this and shows them anyway.\n"
-"  --reverse		Reverse the selected sort order.\n"
-"  --string-sort		Sort punctuation as symbols.\n"
-"  --word-sort		Sort punctuation as part of the word (default).\n"
-"\n"
-"FIELD OPTIONS:\n"
-"  -C, --ratio		List the compression ratio.\n"
-"  -q, --owner		List the owner of the file.\n"
-"  -r, --streams		List alternate data streams of the file.\n"
-"  -S, --size		List the file size even in multple column formats.\n"
-"  -S[acf], --size=acf	Which size field to display or use for sorting:\n"
-"			  a  Allocation size\n"
-"			  c  Compressed size\n"
-"			  f  File size (default)\n"
-"  -t, --attributes	List the file attributes (use the flag twice to list\n"
-"			all attributes, e.g. -tt).\n"
-"  -T, --time		List the file time even in multiple column formats.\n"
-"  -T[acw], --time=acw	Which time field to display or use for sorting:\n"
-"			  a  Access time\n"
-"			  c  Creation time\n"
-"			  w  Write time (default)\n"
-"  -x, --short-names	Show 8.3 short file names.\n"
-"\n"
-"FORMATTING OPTIONS:\n"
-"  -,			Show the thousand separator in sizes (the default).\n"
-"  -f[...]		Use the specified format picture.  You can greatly\n"
-"			customize how the list is displayed (use '-? pictures'\n"
-"			for more info).\n"
-"  -F, --full-paths	Show full file paths in the file name column.\n"
-"  -j			Justify file names in FAT list format.\n"
-"  -J			Justify file names in non-FAT list formats.\n"
-"  --justify[=WHEN]	Justify file names, in which list formats.  If WHEN is\n"
-"			omitted, 'always' is assumed.\n"
-"			  always, fat, normal, never (default)\n"
-"  -SS			Show long file sizes (implies -S).  Note that some list\n"
-"			formats limit the file size width.\n"
-"  -TT			Show long dates and times (implies -T).  Note that some\n"
-"			list formats limit the date and time width.\n"
-"  -W, --width=COLS	Override the screen width.\n"
-"  -Y			Abbreviate dates and times (implies -T).\n"
-"  -Z			Abbreviate file sizes as 1K, 15M, etc (implies -S).\n"
-"  --bare-relative	When listing subdirectories recursively, print paths\n"
-"			relative to the specified patterns instead of expanding\n"
-"			them to fully qualified paths (implies --bare).\n"
-"  --classify		Print '\\' by dir names and '@' by symlink names.\n"
-"  --compact		Use compact time format (short for --time and\n"
-"			--time-style=compact).\n"
-"  --escape-codes[=WHEN]\n"
-"			For colors and hyperlinks in modern terminals.\n"
-"			  always, auto (default), never\n"
-"  --fit-columns		Fit more columns in -w mode by compacting column widths\n"
-"			to fit their content (this is the default; use\n"
-"			--no-fit-columns to disable it).\n"
-"  --lower		Show file names using lower case.\n"
-"  --mini-bytes		Show bytes in the mini size format when less than 1000.\n"
-"  --mini-decimal	Always show one decimal place in the mini size format.\n"
-"  --mini-header		Show a mini header of just the directory name above\n"
-"			each directory listing (if more than one directory).\n"
-"  --more-colors=LIST	Add color rules in the same format as the DIRX_COLORS\n"
-"			environment variable (use '-? colors' for more info).\n"
-"  --nerd-fonts=VER	Select which Nerd Fonts version to use (see '-? colors'\n"
-"			for more info).\n"
-"  --nix			Selects default options that are similar to Unix and\n"
-"			Linux systems.  Hides files starting with '.', skips\n"
-"			recursing into hidden directories, sorts vertically,\n"
-"			displays the file list in wide mode, selects 'compact'\n"
-"			time style, shows a mini directory header above file\n"
-"			lists, quashes volume/header/summary output, disables\n"
-"			filename justify, shows long file names, shows '-' as\n"
-"			size for dirs, and suppresses thousands separators.\n"
-"  --pad-icons=SPACES	Number of spaces to print after an icon.\n"
-"  --relative		Use relative time format (short for --time and\n"
-"			--time-style=relative).\n"
-"  --size-style=STYLE	Which size format to use for display by default when\n"
-"			not overridden by other format options:\n"
-"			  mini, short, normal (default)\n"
-"  --time-style=STYLE	Which time format to use for display by default when\n"
-"			not overridden by other format options:\n"
-"			  locale (default), mini, compact, short, normal,\n"
-"			  full, iso, long-iso, relative\n"
-"  --truncate-char=HEX	Set the truncation character for file names that don't\n"
-"			fit in the allotted space.  Specify a Unicode character\n"
-"			value in hexadecimal (e.g. 2192 is a right-pointing\n"
-"			arrow and 25b8 is a right-pointing triangle).  Or\n"
-"			specify 002e to use .. (two periods).\n"
-"  --utf8		When output is redirected, produce UTF8 output instead\n"
-"			of using the system codepage.\n"
+;
+
+static const char c_usage_epilog[] =
 "\n"
 "Long options that can be used without an argument also accept a 'no-' prefix\n"
 "to disable them.  For example, the --fit-columns option is enabled by default,\n"
@@ -222,6 +250,187 @@ const char c_long_usage[] =
 "Set DIRX_COLORS to specify colors to use in the file list display.  Use\n"
 "'-? colors' for more info on color coding rules.\n"
 ;
+
+static void AppendFlagUsage(StrA& u, const FlagUsageInfo& info, bool skip_leading_spaces=false)
+{
+    const unsigned flag_col_width = 24;
+
+    const char* flag = info.flag;
+    if (skip_leading_spaces)
+    {
+        while (*flag == ' ')
+            ++flag;
+    }
+
+    unsigned flag_len = 2 + unsigned(strlen(flag));
+    u.Append("  ");
+    u.Append(flag);
+    if (flag_len + 2 > flag_col_width)
+    {
+        u.Append("\n");
+        flag_len = 0;
+    }
+    u.AppendSpaces(flag_col_width - flag_len);
+
+    // TODO:  Eventually this can do word wrapping of descriptions based on
+    // the GetConsoleColsRows().
+    const char* p = info.desc;
+    while (*p)
+    {
+        const char* const end = strchr(p, '\n');
+        size_t len = end ? (end - p) : strlen(p);
+        u.Append(p, len);
+        u.Append("\n");
+        len += !!end;
+        p += len;
+        if (*p)
+            u.AppendSpaces(flag_col_width);
+    }
+}
+
+static int CmpFlagChar(char a, char b)
+{
+    static bool s_init = true;
+    static int s_order[256];
+    if (s_init)
+    {
+        static char c_ordered[] =
+        "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
+        "\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"
+        ", "    // So "-?," sorts before "-? foo".
+        "!\"#$%&'()*+./"
+        "0123456789"
+        ":;<=>?@"
+        "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ"
+        "[\\]^_`"
+        "{|}~"
+        "-"
+        "\x7f"
+        ;
+        static_assert(sizeof(c_ordered) == _countof(s_order) / 2 + 1, "wrong number of characters in c_ordered");
+        for (int i = 0; i < sizeof(c_ordered) - 1; ++i)
+            s_order[c_ordered[i]] = i;
+        for (int i = 128; i < 256; ++i)
+            s_order[i] = i;
+        s_init = false;
+    }
+    return (s_order[a] - s_order[b]);
+}
+
+static bool CmpFlagName(size_t a, size_t b)
+{
+    const auto& a_info = c_usage_info[a];
+    const auto& b_info = c_usage_info[b];
+    const char* a_str = a_info.flag;
+    const char* b_str = b_info.flag;
+
+#ifndef KEEP_ASSOCIATED_TOGETHER
+    while (*a_str == ' ') ++a_str;
+    while (*b_str == ' ') ++b_str;
+#endif
+
+    const int a_long = (a_str[0] && a_str[1] == '-');
+    const int b_long = (b_str[0] && b_str[1] == '-');
+
+    int n = a_long - b_long;
+    if (n)
+        return (n < 0);
+
+    while (true)
+    {
+        const unsigned a_c = *a_str;
+        const unsigned b_c = *b_str;
+        n = CmpFlagChar(a_c, b_c);
+        if (n)
+            return (n < 0);
+        if (!a_c || !b_c)
+        {
+            assert(!a_c && !b_c);
+            return false;
+        }
+        ++a_str;
+        ++b_str;
+    }
+}
+
+StrA MakeUsageString(bool alphabetical)
+{
+    StrA u;
+    u.Append(c_usage_prolog);
+
+    if (alphabetical)
+    {
+#ifdef KEEP_ASSOCIATED_TOGETHER
+        std::map<size_t, size_t> associated_indices;
+        const bool skip_leading_spaces = false;
+#else
+        const bool skip_leading_spaces = true;
+#endif
+
+        u.Append("OPTIONS:\n");
+
+        size_t i = 0;
+        std::vector<size_t> usage_indices;
+        for (const auto& info : c_usage_info)
+        {
+            usage_indices.emplace_back(i);
+#ifdef KEEP_ASSOCIATED_TOGETHER
+            if (info.flag[0] == ' ')
+                associated_indices[i - 1] = i;
+#endif
+            ++i;
+        }
+
+        std::sort(usage_indices.begin(), usage_indices.end(), CmpFlagName);
+
+        for (size_t k = 0; k < usage_indices.size(); ++k)
+        {
+            const size_t i = usage_indices[k];
+            const auto& info = c_usage_info[i];
+
+#ifdef KEEP_ASSOCIATED_TOGETHER
+            if (info.flag[0] == ' ')
+                continue;
+#endif
+
+            AppendFlagUsage(u, info, skip_leading_spaces);
+
+#ifdef KEEP_ASSOCIATED_TOGETHER
+            for (size_t j = i;;)
+            {
+                const auto& assoc = associated_indices.find(j);
+                if (assoc == associated_indices.end())
+                    break;
+                j = assoc->second;
+                AppendFlagUsage(u, c_usage_info[j]);
+            }
+#endif
+        }
+    }
+    else
+    {
+        FlagSection section = USAGE;
+        for (const auto& info : c_usage_info)
+        {
+            if (section != info.section)
+            {
+                section = info.section;
+                switch (section)
+                {
+                case DISPLAY:   u.Append("\nDISPLAY OPTIONS:\n"); break;
+                case FILTER:    u.Append("\nFILTERING AND SORTING OPTIONS:\n"); break;
+                case FIELD:     u.Append("\nFIELD OPTIONS:\n"); break;
+                case FORMAT:    u.Append("\nFORMATTING OPTIONS:\n"); break;
+                }
+            }
+
+            AppendFlagUsage(u, info);
+        }
+    }
+
+    u.Append(c_usage_epilog);
+    return u.Text();
+}
 
 const char c_help_colors[] =
 "Set the DIRX_COLORS environment variable to control how files and directories\n"
