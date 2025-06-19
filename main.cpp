@@ -431,6 +431,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
     unsigned limit_depth = -1;
     bool fresh_a_flag = true;
     bool used_A_flag = false;
+    bool auto_dir_brackets = true;
     const WCHAR* picture = 0;
     const LongOption<WCHAR>* long_opt;
     StrW ignore_globs;
@@ -630,12 +631,6 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
                 continue; // Other flags are handled separately further below.
             switch (long_opt->value)
             {
-            case LOI_ATTRIBUTES:
-                SetFlag(flags, FMT_ATTRIBUTES);
-                break;
-            case LOI_NO_ATTRIBUTES:
-                SetFlag(flags, FMT_LONGNOATTRIBUTES);
-                break;
             case LOI_COLOR_SCALE:
                 if (!SetColorScale(opt_value))
                 {
@@ -702,21 +697,9 @@ unrecognized_long_opt_value:
                 if (ClearDefaultTimeStyleIf(L"relative"))
                     SetFlag(flags, FMT_LONGNODATE);
                 break;
-            case LOI_SIZE:
-                SetFlag(flags, FMT_SIZE);
-                break;
-            case LOI_NO_SIZE:
-                SetFlag(flags, FMT_LONGNOSIZE);
-                break;
             case LOI_SIZE_STYLE:
                 if (!SetDefaultSizeStyle(opt_value))
                     goto unrecognized_long_opt_value;
-                break;
-            case LOI_TIME:
-                SetFlag(flags, FMT_DATE);
-                break;
-            case LOI_NO_TIME:
-                SetFlag(flags, FMT_LONGNODATE);
                 break;
             case LOI_TIME_STYLE:
                 if (!SetDefaultTimeStyle(opt_value))
@@ -733,11 +716,13 @@ unrecognized_long_opt_value:
                 SetTruncationCharacterInHex(opt_value);
                 break;
 
+            case LOI_ATTRIBUTES:            flagsON = FMT_ATTRIBUTES; break;
+            case LOI_NO_ATTRIBUTES:         flagsON = FMT_LONGNOATTRIBUTES; break;
             case LOI_NO_BARE:               flagsOFF = FMT_BARE; break;
             case LOI_BARE_RELATIVE:         flagsON = FMT_BARERELATIVE; break;
             case LOI_NO_BARE_RELATIVE:      flagsOFF = FMT_BARERELATIVE; break;
-            case LOI_CLASSIFY:              flagsON = FMT_CLASSIFY; break;
-            case LOI_NO_CLASSIFY:           flagsOFF = FMT_CLASSIFY; break;
+            case LOI_CLASSIFY:              flagsON = FMT_CLASSIFY; auto_dir_brackets = false; break;
+            case LOI_NO_CLASSIFY:           flagsOFF = FMT_CLASSIFY; auto_dir_brackets = false; break;
             case LOI_NO_COLOR:              flagsOFF = FMT_COLORS; break;
             case LOI_NO_COLOR_SCALE:        SetColorScale(L"none"); break;
             case LOI_NO_FAT:                flagsOFF = FMT_FAT; break;
@@ -772,9 +757,13 @@ unrecognized_long_opt_value:
             case LOI_NO_RATIO:              flagsOFF = FMT_COMPRESSED; break;
             case LOI_REVERSE:               SetReverseSort(true); break;
             case LOI_NO_REVERSE:            SetReverseSort(false); break;
+            case LOI_SIZE:                  flagsON = FMT_SIZE; break;
+            case LOI_NO_SIZE:               flagsON = FMT_LONGNOSIZE; break;
             case LOI_NO_SHORT_NAMES:        flagsOFF = FMT_SHORTNAMES; break;
             case LOI_NO_STREAMS:            flagsOFF = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;
             case LOI_STRING_SORT:           g_dwCmpStrFlags |= SORT_STRINGSORT; break;
+            case LOI_TIME:                  flagsON = FMT_DATE; break;
+            case LOI_NO_TIME:               flagsON = FMT_LONGNODATE; break;
             case LOI_WORD_SORT:             g_dwCmpStrFlags &= ~SORT_STRINGSORT; break;
             }
             break;
@@ -979,8 +968,8 @@ unrecognized_long_opt_value:
 
     if (flags & FMT_FORCENONFAT)
         ClearFlag(flags, FMT_FAT);
-    if (cColumns != 1 && !g_nix_defaults && !(flags & (FMT_FAT|FMT_ATTRIBUTES|FMT_MINISIZE|FMT_CLASSIFY)))
-        SetFlag(flags, FMT_DIRBRACKETS);
+    if (auto_dir_brackets)
+        FlipFlag(flags, FMT_DIRBRACKETS, (cColumns != 1 && !g_nix_defaults && !(flags & (FMT_FAT|FMT_ATTRIBUTES|FMT_MINISIZE|FMT_CLASSIFY))));
     if (!(flags & FMT_FAT))
         SetFlag(flags, FMT_FULLSIZE);
     if (flags & (FMT_BARE|FMT_TREE))
