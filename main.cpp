@@ -148,6 +148,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_COLOR_SCALE_MODE,
         LOI_COMPACT_TIME,
         LOI_NO_COMPACT_TIME,
+        LOI_DIGIT_SORT,
         LOI_ESCAPE_CODES,
         LOI_NO_FAT,
         LOI_FIT_COLUMNS,
@@ -181,6 +182,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         LOI_NIX,
         LOI_NO_NIX,
         LOI_NO_NORMAL,
+        LOI_NUMERIC_SORT,
         LOI_NO_OWNER,
         LOI_PAD_ICONS,
         LOI_NO_RATIO,
@@ -225,6 +227,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"concise",               nullptr,            'B' }, // TODO: -B is a placeholder...
         { L"debug",                 &g_debug,           1 },
         { L"no-debug",              &g_debug,           0 },
+        { L"digit-sort",            nullptr,            LOI_DIGIT_SORT },
         { L"escape-codes",          nullptr,            LOI_ESCAPE_CODES,       LOHA_OPTIONAL },
         { L"fat",                   nullptr,            'z' },
         { L"no-fat",                nullptr,            LOI_NO_FAT },
@@ -267,6 +270,7 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"no-nix",                nullptr,            LOI_NO_NIX },
         { L"normal",                nullptr,            'n' },
         { L"no-normal",             nullptr,            LOI_NO_NORMAL },
+        { L"numeric-sort",          nullptr,            LOI_NUMERIC_SORT },
         { L"owner",                 nullptr,            'q' },
         { L"no-owner",              nullptr,            LOI_NO_OWNER },
         { L"pad-icons",             nullptr,            LOI_PAD_ICONS,          LOHA_REQUIRED },
@@ -732,6 +736,7 @@ unrecognized_long_opt_value:
             case LOI_NO_CLASSIFY:           flagsOFF = FMT_CLASSIFY; auto_dir_brackets = false; break;
             case LOI_NO_COLOR:              flagsOFF = FMT_COLORS; break;
             case LOI_NO_COLOR_SCALE:        SetColorScale(L"none"); break;
+            case LOI_DIGIT_SORT:            SetDefaultNumericSort(false); break;
             case LOI_NO_FAT:                flagsOFF = FMT_FAT; break;
             case LOI_FIT_COLUMNS:           SetCanAutoFit(true); break;
             case LOI_NO_FIT_COLUMNS:        SetCanAutoFit(false); break;
@@ -759,6 +764,7 @@ unrecognized_long_opt_value:
             case LOI_MORE_COLORS:           more_colors = opt_value; break;
             case LOI_NERD_FONTS_VER:        SetNerdFontsVersion(wcstoul(opt_value, nullptr, 10)); break;
             case LOI_NO_NORMAL:             flagsOFF = FMT_FORCENONFAT; break;
+            case LOI_NUMERIC_SORT:          SetDefaultNumericSort(true); break;
             case LOI_NO_OWNER:              flagsOFF = FMT_SHOWOWNER; break;
             case LOI_PAD_ICONS:             SetPadIcons(wcstoul(opt_value, nullptr, 10)); break;
             case LOI_NO_RATIO:              flagsOFF = FMT_COMPRESSED; break;
@@ -768,10 +774,10 @@ unrecognized_long_opt_value:
             case LOI_NO_SIZE:               flagsON = FMT_LONGNOSIZE; break;
             case LOI_NO_SHORT_NAMES:        flagsOFF = FMT_SHORTNAMES; break;
             case LOI_NO_STREAMS:            flagsOFF = FMT_ALTDATASTEAMS|FMT_FORCENONFAT; break;
-            case LOI_STRING_SORT:           g_dwCmpStrFlags |= SORT_STRINGSORT; break;
+            case LOI_STRING_SORT:           SetStringSort(true); break;
             case LOI_TIME:                  flagsON = FMT_DATE; break;
             case LOI_NO_TIME:               flagsON = FMT_LONGNODATE; break;
-            case LOI_WORD_SORT:             g_dwCmpStrFlags &= ~SORT_STRINGSORT; break;
+            case LOI_WORD_SORT:             SetStringSort(false); break;
             }
             break;
         }
