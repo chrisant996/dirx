@@ -126,7 +126,7 @@ static const FlagUsageInfo c_usage_info[] =
                                             "  d  Date/time (oldest first)\n"
                                             "  s  Size (smallest first)\n"
                                             "  c  Compression ratio\n"
-                                            "  a  Simple ASCII order (sort \"10\" before \"2\")\n"
+                                            "  a  ASCII order for digits (sort \"10\" before \"2\")\n"
                                             "  u  Unsorted\n"
                                             "  r  Reverse order for all options\n"
                                             "  -  Prefix to reverse order\n" },
@@ -137,9 +137,11 @@ static const FlagUsageInfo c_usage_info[] =
                                             "  r  Skip files with no alternate data streams\n"
                                             "  -  Prefix to skip next type (this is the default)\n"
                                             "  +  Prefix to un-skip next type\n" },
+    { FILTER,   "--digit-sort",             "Sort in ASCII order for digits (\"10\" before \"2\").\n" },
     { FILTER,   "--git-ignore",             "Ignore files mentioned in .gitignore files.\n" },
     { FILTER,   "--hide-dot-files",         "Hide file and directory names starting with '.' or '_'.\n"
                                             "Using -a overrides this and shows them anyway.\n" },
+    { FILTER,   "--numeric-sort",           "Sort in numeric order (\"2\" before \"10\") (default).\n" },
     { FILTER,   "--reverse",                "Reverse the selected sort order.\n" },
     { FILTER,   "--string-sort",            "Sort punctuation as symbols.\n" },
     { FILTER,   "--word-sort",              "Sort punctuation as part of the word (default).\n" },
