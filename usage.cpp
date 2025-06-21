@@ -49,14 +49,14 @@ static const FlagUsageInfo c_usage_info[] =
     { DISPLAY,  "-4",                       "Display four columns per line (more in wide consoles).\n" },
     { DISPLAY,  "-a, --all",                "Display all files (include hidden and system files).\n" },
     { DISPLAY,  "-b, --bare",               "Bare mode; only display names, no header/detail/etc.\n" },
-    { DISPLAY,  "-B, --concise",            "Selects default options for a concise view.  Displays\n"
-                                            "one column per line, only the name field per line,\n"
-                                            "fits field widths to their contents, hides . and ..\n"
-                                            "directories, shows a mini directory header above file\n"
-                                            "lists, quashes volume/header/summary output, disables\n"
-                                            "filename justify, shows long file names, and shows '-'\n"
-                                            "as size for dirs.  (Other flags can be used to add more\n"
-                                            "fields per file entry besides the name field.)\n" },
+    { DISPLAY,  "-B, --almost-bare",        "Selects default options for a concise almost-bare view.\n"
+                                            "Displays the name field in one column per line, hides .\n"
+                                            "and .. directories, shows a mini directory header above\n"
+                                            "file lists, quashes volume/header/summary output,\n"
+                                            "disables filename justify, shows long file names, and\n"
+                                            "shows '-' as size for dirs.  If other flags are used to\n"
+                                            "add more fields per file entry, then field widths are\n"
+                                            "fitted to their contents.\n" },
     { DISPLAY,  "-c, --color",              "Display with colors (use '-? colors' for more info).\n" },
     { DISPLAY,  "-g, --git",                "List each file's git status.\n" },
     { DISPLAY,  "-gg, --git-repos",         "List status of git repo roots and each file's git\n"

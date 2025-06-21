@@ -225,7 +225,6 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
         { L"color-scale-mode",      nullptr,            LOI_COLOR_SCALE_MODE,   LOHA_REQUIRED },
         { L"compact",               nullptr,            LOI_COMPACT_TIME },
         { L"no-compact",            nullptr,            LOI_NO_COMPACT_TIME },
-        { L"concise",               nullptr,            'B' }, // TODO: -B is a placeholder...
         { L"debug",                 &g_debug,           1 },
         { L"no-debug",              &g_debug,           0 },
         { L"digit-sort",            nullptr,            LOI_DIGIT_SORT },
