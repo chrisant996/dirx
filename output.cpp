@@ -855,7 +855,7 @@ void ExpandTabs(const WCHAR* s, StrW& out, unsigned max_width)
                 }
                 break;
             default:
-                const int32 w = inner_iter.character_wcwidth_onectrl();
+                const int32 w = inner_iter.character_wcwidth_zeroctrl();
                 cx += w;
                 if (cx >= max_width)
                     cx = (cx > max_width) ? w : 0;
@@ -864,6 +864,185 @@ void ExpandTabs(const WCHAR* s, StrW& out, unsigned max_width)
             }
         }
     }
+
+    out.Swap(tmp);
+}
+
+class WrapBuilder
+{
+public:
+    WrapBuilder(StrW& out, unsigned max_width)
+    : m_out(out)
+    {
+        if (!max_width)
+        {
+            const DWORD dwColsRows = GetConsoleColsRows(GetStdHandle(STD_OUTPUT_HANDLE));
+            max_width = LOWORD(dwColsRows);
+        }
+        // IMPORTANT:  The minimum wrapping width is 80 because some sections
+        // in the usage text do not support less than 80 columns.
+        m_max_width = max<unsigned>(80, max_width);
+    }
+
+    void Append(const WCHAR* s, unsigned len)
+    {
+        if (m_auto_hanging)
+        {
+            for (const WCHAR* p = s; *p; ++p)
+            {
+                if (*p != ' ')
+                {
+                    SetHangingIndent();
+                    m_hanging_indent += unsigned(p - s);
+                    break;
+                }
+            }
+        }
+        m_word.Append(s, len);
+    }
+
+    void SetHangingIndent()
+    {
+        m_hanging_indent = m_columns + cell_count(m_word.Text());
+        m_auto_hanging = false;
+    }
+
+    bool EnableWrapping(bool wrapping)
+    {
+        const bool was = m_wrapping;
+        m_wrapping = wrapping;
+        return was;
+    }
+
+    void FlushWord()
+    {
+        unsigned cols = cell_count(m_word.Text());
+        if (cols)
+        {
+            const WCHAR* word = m_word.Text();
+            if (m_wrapping && m_columns > 0 && m_columns + cols >= m_max_width)
+            {
+                FlushLine();
+                while (*word == ' ')
+                    ++word;
+                cols = cell_count(word);
+            }
+            m_columns += cols;
+            m_out.Append(word);
+            m_word.Clear();
+        }
+    }
+
+    void NewLine()
+    {
+        ResetLine();
+        FlushLine(true/*force*/);
+    }
+
+    void End()
+    {
+        FlushWord();
+        ResetLine();
+        FlushLine(false/*force*/);
+    }
+
+private:
+    void ResetLine()
+    {
+        m_hanging_indent = 0;
+        m_auto_hanging = true;
+    }
+
+    void FlushLine(bool force=false)
+    {
+        if (m_columns || force)
+        {
+            m_out.Append(L"\n");
+            m_columns = 0;
+            if (m_hanging_indent)
+            {
+                const unsigned cxMaxHanging = min<unsigned>(m_max_width / 2, 40);
+                const unsigned hanging = min<unsigned>(cxMaxHanging, m_hanging_indent);
+                m_out.AppendSpaces(hanging);
+                m_columns += hanging;
+            }
+        }
+    }
+
+private:
+    unsigned m_max_width;
+    unsigned m_columns = 0;
+    unsigned m_hanging_indent = 0;
+    bool m_wrapping = true;
+    bool m_auto_hanging = true;
+    StrW m_word;
+    StrW& m_out;
+};
+
+void WrapText(const WCHAR* s, StrW& out, unsigned max_width)
+{
+    StrW tmp;
+    WrapBuilder build(tmp, max_width);
+
+    ecma48_state state;
+    ecma48_iter iter(s, state);
+    while (const ecma48_code& code = iter.next())
+    {
+        if (code.get_type() != ecma48_code::type_chars &&
+            code.get_type() != ecma48_code::type_c0)
+        {
+            build.Append(code.get_pointer(), code.get_length());
+            continue;
+        }
+
+        bool non_spaces = false;
+        wcwidth_iter inner_iter(code.get_pointer(), code.get_length());
+        while (true)
+        {
+            const WCHAR* const s = inner_iter.get_pointer();
+            const char32_t c = inner_iter.next();
+            if (!c)
+                break;
+
+            assert(c != '\b' && c != '\t');
+            const unsigned len = unsigned(inner_iter.get_pointer() - s);
+
+            switch (c)
+            {
+            case '\r':
+            case '\n':
+                build.FlushWord();
+                build.NewLine();
+                non_spaces = false;
+                break;
+            case ' ':
+                if (non_spaces)
+                {
+                    build.FlushWord();
+                    non_spaces = false;
+                }
+                build.Append(s, len);
+                break;
+            case '\001':    // Disable wrapping.
+            case '\002':    // Enable wrapping.
+                build.EnableWrapping(c == '\x02');
+                break;
+            case '\030':    // Non-breaking space.
+                build.Append(L" ", 1);
+                break;
+            case '\032':    // Set hanging indent.
+                build.FlushWord();
+                build.SetHangingIndent();
+                break;
+            default:
+                build.Append(s, len);
+                non_spaces = true;
+                break;
+            }
+        }
+    }
+
+    build.End();
 
     out.Swap(tmp);
 }

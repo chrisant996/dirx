@@ -14,4 +14,4 @@ extern const WCHAR c_help_icons_examples[];
 extern const char c_help_pictures[];
 extern const char c_help_regex[];
 
-StrA MakeUsageString(bool alphabetical=false);
+StrA MakeUsageString(bool alphabetical, unsigned flag_col_width);

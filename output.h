@@ -23,6 +23,7 @@ enum PaginationAction { pageFull, pageHalf, pageOneLine, pageAbort };
 PaginationAction PageBreak(HANDLE hin, HANDLE hout);
 
 void ExpandTabs(const WCHAR* s, StrW& out, unsigned max_width=0);
+void WrapText(const WCHAR* s, StrW& out, unsigned max_width=0);
 void OutputConsole(HANDLE h, const WCHAR* p, unsigned len=unsigned(-1), const WCHAR* color=nullptr);
 
 void PrintfV(const WCHAR* format, va_list args);

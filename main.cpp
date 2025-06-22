@@ -394,23 +394,33 @@ int __cdecl _tmain(int argc, const WCHAR** argv)
             {
                 s.SetA(c_help_regex);
             }
-            else if (!wcsicmp(argv[0], L"alphabetical"))
-            {
-                app.ToUpper();
-                fmt.SetA(MakeUsageString(true));
-                s.Printf(fmt.Text(), app.Text());
-            }
         }
         if (!print_all_icons)
         {
+            unsigned width = 80;
+#ifdef AUTO_DYNAMIC_WIDTH_FOR_USAGE_TEXT
+            width = LOWORD(GetConsoleColsRows(GetStdHandle(STD_OUTPUT_HANDLE)));
+#endif
+            const LongOption<WCHAR>* long_opt;
+            for (unsigned ii = 0; opts.GetValue(ii, ch, opt_value, &long_opt); ii++)
+            {
+                if (ch == 'W')
+                {
+                    const unsigned c_min_usage_width = 64;
+                    SkipColonOrEqual(opt_value);
+                    width = max<unsigned>(c_min_usage_width, wcstoul(opt_value, nullptr, 10));
+                }
+            }
+            SetConsoleWidth(width);
             if (s.Empty())
             {
                 app.ToUpper();
-                fmt.SetA(MakeUsageString());
+                fmt.SetA(MakeUsageString(argv[0] && !wcsicmp(argv[0], L"alphabetical"), (width >= 88) ? 32 : 24));
                 s.Printf(fmt.Text(), app.Text());
             }
             SetPagination(true);
             ExpandTabs(s.Text(), s);
+            WrapText(s.Text(), s);
             OutputConsole(GetStdHandle(STD_OUTPUT_HANDLE), s.Text());
             SetGracefulExit();
             return 0;
