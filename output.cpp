@@ -312,7 +312,7 @@ void CRestoreConsole::Restore()
 
 BOOL CRestoreConsole::BreakHandler(DWORD CtrlType)
 {
-    if (CtrlType == CTRL_C_EVENT || CTRL_C_EVENT == CTRL_BREAK_EVENT)
+    if (CtrlType == CTRL_C_EVENT || CtrlType == CTRL_BREAK_EVENT)
     {
         AcquireConsoleMutex();
         s_restoreConsole.Restore();
