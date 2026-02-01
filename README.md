@@ -531,7 +531,7 @@ Operator | Description
 
 ## Building DirX
 
-DirX uses [Premake](http://premake.github.io) to generate Visual Studio solutions. Note that Premake >= 5.0.0-beta1 is required.
+DirX uses [Premake](http://premake.github.io) to generate Visual Studio solutions. Note that Premake >= 5.0.0-beta4 is required.
 
 1. Cd to your clone of dirx.
 2. Run <code>premake5.exe <em>toolchain</em></code> (where <em>toolchain</em> is one of Premake's actions - see `premake5.exe --help`).
