@@ -5,6 +5,12 @@ if _ACTION == "gmake2" then
     error("Use `premake5 gmake` instead; gmake2 neglects to link resources.")
 end
 
+if _PREMAKE_VERSION:find("^4") then
+    error("Requires premake 5.0.0-beta8 or newer.")
+elseif (tonumber(_PREMAKE_VERSION:match("^5%.0%.0.beta(.*)") or "0") or 0) < 8 then
+    error("Requires premake 5.0.0-beta8 or newer.")
+end
+
 
 --------------------------------------------------------------------------------
 local function init_configuration(cfg)
