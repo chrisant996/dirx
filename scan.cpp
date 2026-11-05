@@ -181,7 +181,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const WCHAR
                         ((callbacks.Settings().IsSet(FMT_HIDEPSEUDODIRS) && IsPseudoDirectory(fd.cFileName)) ||
                          (callbacks.Settings().IsSet(FMT_TREE) && subdirs && depth + 1 < limit_depth)))
                         continue;
-                    if (IsHiddenName(fd.cFileName))
+                    if (IsHiddenName(fd.cFileName, pattern->m_patterns[ii].Text()))
                         continue;
 
                     if (reh.IsRegex() && !reh.Match(fd.cFileName))
@@ -260,7 +260,7 @@ static bool ScanFiles(DirScanCallbacks& callbacks, const WCHAR* dir, const WCHAR
                 {
                     if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
                         continue;
-                    if (IsHidden(fd) && callbacks.Settings().IsSet(FMT_SKIPHIDDENDIRS))
+                    if (IsHidden(fd, pattern->m_patterns[ii].Text()) && callbacks.Settings().IsSet(FMT_SKIPHIDDENDIRS))
                         continue;
                     if (IsTraversableReparse(fd) && callbacks.Settings().IsSet(FMT_SKIPJUNCTIONS))
                         continue;

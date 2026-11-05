@@ -140,7 +140,9 @@ static const FlagUsageInfo c_usage_info[] =
     { FILTER,   "--digit-sort",             "Sort in ASCII order for digits (\"10\" before \"2\").\n" },
     { FILTER,   "--git-ignore",             "Ignore files mentioned in .gitignore files.\n" },
     { FILTER,   "--hide-dot-files",         "Hide file and directory names starting with '.' or '_'.  Using -a "
-                                            "overrides this and shows them anyway.\n" },
+                                            "overrides this and shows them anyway.  Names matching a specified "
+                                            "wildcard also override this and are shown anyway.  Matching a "
+                                            "regular expression does not automatically override this.\n" },
     { FILTER,   "--numeric-sort",           "Sort in numeric order (\"2\" before \"10\") (default).\n" },
     { FILTER,   "--reverse",                "Reverse the selected sort order.\n" },
     { FILTER,   "--string-sort",            "Sort punctuation as symbols.\n" },

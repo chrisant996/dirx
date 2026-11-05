@@ -171,16 +171,21 @@ bool IsFATDrive(const WCHAR* path, Error& e)
     return (!wcsicmp(name, L"FAT") && cbComponentMax == 12); // 12 == 8.3
 }
 
-bool IsHidden(const WIN32_FIND_DATA& fd)
+bool IsHidden(const WIN32_FIND_DATA& fd, const WCHAR* pattern)
 {
     return ((fd.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) ||
-            IsHiddenName(fd.cFileName));
+            IsHiddenName(fd.cFileName, pattern));
 }
 
-bool IsHiddenName(const WCHAR* p)
+bool IsHiddenName(const WCHAR* p, const WCHAR* pattern)
 {
-    return ((s_hide_dot_files > 0) &&
-            (p[0] == '.' || p[0] == '_'));
+    if (s_hide_dot_files <= 0)
+        return false;
+    if (p[0] != '.' && p[0] != '_')
+        return false;
+    if (pattern && *pattern == '.' && !IsPseudoDirectory(p))
+        return false;
+    return true;
 }
 
 FileType GetFileType(const WCHAR* p)
